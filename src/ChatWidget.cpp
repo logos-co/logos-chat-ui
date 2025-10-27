@@ -249,6 +249,29 @@ void ChatWidget::updateStatus(const QString& message) {
     qDebug() << message;
 }
 
+void ChatWidget::retrieveMessageHistory() {
+    if (!isWakuRunning) {
+        updateStatus("Waku is not running. Cannot retrieve message history.");
+        return;
+    }
+    
+    if (currentChannel.isEmpty()) {
+        updateStatus("No channel selected. Cannot retrieve message history.");
+        return;
+    }
+    
+    updateStatus("Retrieving message history for channel: " + currentChannel);
+    chatDisplay->append("<i>--- Message History ---</i>");
+    
+    bool success = logos->chat.retrieveHistory(currentChannel);
+    if (success) {
+        qDebug() << "Successfully requested message history for channel:" << currentChannel;
+    } else {
+        updateStatus("Failed to retrieve message history for channel: " + currentChannel);
+        qDebug() << "Failed to retrieve message history for channel:" << currentChannel;
+    }
+}
+
 void ChatWidget::displayMessage(const QString& sender, const QString& message) {
     QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
     QString formattedMessage = QString("[%1] %2: %3").arg(timestamp, sender, message);
