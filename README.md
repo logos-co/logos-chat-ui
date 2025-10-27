@@ -24,7 +24,7 @@ The result will include:
 nix build '.#logos-chat-ui-lib'
 
 # Build the standalone Qt application
-nix build '.#logos-chat-ui-app'
+nix build '.#app'
 ```
 
 #### Development Shell
@@ -46,7 +46,7 @@ The compiled artifacts can be found at `result/`
 
 #### Running the Standalone App
 
-After building the app with `nix build '.#logos-chat-ui-app'`, you can run it:
+After building the app with `nix build '.#app'`, you can run it:
 
 ```bash
 # Run the standalone Qt application
@@ -73,7 +73,7 @@ result/
     └── chat_ui.dylib    # Logos Chat UI plugin
 ```
 
-**App build (`nix build '.#logos-chat-ui-app'`):**
+**App build (`nix build '.#app'`):**
 ```
 result/
 ├── bin/
