@@ -22,6 +22,9 @@ The result will include:
 ```bash
 # Build only the library (plugin)
 nix build '.#logos-chat-ui-lib'
+
+# Build the standalone Qt application
+nix build '.#logos-chat-ui-app'
 ```
 
 #### Development Shell
@@ -41,20 +44,49 @@ nix build --extra-experimental-features 'nix-command flakes'
 
 The compiled artifacts can be found at `result/`
 
+#### Running the Standalone App
+
+After building the app with `nix build '.#logos-chat-ui-app'`, you can run it:
+
+```bash
+# Run the standalone Qt application
+./result/bin/logos-chat-ui-app
+```
+
+The app will automatically load the required modules (capability_module, waku_module, chat) and the chat_ui Qt plugin. All dependencies are bundled in the Nix store layout.
+
 #### Nix Organization
 
 The nix build system is organized into modular files in the `/nix` directory:
 - `nix/default.nix` - Common configuration (dependencies, flags, metadata)
 - `nix/lib.nix` - UI plugin compilation
+- `nix/app.nix` - Standalone Qt application compilation
 
 ## Output Structure
 
 When built with Nix:
 
+**Library build (`nix build '.#logos-chat-ui-lib'`):**
 ```
 result/
 └── lib/
     └── chat_ui.dylib    # Logos Chat UI plugin
+```
+
+**App build (`nix build '.#logos-chat-ui-app'`):**
+```
+result/
+├── bin/
+│   └── logos-chat-ui-app    # Standalone Qt application
+├── lib/
+│   ├── liblogos_core.dylib  # Logos core library
+│   └── liblogos_sdk.dylib   # Logos SDK library
+├── modules/
+│   ├── capability_module_plugin.dylib
+│   ├── waku_module_plugin.dylib
+│   ├── chat_plugin.dylib
+│   └── libwaku.dylib
+└── chat_ui.dylib            # Qt plugin (loaded by app)
 ```
 
 ## Requirements

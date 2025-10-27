@@ -36,10 +36,17 @@
           lib = import ./nix/lib.nix { 
             inherit pkgs common src logosChatModule logosSdk; 
           };
+          
+          # App package
+          app = import ./nix/app.nix { 
+            inherit pkgs common src logosLiblogos logosSdk logosChatModule logosWakuModule logosCapabilityModule;
+            logosChatUI = lib;
+          };
         in
         {
           # Individual outputs
           logos-chat-ui-lib = lib;
+          logos-chat-ui-app = app;
           
           # Default package
           default = lib;
