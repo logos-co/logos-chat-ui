@@ -30,7 +30,7 @@ void MainWindow::setupUi()
     #endif
 
     // Load the chat_ui plugin with the appropriate extension
-    QString pluginPath = QCoreApplication::applicationDirPath() + "/chat_ui" + pluginExtension;
+    QString pluginPath = QCoreApplication::applicationDirPath() + "/../chat_ui" + pluginExtension;
     QPluginLoader loader(pluginPath);
 
     QWidget* chatWidget = nullptr;

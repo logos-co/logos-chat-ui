@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
 
     // Set the plugins directory
-    QString pluginsDir = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/modules");
+    QString pluginsDir = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../modules");
     std::cout << "Setting plugins directory to: " << pluginsDir.toStdString() << std::endl;
     logos_core_set_plugins_dir(pluginsDir.toUtf8().constData());
 

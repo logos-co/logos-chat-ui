@@ -77,7 +77,9 @@ result/
 ```
 result/
 ├── bin/
-│   └── logos-chat-ui-app    # Standalone Qt application
+│   ├── logos-chat-ui-app    # Standalone Qt application
+│   ├── logos_host           # Logos host executable (for plugins)
+│   └── logoscore            # Logos core executable
 ├── lib/
 │   ├── liblogos_core.dylib  # Logos core library
 │   └── liblogos_sdk.dylib   # Logos SDK library

@@ -66,6 +66,16 @@ pkgs.stdenv.mkDerivation rec {
       echo "Installed logos-chat-ui-app binary"
     fi
     
+    # Copy the core binaries from liblogos
+    if [ -f "${logosLiblogos}/bin/logoscore" ]; then
+      cp -L "${logosLiblogos}/bin/logoscore" "$out/bin/"
+      echo "Installed logoscore binary"
+    fi
+    if [ -f "${logosLiblogos}/bin/logos_host" ]; then
+      cp -L "${logosLiblogos}/bin/logos_host" "$out/bin/"
+      echo "Installed logos_host binary"
+    fi
+    
     # Copy required shared libraries from liblogos
     if ls "${logosLiblogos}/lib/"liblogos_core.* >/dev/null 2>&1; then
       cp -L "${logosLiblogos}/lib/"liblogos_core.* "$out/lib/" || true
