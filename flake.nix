@@ -47,7 +47,8 @@
           # Individual outputs
           logos-chat-ui-lib = lib;
           app = app;
-          
+          lib = lib;
+
           # Default package
           default = lib;
         }
