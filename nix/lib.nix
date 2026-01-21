@@ -76,9 +76,9 @@ pkgs.stdenv.mkDerivation {
     fi
     
     # Also install the generated include files
-    if [ -d "./generated_code/include" ]; then
+    if [ -d "../generated_code/include" ]; then
       mkdir -p $out/include
-      cp -r ./generated_code/include/* $out/include/
+      cp -r ../generated_code/include/* $out/include/
       echo "Installed generated include files:"
       ls -la $out/include/
     fi
