@@ -3,7 +3,7 @@
 #include <IComponent.h>
 #include <QObject>
 
-class ChatUIComponent : public QObject, public IComponent {
+class ChatPlugin : public QObject, public IComponent {
     Q_OBJECT
     Q_INTERFACES(IComponent)
     Q_PLUGIN_METADATA(IID IComponent_iid FILE "metadata.json")
@@ -11,4 +11,4 @@ class ChatUIComponent : public QObject, public IComponent {
 public:
     Q_INVOKABLE QWidget* createWidget(LogosAPI* logosAPI = nullptr) override;
     void destroyWidget(QWidget* widget) override;
-}; 
+};

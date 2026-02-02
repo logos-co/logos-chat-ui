@@ -68,7 +68,7 @@ if(NOT _cpp_sdk_found)
 endif()
 
 # Find Qt packages
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets RemoteObjects)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets RemoteObjects Quick QuickWidgets)
 
 # Get the real path to handle symlinks correctly
 get_filename_component(REAL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" REALPATH)
@@ -88,13 +88,11 @@ endif()
 
 # Source files
 set(SOURCES
-    ChatUIComponent.cpp
-    ChatUIComponent.h
-    src/ChatWidget.cpp
-    src/ChatWidget.h
-    src/ChatWindow.cpp
-    src/ChatWindow.h
-    src/main.cpp
+    src/ChatPlugin.cpp
+    src/ChatPlugin.h
+    src/ChatBackend.cpp
+    src/ChatBackend.h
+    src/chat_resources.qrc
 )
 
 # Add SDK sources (only if source layout, installed layout uses the library)
@@ -176,6 +174,7 @@ endif()
 # Include directories
 target_include_directories(chat_ui PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${PLUGINS_OUTPUT_DIR}
 )
@@ -208,6 +207,8 @@ target_link_libraries(chat_ui PRIVATE
     Qt6::Core
     Qt6::Widgets
     Qt6::RemoteObjects
+    Qt6::Quick
+    Qt6::QuickWidgets
     component-interfaces
 )
 

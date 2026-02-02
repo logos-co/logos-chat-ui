@@ -1,0 +1,6 @@
+<!DOCTYPE RCC>
+<RCC>
+    <qresource prefix="/">
+        <file alias="ChatView.qml">ChatView.qml</file>
+    </qresource>
+</RCC>
