@@ -1,11 +1,13 @@
 {
-  "name": "chat_ui",
+  "name": "chat_ui_mix",
   "version": "1.0.0",
   "description": "Chat interface for the Logos application",
   "author": "Logos Core Team",
   "type": "ui",
   "main": "chat_ui",
-  "dependencies": ["chat"],
+  "dependencies": [
+    "chat"
+  ],
   "category": "chat",
   "build": {
     "type": "cmake",
@@ -23,4 +25,4 @@
     "ui_components",
     "messaging"
   ]
-} 
+}
