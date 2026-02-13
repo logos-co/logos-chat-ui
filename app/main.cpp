@@ -1,8 +1,11 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QCommandLineParser>
 #include <QDir>
 #include <QDebug>
+#include <QIcon>
+#include <QRegularExpression>
 #include <iostream>
 #include <memory>
 
@@ -30,6 +33,16 @@ int main(int argc, char *argv[])
 {
     // Create QApplication first
     QApplication app(argc, argv);
+    QApplication::setWindowIcon(QIcon(":/icons/app_icon.png"));
+
+    QCommandLineParser parser;
+    parser.addHelpOption();
+    QCommandLineOption showSettingsOption("show-settings", "Show the settings tab in the UI");
+    parser.addOption(showSettingsOption);
+    parser.process(app);
+
+    // Store as application property so plugins can access it
+    app.setProperty("showSettings", parser.isSet(showSettingsOption));
 
     // Set the plugins directory
     QString pluginsDir = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../modules");
@@ -81,6 +94,8 @@ int main(int argc, char *argv[])
     // Create and show the main window
     MainWindow window;
     window.show();
+    window.raise();
+    window.activateWindow();
     
     // Run the application
     int result = app.exec();
