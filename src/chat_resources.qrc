@@ -2,5 +2,6 @@
 <RCC>
     <qresource prefix="/">
         <file alias="ChatView.qml">ChatView.qml</file>
+        <file>icons/chat.png</file>
     </qresource>
 </RCC>

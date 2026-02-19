@@ -5,6 +5,7 @@
   "author": "Logos Core Team",
   "type": "ui",
   "main": "chat_ui",
+  "icon": ":/icons/chat.png",
   "dependencies": ["chat"],
   "category": "chat",
   "build": {
@@ -23,4 +24,4 @@
     "ui_components",
     "messaging"
   ]
-} 
+}
