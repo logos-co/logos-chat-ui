@@ -13,40 +13,42 @@ void ConversationListPanel::setupUI()
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(0);
 
-    // Set dark background for the entire panel
-    setStyleSheet("background-color: #1c1c1e;");
+    // Set terminal background for the entire panel
+    setStyleSheet("background-color: #0A0A0A;");
 
     // Header with title and new conversation button
     QWidget* headerWidget = new QWidget(this);
-    headerWidget->setStyleSheet("background-color: #2c2c2e; border-bottom: 1px solid #3a3a3c;");
+    headerWidget->setFixedHeight(50);
+    headerWidget->setStyleSheet("background-color: #0A0A0A; border-bottom: 1px solid #2a2a2a;");
     m_headerLayout = new QHBoxLayout(headerWidget);
-    m_headerLayout->setContentsMargins(15, 12, 15, 12);
+    m_headerLayout->setContentsMargins(15, 0, 15, 0);
 
-    m_titleLabel = new QLabel("Conversations", headerWidget);
-    m_titleLabel->setStyleSheet("color: #ffffff; background: transparent;");
-    QFont titleFont = m_titleLabel->font();
+    m_titleLabel = new QLabel("> \xce\xbb chat", headerWidget);
+    m_titleLabel->setStyleSheet("color: #FAFAFA; background: transparent;");
+    QFont titleFont("JetBrains Mono", 14);
+    titleFont.setStyleHint(QFont::Monospace);
     titleFont.setBold(true);
-    titleFont.setPointSize(14);
     m_titleLabel->setFont(titleFont);
 
     m_newConversationButton = new QPushButton(headerWidget);
-    m_newConversationButton->setText("+");
-    m_newConversationButton->setFixedSize(32, 32);
+    m_newConversationButton->setText("+ new");
+    m_newConversationButton->setFixedHeight(32);
     m_newConversationButton->setToolTip("New Conversation");
     m_newConversationButton->setStyleSheet(
         "QPushButton {"
-        "  background-color: #0a84ff;"
+        "  background-color: #10B981;"
         "  border: none;"
-        "  border-radius: 16px;"
-        "  font-size: 18px;"
+        "  border-radius: 4px;"
+        "  font-size: 12px;"
         "  font-weight: bold;"
-        "  color: white;"
+        "  color: #0A0A0A;"
+        "  padding: 6px 12px;"
         "}"
         "QPushButton:hover {"
-        "  background-color: #409cff;"
+        "  background-color: #34D399;"
         "}"
         "QPushButton:pressed {"
-        "  background-color: #0060df;"
+        "  background-color: #059669;"
         "}"
     );
 
@@ -59,38 +61,39 @@ void ConversationListPanel::setupUI()
     m_conversationList->setStyleSheet(
         "QListWidget {"
         "  border: none;"
-        "  background-color: #1c1c1e;"
+        "  background-color: #0A0A0A;"
         "}"
         "QListWidget::item {"
         "  padding: 12px 15px;"
-        "  border-bottom: 1px solid #3a3a3c;"
+        "  border-bottom: 1px solid #2a2a2a;"
         "}"
         "QListWidget::item:selected {"
-        "  background-color: #3a3a3c;"
+        "  background-color: #1F1F1F;"
         "}"
         "QListWidget::item:hover {"
-        "  background-color: #2c2c2e;"
+        "  background-color: #1F1F1F;"
         "}"
     );
 
     // My Bundle button at bottom
-    m_myBundleButton = new QPushButton("My Bundle", this);
+    m_myBundleButton = new QPushButton("$ share_handle", this);
+    m_myBundleButton->setFixedHeight(68);
     m_myBundleButton->setStyleSheet(
         "QPushButton {"
-        "  background-color: #2c2c2e;"
+        "  background-color: transparent;"
         "  border: none;"
-        "  border-top: 1px solid #3a3a3c;"
+        "  border-top: 1px solid #2a2a2a;"
         "  border-radius: 0px;"
         "  padding: 15px;"
         "  font-size: 13px;"
         "  font-weight: bold;"
-        "  color: #0a84ff;"
+        "  color: #FAFAFA;"
         "}"
         "QPushButton:hover {"
-        "  background-color: #3a3a3c;"
+        "  background-color: #1F1F1F;"
         "}"
         "QPushButton:pressed {"
-        "  background-color: #4a4a4c;"
+        "  background-color: #1F1F1F;"
         "}"
     );
 
@@ -195,7 +198,7 @@ void ConversationListPanel::updateConversationDisplay(QListWidgetItem* item,
                                                        const QString& name, 
                                                        const QDateTime& lastActivity)
 {
-    QString displayText = QString("<b style='color: #ffffff;'>%1</b><br><span style='color: #8e8e93; font-size: 10pt;'>%2</span>")
+    QString displayText = QString("<b style='color: #FAFAFA; font-family: JetBrains Mono, monospace;'>%1</b><br><span style='color: #4B5563; font-size: 10pt; font-family: IBM Plex Mono, monospace;'>%2</span>")
                           .arg(name)
                           .arg(formatRelativeTime(lastActivity));
     

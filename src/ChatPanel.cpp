@@ -31,16 +31,16 @@ void ChatPanel::setupUI()
 void ChatPanel::setupEmptyState()
 {
     m_emptyStateWidget = new QWidget(this);
-    m_emptyStateWidget->setStyleSheet("background-color: #1c1c1e;");
+    m_emptyStateWidget->setStyleSheet("background-color: #0A0A0A;");
     QVBoxLayout* emptyLayout = new QVBoxLayout(m_emptyStateWidget);
 
     m_emptyStateLabel = new QLabel("Select a conversation or start a new one", m_emptyStateWidget);
     m_emptyStateLabel->setAlignment(Qt::AlignCenter);
-    QFont emptyFont = m_emptyStateLabel->font();
-    emptyFont.setPointSize(14);
+    QFont emptyFont("JetBrains Mono", 14);
+    emptyFont.setStyleHint(QFont::Monospace);
     emptyFont.setItalic(true);
     m_emptyStateLabel->setFont(emptyFont);
-    m_emptyStateLabel->setStyleSheet("color: #8e8e93; background: transparent;");
+    m_emptyStateLabel->setStyleSheet("color: #6B7280; background: transparent;");
 
     emptyLayout->addStretch();
     emptyLayout->addWidget(m_emptyStateLabel);
@@ -54,22 +54,23 @@ void ChatPanel::setupChatState()
     m_chatLayout->setContentsMargins(0, 0, 0, 0);
     m_chatLayout->setSpacing(0);
 
-    // Title header - dark theme
+    // Title header - terminal theme
     QWidget* headerWidget = new QWidget(m_chatStateWidget);
-    headerWidget->setStyleSheet("background-color: #2c2c2e; border-bottom: 1px solid #3a3a3c;");
+    headerWidget->setFixedHeight(50);
+    headerWidget->setStyleSheet("background-color: #0A0A0A; border-bottom: 1px solid #2a2a2a;");
     QHBoxLayout* headerLayout = new QHBoxLayout(headerWidget);
-    headerLayout->setContentsMargins(15, 12, 15, 12);
+    headerLayout->setContentsMargins(15, 0, 15, 0);
 
     m_titleLabel = new QLabel("", headerWidget);
-    m_titleLabel->setStyleSheet("color: #ffffff; background: transparent;");
-    QFont titleFont = m_titleLabel->font();
+    m_titleLabel->setStyleSheet("color: #FAFAFA; background: transparent;");
+    QFont titleFont("JetBrains Mono", 14);
+    titleFont.setStyleHint(QFont::Monospace);
     titleFont.setBold(true);
-    titleFont.setPointSize(14);
     m_titleLabel->setFont(titleFont);
     headerLayout->addWidget(m_titleLabel);
     headerLayout->addStretch();
 
-    // Messages scroll area - dark theme
+    // Messages scroll area - terminal theme
     m_scrollArea = new QScrollArea(m_chatStateWidget);
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -77,15 +78,15 @@ void ChatPanel::setupChatState()
     m_scrollArea->setStyleSheet(
         "QScrollArea {"
         "  border: none;"
-        "  background-color: #1c1c1e;"
+        "  background-color: #0A0A0A;"
         "}"
         "QScrollBar:vertical {"
-        "  background-color: #1c1c1e;"
+        "  background-color: #0A0A0A;"
         "  width: 8px;"
         "  margin: 0px;"
         "}"
         "QScrollBar::handle:vertical {"
-        "  background-color: #4a4a4c;"
+        "  background-color: #2a2a2a;"
         "  border-radius: 4px;"
         "  min-height: 20px;"
         "}"
@@ -95,17 +96,18 @@ void ChatPanel::setupChatState()
     );
 
     m_messagesContainer = new QWidget(m_scrollArea);
-    m_messagesContainer->setStyleSheet("background-color: #1c1c1e;");
+    m_messagesContainer->setStyleSheet("background-color: #0A0A0A;");
     m_messagesLayout = new QVBoxLayout(m_messagesContainer);
-    m_messagesLayout->setContentsMargins(10, 10, 10, 10);
+    m_messagesLayout->setContentsMargins(16, 16, 16, 16);
     m_messagesLayout->setSpacing(5);
     m_messagesLayout->addStretch();
 
     m_scrollArea->setWidget(m_messagesContainer);
 
-    // Input area - dark theme
+    // Input area - terminal theme
     m_inputWidget = new QWidget(m_chatStateWidget);
-    m_inputWidget->setStyleSheet("background-color: #2c2c2e; border-top: 1px solid #3a3a3c;");
+    m_inputWidget->setFixedHeight(68);
+    m_inputWidget->setStyleSheet("background-color: #0A0A0A; border-top: 1px solid #2a2a2a;");
     m_inputLayout = new QHBoxLayout(m_inputWidget);
     m_inputLayout->setContentsMargins(15, 10, 15, 10);
     m_inputLayout->setSpacing(10);
@@ -114,41 +116,41 @@ void ChatPanel::setupChatState()
     m_messageInput->setPlaceholderText("Type a message...");
     m_messageInput->setStyleSheet(
         "QLineEdit {"
-        "  border: 1px solid #4a4a4c;"
-        "  border-radius: 20px;"
+        "  border: 1px solid #2a2a2a;"
+        "  border-radius: 4px;"
         "  padding: 10px 15px;"
-        "  background-color: #3a3a3c;"
-        "  color: #ffffff;"
+        "  background-color: #0F0F0F;"
+        "  color: #FAFAFA;"
         "  font-size: 13px;"
         "}"
         "QLineEdit:focus {"
-        "  border-color: #0a84ff;"
+        "  border-color: #10B981;"
         "}"
         "QLineEdit::placeholder {"
-        "  color: #8e8e93;"
+        "  color: #4B5563;"
         "}"
     );
 
-    m_sendButton = new QPushButton("Send", m_inputWidget);
+    m_sendButton = new QPushButton(">>", m_inputWidget);
+    m_sendButton->setFixedWidth(48);
     m_sendButton->setStyleSheet(
         "QPushButton {"
-        "  background-color: #0a84ff;"
-        "  color: white;"
+        "  background-color: #10B981;"
+        "  color: #0A0A0A;"
         "  border: none;"
-        "  border-radius: 20px;"
-        "  padding: 10px 20px;"
-        "  font-size: 13px;"
+        "  border-radius: 4px;"
+        "  font-size: 16px;"
         "  font-weight: bold;"
         "}"
         "QPushButton:hover {"
-        "  background-color: #409cff;"
+        "  background-color: #34D399;"
         "}"
         "QPushButton:pressed {"
-        "  background-color: #0060df;"
+        "  background-color: #059669;"
         "}"
         "QPushButton:disabled {"
-        "  background-color: #4a4a4c;"
-        "  color: #8e8e93;"
+        "  background-color: #1F1F1F;"
+        "  color: #4B5563;"
         "}"
     );
 

@@ -5,7 +5,9 @@
 #include <QAction>
 #include <QClipboard>
 #include <QDebug>
+#include <QApplication>
 #include <QGuiApplication>
+#include <QPalette>
 #include <QInputDialog>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -50,18 +52,30 @@ ChatSDKWindow::~ChatSDKWindow() {
 
 void ChatSDKWindow::setupUI() {
   // Set window properties
-  setWindowTitle("Logos Chat SDK");
+  setWindowTitle("> \xce\xbb chat");
   setMinimumSize(800, 600);
   resize(1000, 700);
 
-  // Create splitter - dark theme
+  // Set application-wide monospace font
+  QFont appFont("JetBrains Mono", 12);
+  appFont.setStyleHint(QFont::Monospace);
+  QApplication::setFont(appFont);
+
+  // Dark title bar (macOS and general)
+  QPalette darkPalette = palette();
+  darkPalette.setColor(QPalette::Window, QColor("#000000"));
+  darkPalette.setColor(QPalette::WindowText, QColor("#FAFAFA"));
+  setPalette(darkPalette);
+  setStyleSheet("QMainWindow { background-color: #000000; }");
+
+  // Create splitter - terminal theme
   m_splitter = new QSplitter(Qt::Horizontal, this);
   m_splitter->setHandleWidth(1);
   m_splitter->setStyleSheet("QSplitter {"
-                            "  background-color: #1c1c1e;"
+                            "  background-color: #0A0A0A;"
                             "}"
                             "QSplitter::handle {"
-                            "  background-color: #3a3a3c;"
+                            "  background-color: #2a2a2a;"
                             "}");
 
   // Create panels
@@ -81,12 +95,12 @@ void ChatSDKWindow::setupUI() {
 
   setCentralWidget(m_splitter);
 
-  // Create status bar - dark theme
+  // Create status bar - terminal theme
   m_statusBar = new QStatusBar(this);
   m_statusBar->setStyleSheet("QStatusBar {"
-                             "  background-color: #2c2c2e;"
-                             "  color: #8e8e93;"
-                             "  border-top: 1px solid #3a3a3c;"
+                             "  background-color: #0A0A0A;"
+                             "  color: #6B7280;"
+                             "  border-top: 1px solid #2a2a2a;"
                              "}");
   setStatusBar(m_statusBar);
   m_statusBar->showMessage("Ready");

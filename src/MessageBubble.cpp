@@ -26,7 +26,7 @@ void MessageBubble::setupUI()
     bubbleContainer->setFrameShape(QFrame::NoFrame);
     bubbleContainer->setAutoFillBackground(true);
     QVBoxLayout* bubbleLayout = new QVBoxLayout(bubbleContainer);
-    bubbleLayout->setContentsMargins(14, 10, 14, 10);
+    bubbleLayout->setContentsMargins(16, 16, 16, 16);
     bubbleLayout->setSpacing(4);
 
     // Content label
@@ -57,35 +57,31 @@ void MessageBubble::setupUI()
 
     // Style the bubble based on sender
     if (m_isMe) {
-        // My message - right aligned, blue background (iOS style)
+        // My message - right aligned, green background (terminal style)
         bubbleContainer->setStyleSheet(
             "QFrame {"
-            "  background-color: #0a84ff;"
-            "  border-radius: 16px;"
-            "}"
-            "QFrame QLabel {"
-            "  background: transparent;"
+            "  background-color: #10B981;"
+            "  border: none;"
+            "  border-radius: 8px;"
             "}"
         );
-        m_contentLabel->setStyleSheet("QLabel { color: #ffffff; background: transparent; }");
-        m_timestampLabel->setStyleSheet("QLabel { color: rgba(255, 255, 255, 0.7); background: transparent; }");
+        m_contentLabel->setStyleSheet("QLabel { color: #0A0A0A; background: transparent; border: none; }");
+        m_timestampLabel->setStyleSheet("QLabel { color: rgba(10, 10, 10, 0.6); background: transparent; border: none; }");
         m_timestampLabel->setAlignment(Qt::AlignRight);
         // Spacer on left (50%), bubble on right (50%)
         mainLayout->addWidget(spacer, 1);
         mainLayout->addWidget(bubbleContainer, 1);
     } else {
-        // Counterparty message - left aligned, dark gray background
+        // Counterparty message - left aligned, dark bordered background
         bubbleContainer->setStyleSheet(
             "QFrame {"
-            "  background-color: #3a3a3c;"
-            "  border-radius: 16px;"
-            "}"
-            "QFrame QLabel {"
-            "  background: transparent;"
+            "  background-color: #1F1F1F;"
+            "  border: 1px solid #2a2a2a;"
+            "  border-radius: 8px;"
             "}"
         );
-        m_contentLabel->setStyleSheet("QLabel { color: #ffffff; background: transparent; }");
-        m_timestampLabel->setStyleSheet("QLabel { color: #8e8e93; background: transparent; }");
+        m_contentLabel->setStyleSheet("QLabel { color: #FAFAFA; background: transparent; border: none; }");
+        m_timestampLabel->setStyleSheet("QLabel { color: #4B5563; background: transparent; border: none; }");
         m_timestampLabel->setAlignment(Qt::AlignLeft);
         // Bubble on left (50%), spacer on right (50%)
         mainLayout->addWidget(bubbleContainer, 1);
