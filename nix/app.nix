@@ -233,17 +233,12 @@ pkgs.stdenv.mkDerivation rec {
       echo "Warning: chatsdk_module_plugin not found at ${logosSDKModuleLib}/lib/"
       ls -la "${logosSDKModuleLib}/lib/" || true
     fi
-    # Copy liblogoschat (Nim) and liblibchat (Rust) to modules and lib
-    # directories so the plugin can find them at runtime
+    # Copy liblogoschat (Nim) to modules and lib directories
+    # so the plugin can find it at runtime
     if ls "${logosSDKModuleLib}/lib/"liblogoschat.* >/dev/null 2>&1; then
       cp -L "${logosSDKModuleLib}/lib/"liblogoschat.* "$out/modules/"
       cp -L "${logosSDKModuleLib}/lib/"liblogoschat.* "$out/lib/"
       echo "Installed liblogoschat to modules and lib directories"
-    fi
-    if ls "${logosSDKModuleLib}/lib/"liblibchat.* >/dev/null 2>&1; then
-      cp -L "${logosSDKModuleLib}/lib/"liblibchat.* "$out/modules/"
-      cp -L "${logosSDKModuleLib}/lib/"liblibchat.* "$out/lib/"
-      echo "Installed liblibchat to modules and lib directories"
     fi
     '' else ''
     echo "Note: logosSDKModuleLib not provided, skipping chatsdk_module installation"
