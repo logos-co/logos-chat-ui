@@ -73,6 +73,12 @@ void ConversationListPanel::setupUI()
         "QListWidget::item:hover {"
         "  background-color: #1F1F1F;"
         "}"
+        "QListWidget::item:selected QWidget {"
+        "  background-color: #1F1F1F;"
+        "}"
+        "QListWidget::item:hover QWidget {"
+        "  background-color: #1F1F1F;"
+        "}"
     );
 
     // My Bundle button at bottom
@@ -120,10 +126,10 @@ void ConversationListPanel::addConversation(const QString& id, const QString& na
 
     QListWidgetItem* item = new QListWidgetItem(m_conversationList);
     item->setData(Qt::UserRole, id);
-    updateConversationDisplay(item, name, lastActivity);
+    updateConversationDisplay(item, name, lastActivity, 0);
 
     m_conversationItems[id] = item;
-    m_conversationData[id] = {name, lastActivity};
+    m_conversationData[id] = {name, lastActivity, 0};
 }
 
 void ConversationListPanel::updateConversation(const QString& id, const QDateTime& lastActivity)
@@ -132,7 +138,8 @@ void ConversationListPanel::updateConversation(const QString& id, const QDateTim
 
     QListWidgetItem* item = m_conversationItems[id];
     m_conversationData[id].lastActivity = lastActivity;
-    updateConversationDisplay(item, m_conversationData[id].name, lastActivity);
+    updateConversationDisplay(item, m_conversationData[id].name, lastActivity,
+                              m_conversationData[id].unreadCount);
 }
 
 void ConversationListPanel::removeConversation(const QString& id)
@@ -156,6 +163,27 @@ void ConversationListPanel::selectConversation(const QString& id)
 {
     if (!m_conversationItems.contains(id)) return;
     m_conversationList->setCurrentItem(m_conversationItems[id]);
+}
+
+void ConversationListPanel::incrementUnread(const QString& id)
+{
+    if (!m_conversationItems.contains(id)) return;
+    m_conversationData[id].unreadCount++;
+    QListWidgetItem* item = m_conversationItems[id];
+    updateConversationDisplay(item, m_conversationData[id].name,
+                              m_conversationData[id].lastActivity,
+                              m_conversationData[id].unreadCount);
+}
+
+void ConversationListPanel::clearUnread(const QString& id)
+{
+    if (!m_conversationItems.contains(id)) return;
+    if (m_conversationData[id].unreadCount == 0) return;
+    m_conversationData[id].unreadCount = 0;
+    QListWidgetItem* item = m_conversationItems[id];
+    updateConversationDisplay(item, m_conversationData[id].name,
+                              m_conversationData[id].lastActivity,
+                              m_conversationData[id].unreadCount);
 }
 
 void ConversationListPanel::onItemClicked(QListWidgetItem* item)
@@ -196,17 +224,46 @@ QString ConversationListPanel::formatRelativeTime(const QDateTime& dateTime)
 
 void ConversationListPanel::updateConversationDisplay(QListWidgetItem* item, 
                                                        const QString& name, 
-                                                       const QDateTime& lastActivity)
+                                                       const QDateTime& lastActivity,
+                                                       int unreadCount)
 {
+    QWidget* container = new QWidget(m_conversationList);
+    QHBoxLayout* layout = new QHBoxLayout(container);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(8);
+    container->setAttribute(Qt::WA_StyledBackground, true);
+    container->setStyleSheet("background: transparent;");
+
     QString displayText = QString("<b style='color: #FAFAFA; font-family: JetBrains Mono, monospace;'>%1</b><br><span style='color: #4B5563; font-size: 10pt; font-family: IBM Plex Mono, monospace;'>%2</span>")
                           .arg(name)
                           .arg(formatRelativeTime(lastActivity));
-    
-    QLabel* label = new QLabel(displayText);
+
+    QLabel* label = new QLabel(displayText, container);
     label->setTextFormat(Qt::RichText);
     label->setContentsMargins(0, 0, 0, 0);
     label->setStyleSheet("background: transparent;");
-    
+    label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    layout->addWidget(label);
+
+    if (unreadCount > 0) {
+        QString unreadText = unreadCount > 99 ? "99+" : QString::number(unreadCount);
+        QLabel* badge = new QLabel(unreadText, container);
+        badge->setAlignment(Qt::AlignCenter);
+        badge->setMinimumSize(QSize(20, 20));
+        badge->setMaximumSize(QSize(20, 20));
+        badge->setStyleSheet(
+            "QLabel {"
+            "  background-color: #EF4444;"
+            "  color: #FFFFFF;"
+            "  border-radius: 10px;"
+            "  font-size: 10px;"
+            "  font-weight: bold;"
+            "  padding: 0;"
+            "}"
+        );
+        layout->addWidget(badge);
+    }
+
     item->setSizeHint(QSize(0, 50));
-    m_conversationList->setItemWidget(item, label);
+    m_conversationList->setItemWidget(item, container);
 }

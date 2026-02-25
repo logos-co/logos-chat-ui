@@ -272,6 +272,7 @@ void ChatSDKWindow::onConversationSelected(const QString &conversationId) {
   }
 
   m_currentConversationId = conversationId;
+  m_conversationList->clearUnread(conversationId);
   const auto &convo = m_conversations[conversationId];
   m_chatPanel->setConversation(conversationId, convo.name);
   showConversationMessages(conversationId);
@@ -651,6 +652,8 @@ void ChatSDKWindow::onChatsdkNewMessage(const QVariantList &data) {
   // If this is the currently selected conversation, show the message
   if (conversationId == m_currentConversationId) {
     m_chatPanel->addMessage(sender, content, receivedAt, false);
+  } else {
+    m_conversationList->incrementUnread(conversationId);
   }
 
   // Show notification
@@ -719,12 +722,16 @@ void ChatSDKWindow::onChatsdkNewConversation(const QVariantList &data) {
   // add it to this conversation (the first new one created).
   // See: https://github.com/logos-messaging/logos-chat/issues/86
   bool shouldAutoSelect = false;
-  if (!m_pendingInitialMessage.isEmpty()) {
+  bool initiatedLocally = !m_pendingInitialMessage.isEmpty();
+  if (initiatedLocally) {
     QDateTime createdAt = QDateTime::currentDateTime();
     m_messages[conversationId].append(
         {"Me", m_pendingInitialMessage, createdAt, true});
     m_pendingInitialMessage.clear();
     shouldAutoSelect = true;
+  } else if (m_currentConversationId.isEmpty() ||
+             m_currentConversationId != conversationId) {
+    m_conversationList->incrementUnread(conversationId);
   }
 
   // Auto-select if this is a conversation we initiated
