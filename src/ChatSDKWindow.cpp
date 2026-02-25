@@ -306,17 +306,6 @@ void ChatSDKWindow::onNewConversationRequested() {
       "Paste the other user's intro bundle:", "", &ok);
 
   if (ok && !bundle.isEmpty()) {
-    // Validate it looks like JSON
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(bundle.toUtf8(), &error);
-    if (doc.isNull()) {
-      QMessageBox::warning(
-          this, "Invalid Bundle",
-          QString("The bundle doesn't appear to be valid JSON:\n%1")
-              .arg(error.errorString()));
-      return;
-    }
-
     bool messageOk = false;
     QString initialMessage = QInputDialog::getText(
         this, "Initial Message",

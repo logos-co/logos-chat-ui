@@ -1,5 +1,5 @@
 # Builds the logos-chatsdk-ui library
-{ pkgs, common, src, logosSDKModule ? null, logosSdk }:
+{ pkgs, common, src, logosChatSdkModule ? null, logosSdk }:
 
 pkgs.stdenv.mkDerivation {
   pname = "${common.pname}-lib";
@@ -18,11 +18,11 @@ pkgs.stdenv.mkDerivation {
     mkdir -p ./generated_code
     
     # Copy include files from logos-chatsdk-module result if available
-    ${if logosSDKModule != null then ''
+    ${if logosChatSdkModule != null then ''
     echo "Copying include files from logos-chatsdk-module..."
-    if [ -d "${logosSDKModule}/include" ]; then
+    if [ -d "${logosChatSdkModule}/include" ]; then
       echo "Found include directory in logos-chatsdk-module"
-      cp -r "${logosSDKModule}/include"/* ./generated_code/
+      cp -r "${logosChatSdkModule}/include"/* ./generated_code/
       echo "Copied include files:"
       ls -la ./generated_code/
     else
