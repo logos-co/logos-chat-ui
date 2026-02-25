@@ -260,20 +260,9 @@ void ChatSDKWindow::onNewConversationRequested() {
   bool ok;
   QString bundle = QInputDialog::getMultiLineText(
       this, "New Conversation",
-      "Paste the other user's intro bundle (JSON):", "", &ok);
+      "Paste the other user's intro bundle:", "", &ok);
 
   if (ok && !bundle.isEmpty()) {
-    // Validate it looks like JSON
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(bundle.toUtf8(), &error);
-    if (doc.isNull()) {
-      QMessageBox::warning(
-          this, "Invalid Bundle",
-          QString("The bundle doesn't appear to be valid JSON:\n%1")
-              .arg(error.errorString()));
-      return;
-    }
-
     m_statusBar->showMessage("Creating new conversation...");
 
     // Create the private conversation with an initial greeting message
@@ -501,13 +490,13 @@ void ChatSDKWindow::onChatsdkCreateIntroBundleResult(const QVariantList &data) {
   }
   m_pendingBundleRequest = false;
 
-  // data format: [success (bool), returnCode (int), bundleJson (QString),
+  // data format: [success (bool), returnCode (int), bundleStr (QString),
   // timestamp (QString)]
   bool success = data.size() > 0 ? data[0].toBool() : false;
   int returnCode = data.size() > 1 ? data[1].toInt() : -1;
-  QString bundleJson = data.size() > 2 ? data[2].toString() : "";
+  QString bundleStr = data.size() > 2 ? data[2].toString() : "";
 
-  if (!success || bundleJson.isEmpty()) {
+  if (!success || bundleStr.isEmpty()) {
     QMessageBox::warning(
         this, "Error",
         QString("Failed to create bundle.\nError code: %1").arg(returnCode));
@@ -519,7 +508,7 @@ void ChatSDKWindow::onChatsdkCreateIntroBundleResult(const QVariantList &data) {
   QMessageBox msgBox(this);
   msgBox.setWindowTitle("My Bundle");
   msgBox.setText("Share this bundle with others to start a conversation:");
-  msgBox.setInformativeText(bundleJson);
+  msgBox.setInformativeText(bundleStr);
   msgBox.setIcon(QMessageBox::Information);
   msgBox.setStandardButtons(QMessageBox::Ok);
   msgBox.setTextInteractionFlags(Qt::TextSelectableByMouse);
@@ -529,7 +518,7 @@ void ChatSDKWindow::onChatsdkCreateIntroBundleResult(const QVariantList &data) {
   msgBox.exec();
 
   if (msgBox.clickedButton() == copyBtn) {
-    QGuiApplication::clipboard()->setText(bundleJson);
+    QGuiApplication::clipboard()->setText(bundleStr);
     m_statusBar->showMessage("Bundle copied to clipboard", 3000);
   }
 }
