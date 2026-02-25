@@ -27,6 +27,8 @@ public slots:
     void removeConversation(const QString& id);
     void clearConversations();
     void selectConversation(const QString& id);
+    void incrementUnread(const QString& id);
+    void clearUnread(const QString& id);
 
 private slots:
     void onItemClicked(QListWidgetItem* item);
@@ -36,7 +38,7 @@ private slots:
 private:
     void setupUI();
     QString formatRelativeTime(const QDateTime& dateTime);
-    void updateConversationDisplay(QListWidgetItem* item, const QString& name, const QDateTime& lastActivity);
+    void updateConversationDisplay(QListWidgetItem* item, const QString& name, const QDateTime& lastActivity, int unreadCount);
 
     QVBoxLayout* m_mainLayout;
     QHBoxLayout* m_headerLayout;
@@ -51,6 +53,7 @@ private:
     struct ConversationData {
         QString name;
         QDateTime lastActivity;
+        int unreadCount = 0;
     };
     QMap<QString, ConversationData> m_conversationData;
 };
