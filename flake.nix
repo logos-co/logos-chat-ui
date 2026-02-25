@@ -16,13 +16,12 @@
         pkgs = import nixpkgs { inherit system; };
         logosSdk = logos-cpp-sdk.packages.${system}.default;
         logosLiblogos = logos-liblogos.packages.${system}.default;
-        logosSDKModule = logos-chatsdk-module.packages.${system}.logos-chatsdk-module-include;
-        logosSDKModuleLib = logos-chatsdk-module.packages.${system}.logos-chatsdk-module-lib;
+        logosChatSdkModule = logos-chatsdk-module.packages.${system}.default;
         logosCapabilityModule = logos-capability-module.packages.${system}.default;
       });
     in
     {
-      packages = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosSDKModule, logosSDKModuleLib, logosCapabilityModule }: 
+      packages = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosChatSdkModule, logosCapabilityModule }: 
         let
           # Common configuration
           common = import ./nix/default.nix { 
@@ -32,13 +31,13 @@
           
           # Library package
           lib = import ./nix/lib.nix { 
-            inherit pkgs common src logosSdk logosSDKModule;
+            inherit pkgs common src logosSdk logosChatSdkModule;
           };
           
           # App package
           app = import ./nix/app.nix { 
-            inherit pkgs common src logosLiblogos logosSdk logosSDKModule logosSDKModuleLib logosCapabilityModule;
-            logosChatSDKUI = lib;
+            inherit pkgs common src logosLiblogos logosSdk logosChatSdkModule logosCapabilityModule;
+            logosChatSdkUi = lib;
           };
         in
         {
@@ -52,7 +51,7 @@
         }
       );
 
-      devShells = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosSDKModule, logosSDKModuleLib, logosCapabilityModule }: {
+      devShells = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosChatSdkModule, logosCapabilityModule }: {
         default = pkgs.mkShell {
           nativeBuildInputs = [
             pkgs.cmake
