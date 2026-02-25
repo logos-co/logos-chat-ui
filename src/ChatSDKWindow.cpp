@@ -670,10 +670,7 @@ void ChatSDKWindow::onChatsdkNewConversation(const QVariantList &data) {
     return;
   }
 
-  QMutexLocker locker(&m_conversationsMutex);
-
   if (m_conversations.contains(conversationId)) {
-    locker.unlock();
     m_conversationList->updateConversation(conversationId,
                                            QDateTime::currentDateTime());
     return;
@@ -704,8 +701,6 @@ void ChatSDKWindow::onChatsdkNewConversation(const QVariantList &data) {
   m_conversations[conversationId] = {
       QString("Chat %1").arg(displayName), peerId,
       QDateTime::currentDateTime()};
-
-  locker.unlock();
 
   // WORKAROUND: If there's a pending initial message from newPrivateConversation,
   // add it to this conversation (the first new one created).
