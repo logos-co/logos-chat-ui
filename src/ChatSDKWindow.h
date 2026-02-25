@@ -90,5 +90,4 @@ private:
     QMap<QString, ConversationInfo> m_conversations;
     QMap<QString, QList<MessageInfo>> m_messages;
     QString m_currentConversationId;  // Currently selected conversation
-    QMutex m_conversationsMutex;  // Protect conversation and message maps from concurrent access
 };
