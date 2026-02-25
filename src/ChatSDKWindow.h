@@ -7,6 +7,8 @@
 #include <QMap>
 #include <QDateTime>
 #include <QAction>
+#include <QLabel>
+#include <QMutex>
 #include "logos_api.h"
 #include "logos_sdk.h"
 
@@ -42,12 +44,14 @@ private slots:
     void onChatsdkNewConversation(const QVariantList& data);
     void onChatsdkNewPrivateConversationResult(const QVariantList& data);
     void onChatsdkSendMessageResult(const QVariantList& data);
+    void onChatsdkGetIdResult(const QVariantList& data);
 
 private:
     void setupUI();
     void setupMenu();
     void setupEventHandlers();
     void updateChatMenuState();
+    void showConversationMessages(const QString& conversationId);
 
     // LogosAPI integration
     LogosAPI* m_logosAPI;
@@ -56,8 +60,10 @@ private:
     bool m_chatInitialized;
     bool m_chatRunning;
     bool m_pendingBundleRequest;
-    
-    // UI components
+    bool m_autoStartOnLaunch;
+  QString m_pendingInitialMessage;  // Workaround for issue #86
+  QString m_myIdentity;
+  QMap<QString, QString> m_peerIdentities;  // conversationId -> peerId
     QSplitter* m_splitter;
     ConversationListPanel* m_conversationList;
     ChatPanel* m_chatPanel;
@@ -67,12 +73,22 @@ private:
     QAction* m_initChatAction;
     QAction* m_startChatAction;
     QAction* m_stopChatAction;
+    QLabel* m_identityLabel;
 
     // Store conversation messages
     struct ConversationInfo {
         QString name;
+        QString peerId;
         QDateTime lastActivity;
     };
+    struct MessageInfo {
+        QString sender;
+        QString content;
+        QDateTime timestamp;
+        bool isMe;
+    };
     QMap<QString, ConversationInfo> m_conversations;
+    QMap<QString, QList<MessageInfo>> m_messages;
     QString m_currentConversationId;  // Currently selected conversation
+    QMutex m_conversationsMutex;  // Protect conversation and message maps from concurrent access
 };

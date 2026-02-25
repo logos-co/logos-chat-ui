@@ -14,12 +14,15 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QRegularExpression>
+#include <QTimer>
+#include <QLabel>
 
 ChatSDKWindow::ChatSDKWindow(LogosAPI *logosAPI, QWidget *parent)
     : QMainWindow(parent), m_logosAPI(logosAPI), m_ownsLogosAPI(false),
       m_logos(nullptr), m_chatInitialized(false), m_chatRunning(false),
-      m_pendingBundleRequest(false), m_initChatAction(nullptr),
-      m_startChatAction(nullptr), m_stopChatAction(nullptr) {
+  m_pendingBundleRequest(false), m_autoStartOnLaunch(true),
+  m_initChatAction(nullptr), m_startChatAction(nullptr),
+  m_stopChatAction(nullptr) {
   // Create our own LogosAPI if none was provided
   if (!m_logosAPI) {
     m_logosAPI = new LogosAPI("core", this);
@@ -32,6 +35,8 @@ ChatSDKWindow::ChatSDKWindow(LogosAPI *logosAPI, QWidget *parent)
   setupUI();
   setupMenu();
   setupEventHandlers();
+
+  QTimer::singleShot(0, this, [this]() { onInitChat(); });
 }
 
 ChatSDKWindow::~ChatSDKWindow() {
@@ -104,6 +109,14 @@ void ChatSDKWindow::setupUI() {
                              "}");
   setStatusBar(m_statusBar);
   m_statusBar->showMessage("Ready");
+
+  // Create identity display label in status bar right side
+  m_identityLabel = new QLabel(this);
+  m_identityLabel->setStyleSheet("color: #6B7280; margin-right: 15px;");
+  m_identityLabel->setText("ID: loading...");
+  m_identityLabel->setMinimumWidth(120);
+  m_identityLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+  m_statusBar->addPermanentWidget(m_identityLabel);
 
   // Connect signals
   connect(m_conversationList, &ConversationListPanel::conversationSelected,
@@ -217,6 +230,13 @@ void ChatSDKWindow::setupEventHandlers() {
             Qt::QueuedConnection);
       });
 
+  m_logos->chatsdk_module.on(
+      "chatsdkGetIdResult", [this](const QVariantList &data) {
+        QMetaObject::invokeMethod(
+            this, [this, data]() { onChatsdkGetIdResult(data); },
+            Qt::QueuedConnection);
+      });
+
   qDebug() << "ChatSDKWindow: Event handlers set up successfully";
 }
 
@@ -232,6 +252,20 @@ void ChatSDKWindow::updateChatMenuState() {
   }
 }
 
+void ChatSDKWindow::showConversationMessages(const QString &conversationId) {
+  m_chatPanel->clearMessages();
+
+  if (!m_messages.contains(conversationId)) {
+    return;
+  }
+
+  const auto &messages = m_messages[conversationId];
+  for (const auto &message : messages) {
+    m_chatPanel->addMessage(message.sender, message.content, message.timestamp,
+                            message.isMe);
+  }
+}
+
 void ChatSDKWindow::onConversationSelected(const QString &conversationId) {
   if (!m_conversations.contains(conversationId)) {
     return;
@@ -240,7 +274,15 @@ void ChatSDKWindow::onConversationSelected(const QString &conversationId) {
   m_currentConversationId = conversationId;
   const auto &convo = m_conversations[conversationId];
   m_chatPanel->setConversation(conversationId, convo.name);
-  m_statusBar->showMessage(QString("Conversation: %1").arg(convo.name), 3000);
+  showConversationMessages(conversationId);
+  
+  // Update status bar to show peer identity if available
+  QString statusMessage = QString("Conversation: %1").arg(convo.name);
+  if (m_peerIdentities.contains(conversationId)) {
+    QString peerId = m_peerIdentities[conversationId];
+    statusMessage = QString("Chatting with: %1").arg(peerId.left(6));
+  }
+  m_statusBar->showMessage(statusMessage, 3000);
 }
 
 void ChatSDKWindow::onNewConversationRequested() {
@@ -263,11 +305,39 @@ void ChatSDKWindow::onNewConversationRequested() {
       "Paste the other user's intro bundle:", "", &ok);
 
   if (ok && !bundle.isEmpty()) {
+    // Validate it looks like JSON
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(bundle.toUtf8(), &error);
+    if (doc.isNull()) {
+      QMessageBox::warning(
+          this, "Invalid Bundle",
+          QString("The bundle doesn't appear to be valid JSON:\n%1")
+              .arg(error.errorString()));
+      return;
+    }
+
+    bool messageOk = false;
+    QString initialMessage = QInputDialog::getText(
+        this, "Initial Message",
+        "Message to send with the new conversation:", QLineEdit::Normal,
+        "Hello!", &messageOk);
+
+    if (!messageOk) {
+      return;
+    }
+
+    initialMessage = initialMessage.trimmed();
+    if (initialMessage.isEmpty()) {
+      QMessageBox::warning(this, "Invalid Message",
+                           "Please enter a non-empty initial message.");
+      return;
+    }
+
+    m_pendingInitialMessage = initialMessage;
     m_statusBar->showMessage("Creating new conversation...");
 
     // Create the private conversation with an initial greeting message
     // Content must be hex-encoded for the libchat API
-    QString initialMessage = "Hello!";
     QString initialMessageHex =
         QString::fromLatin1(initialMessage.toUtf8().toHex());
 
@@ -275,6 +345,7 @@ void ChatSDKWindow::onNewConversationRequested() {
         bundle, initialMessageHex);
 
     if (!success) {
+      m_pendingInitialMessage.clear();
       QMessageBox::warning(this, "Error",
                            "Failed to initiate conversation creation. Check "
                            "the logs for details.");
@@ -425,11 +496,20 @@ void ChatSDKWindow::onChatsdkInitResult(const QVariantList &data) {
     m_statusBar->showMessage("Chat initialized successfully", 5000);
     updateChatMenuState();
 
+    if (m_autoStartOnLaunch) {
+      m_autoStartOnLaunch = false;
+      onStartChat();
+      return;
+    }
+
     QMessageBox::information(
         this, "Chat Initialized",
         "Chat has been initialized successfully.\n\n"
         "You can now start the chat using Chat > Start Chat.");
   } else {
+    if (m_autoStartOnLaunch) {
+      m_autoStartOnLaunch = false;
+    }
     m_statusBar->showMessage(
         QString("Chat initialization failed (code: %1)").arg(returnCode), 5000);
     QMessageBox::warning(
@@ -453,6 +533,8 @@ void ChatSDKWindow::onChatsdkStartResult(const QVariantList &data) {
     m_chatRunning = true;
     m_statusBar->showMessage("Chat started - connected to network", 5000);
     updateChatMenuState();
+
+    m_logos->chatsdk_module.getId();
   } else {
     m_statusBar->showMessage(
         QString("Chat start failed (code: %1)").arg(returnCode), 5000);
@@ -558,14 +640,17 @@ void ChatSDKWindow::onChatsdkNewMessage(const QVariantList &data) {
   }
 
   // Update conversation list with new activity
+  QDateTime receivedAt = QDateTime::currentDateTime();
   if (m_conversations.contains(conversationId)) {
-    m_conversations[conversationId].lastActivity = QDateTime::currentDateTime();
+    m_conversations[conversationId].lastActivity = receivedAt;
+    m_conversationList->updateConversation(conversationId, receivedAt);
   }
+
+  m_messages[conversationId].append({sender, content, receivedAt, false});
 
   // If this is the currently selected conversation, show the message
   if (conversationId == m_currentConversationId) {
-    m_chatPanel->addMessage(sender, content, QDateTime::currentDateTime(),
-                            false);
+    m_chatPanel->addMessage(sender, content, receivedAt, false);
   }
 
   // Show notification
@@ -587,19 +672,71 @@ void ChatSDKWindow::onChatsdkNewConversation(const QVariantList &data) {
   QJsonObject obj = doc.object();
   QString conversationId = obj["conversationId"].toString();
   QString conversationType = obj["conversationType"].toString();
+  QString peerId;
+
+  if (conversationId.isEmpty()) {
+    return;
+  }
+
+  QMutexLocker locker(&m_conversationsMutex);
+
+  if (m_conversations.contains(conversationId)) {
+    locker.unlock();
+    m_conversationList->updateConversation(conversationId,
+                                           QDateTime::currentDateTime());
+    return;
+  }
+
+  // Try to extract peer identity
+  if (obj.contains("peerId")) {
+    peerId = obj["peerId"].toString();
+  } else if (obj.contains("peerIdentity")) {
+    peerId = obj["peerIdentity"].toString();
+  }
+
+  // Use peer identity (first 6 chars) or fallback to conversation ID (first 8 chars)
+  QString displayName;
+  if (!peerId.isEmpty()) {
+    m_peerIdentities[conversationId] = peerId;
+    displayName = peerId.left(6);
+    qDebug() << "ChatSDKWindow: Peer identity:" << displayName;
+  } else {
+    displayName = conversationId.left(8);
+  }
 
   // Add to conversation list
   m_conversationList->addConversation(
-      conversationId, QString("Chat %1").arg(conversationId.left(8)),
+      conversationId, QString("Chat %1").arg(displayName),
       QDateTime::currentDateTime());
 
   m_conversations[conversationId] = {
-      QString("Chat %1").arg(conversationId.left(8)),
+      QString("Chat %1").arg(displayName), peerId,
       QDateTime::currentDateTime()};
+
+  locker.unlock();
+
+  // WORKAROUND: If there's a pending initial message from newPrivateConversation,
+  // add it to this conversation (the first new one created).
+  // See: https://github.com/logos-messaging/logos-chat/issues/86
+  bool shouldAutoSelect = false;
+  if (!m_pendingInitialMessage.isEmpty()) {
+    QDateTime createdAt = QDateTime::currentDateTime();
+    m_messages[conversationId].append(
+        {"Me", m_pendingInitialMessage, createdAt, true});
+    m_pendingInitialMessage.clear();
+    shouldAutoSelect = true;
+  }
+
+  // Auto-select if this is a conversation we initiated
+  if (shouldAutoSelect) {
+    m_conversationList->selectConversation(conversationId);
+    onConversationSelected(conversationId);
+  }
 
   m_statusBar->showMessage(
       QString("New %1 conversation created").arg(conversationType), 3000);
 }
+
 
 void ChatSDKWindow::onChatsdkNewPrivateConversationResult(
     const QVariantList &data) {
@@ -609,9 +746,10 @@ void ChatSDKWindow::onChatsdkNewPrivateConversationResult(
   // timestamp (QString)]
   bool success = data.size() > 0 ? data[0].toBool() : false;
   int returnCode = data.size() > 1 ? data[1].toInt() : -1;
-  QString conversationJson = data.size() > 2 ? data[2].toString() : "";
+  bool effectiveSuccess = success || returnCode == 0;
 
-  if (!success) {
+  if (!effectiveSuccess) {
+    m_pendingInitialMessage.clear();
     QMessageBox::warning(
         this, "Error",
         QString("Failed to create conversation.\nError code: %1")
@@ -620,44 +758,13 @@ void ChatSDKWindow::onChatsdkNewPrivateConversationResult(
     return;
   }
 
-  // Parse the conversation JSON to get the ID
-  QJsonDocument doc = QJsonDocument::fromJson(conversationJson.toUtf8());
-  QString conversationId;
-  QString peerName = "Peer";
-
-  if (doc.isObject()) {
-    QJsonObject obj = doc.object();
-    conversationId = obj["conversationId"].toString();
-    if (conversationId.isEmpty()) {
-      conversationId = obj["id"].toString();
-    }
-    // Try to get peer name from the response
-    if (obj.contains("peerName")) {
-      peerName = obj["peerName"].toString();
-    }
-  }
-
-  if (conversationId.isEmpty()) {
-    // Generate a temporary ID if none returned
-    conversationId =
-        QString("conv-%1").arg(QDateTime::currentMSecsSinceEpoch());
-  }
-
-  // Add to conversation list
-  QString displayName = QString("Chat with %1").arg(peerName);
-  m_conversationList->addConversation(conversationId, displayName,
-                                      QDateTime::currentDateTime());
-
-  m_conversations[conversationId] = {displayName, QDateTime::currentDateTime()};
-
-  // Auto-select the new conversation
-  m_conversationList->selectConversation(conversationId);
-  onConversationSelected(conversationId);
-
-  m_statusBar->showMessage("New conversation created!", 3000);
-  QMessageBox::information(
-      this, "Conversation Created",
-      "New private conversation has been created.\nYou can now send messages!");
+  // WORKAROUND: newPrivateConversationResult doesn't reliably return the conversation ID,
+  // so we can't match the initial message to the correct conversation here.
+  // Instead, we keep m_pendingInitialMessage and let onChatsdkNewConversation
+  // push it to the first newly created conversation.
+  // See: https://github.com/logos-messaging/logos-chat/issues/86
+  
+  m_statusBar->showMessage("Conversation created successfully", 3000);
 }
 
 void ChatSDKWindow::onChatsdkSendMessageResult(const QVariantList &data) {
@@ -676,6 +783,20 @@ void ChatSDKWindow::onChatsdkSendMessageResult(const QVariantList &data) {
   }
 }
 
+void ChatSDKWindow::onChatsdkGetIdResult(const QVariantList &data) {
+  qDebug() << "ChatSDKWindow: Get ID result:" << data;
+
+  // data format: [identity (QString), timestamp (QString)]
+  if (data.size() > 0) {
+    QString identity = data[0].toString();
+    if (!identity.isEmpty()) {
+      m_myIdentity = identity;
+      m_identityLabel->setText(QString("ID: %1").arg(identity));
+      qDebug() << "ChatSDKWindow: My identity set to:" << identity;
+    }
+  }
+}
+
 void ChatSDKWindow::onMessageSent(const QString &conversationId,
                                   const QString &content) {
   if (!m_chatRunning || !m_logos) {
@@ -690,6 +811,9 @@ void ChatSDKWindow::onMessageSent(const QString &conversationId,
 
   qDebug() << "ChatSDKWindow: Sending message to conversation:"
            << conversationId << "content:" << content;
+
+  QDateTime sentAt = QDateTime::currentDateTime();
+  m_messages[conversationId].append({"Me", content, sentAt, true});
 
   // Content must be hex-encoded for the libchat API
   QString contentHex = QString::fromLatin1(content.toUtf8().toHex());
