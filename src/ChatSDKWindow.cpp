@@ -8,7 +8,12 @@
 #include <QApplication>
 #include <QGuiApplication>
 #include <QPalette>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QInputDialog>
+#include <QLineEdit>
+#include <QTextEdit>
+#include <QVBoxLayout>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMenu>
@@ -300,49 +305,72 @@ void ChatSDKWindow::onNewConversationRequested() {
     return;
   }
 
-  bool ok;
-  QString bundle = QInputDialog::getMultiLineText(
-      this, "New Conversation",
-      "Paste the other user's intro bundle:", "", &ok);
+  QDialog dialog(this);
+  dialog.setWindowTitle("New Conversation");
+  dialog.setMinimumWidth(520);
 
-  if (ok && !bundle.isEmpty()) {
-    bool messageOk = false;
-    QString initialMessage = QInputDialog::getText(
-        this, "Initial Message",
-        "Message to send with the new conversation:", QLineEdit::Normal,
-        "Hello!", &messageOk);
+  QVBoxLayout *layout = new QVBoxLayout(&dialog);
 
-    if (!messageOk) {
-      return;
-    }
+  QLabel *bundleLabel = new QLabel("Paste the other user's intro bundle:");
+  QTextEdit *bundleEdit = new QTextEdit(&dialog);
+  bundleEdit->setAcceptRichText(false);
+  bundleEdit->setLineWrapMode(QTextEdit::WidgetWidth);
+  bundleEdit->setPlaceholderText("logos_chatintro...");
+  bundleEdit->setMinimumHeight(140);
 
-    initialMessage = initialMessage.trimmed();
-    if (initialMessage.isEmpty()) {
-      QMessageBox::warning(this, "Invalid Message",
-                           "Please enter a non-empty initial message.");
-      return;
-    }
+  QLabel *messageLabel = new QLabel("Intro message:");
+  QLineEdit *messageEdit = new QLineEdit(&dialog);
+  messageEdit->setText("Hello!");
+  messageEdit->setPlaceholderText("Type your first message");
 
-    m_pendingInitialMessage = initialMessage;
-    m_statusBar->showMessage("Creating new conversation...");
+  QDialogButtonBox *buttons = new QDialogButtonBox(
+      QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+  connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+  connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
 
-    // Create the private conversation with an initial greeting message
-    // Content must be hex-encoded for the libchat API
-    QString initialMessageHex =
-        QString::fromLatin1(initialMessage.toUtf8().toHex());
+  layout->addWidget(bundleLabel);
+  layout->addWidget(bundleEdit);
+  layout->addWidget(messageLabel);
+  layout->addWidget(messageEdit);
+  layout->addWidget(buttons);
 
-    bool success = m_logos->chatsdk_module.newPrivateConversation(
-        bundle, initialMessageHex);
-
-    if (!success) {
-      m_pendingInitialMessage.clear();
-      QMessageBox::warning(this, "Error",
-                           "Failed to initiate conversation creation. Check "
-                           "the logs for details.");
-      m_statusBar->showMessage("Failed to create conversation", 3000);
-    }
-    // Result will come via onChatsdkNewPrivateConversationResult
+  if (dialog.exec() != QDialog::Accepted) {
+    return;
   }
+
+  QString bundle = bundleEdit->toPlainText().trimmed();
+  if (bundle.isEmpty()) {
+    QMessageBox::warning(this, "Invalid Bundle",
+                         "Please paste a non-empty intro bundle.");
+    return;
+  }
+
+  QString initialMessage = messageEdit->text().trimmed();
+  if (initialMessage.isEmpty()) {
+    QMessageBox::warning(this, "Invalid Message",
+                         "Please enter a non-empty initial message.");
+    return;
+  }
+
+  m_pendingInitialMessage = initialMessage;
+  m_statusBar->showMessage("Creating new conversation...");
+
+  // Create the private conversation with an initial greeting message
+  // Content must be hex-encoded for the libchat API
+  QString initialMessageHex =
+      QString::fromLatin1(initialMessage.toUtf8().toHex());
+
+  bool success = m_logos->chatsdk_module.newPrivateConversation(
+      bundle, initialMessageHex);
+
+  if (!success) {
+    m_pendingInitialMessage.clear();
+    QMessageBox::warning(this, "Error",
+                         "Failed to initiate conversation creation. Check "
+                         "the logs for details.");
+    m_statusBar->showMessage("Failed to create conversation", 3000);
+  }
+  // Result will come via onChatsdkNewPrivateConversationResult
 }
 
 void ChatSDKWindow::onMyBundleRequested() {
@@ -713,9 +741,6 @@ void ChatSDKWindow::onChatsdkNewConversation(const QVariantList &data) {
         {"Me", m_pendingInitialMessage, createdAt, true});
     m_pendingInitialMessage.clear();
     shouldAutoSelect = true;
-  } else if (m_currentConversationId.isEmpty() ||
-             m_currentConversationId != conversationId) {
-    m_conversationList->incrementUnread(conversationId);
   }
 
   // Auto-select if this is a conversation we initiated
