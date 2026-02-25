@@ -1,5 +1,5 @@
 # Builds the logos-chatsdk-ui-app standalone application
-{ pkgs, common, src, logosLiblogos, logosSdk, logosSDKModule ? null, logosSDKModuleLib ? null, logosCapabilityModule ? null, logosChatSDKUI }:
+{ pkgs, common, src, logosLiblogos, logosSdk, logosChatSdkModule ? null, logosCapabilityModule ? null, logosChatSdkUi }:
 
 pkgs.stdenv.mkDerivation rec {
   pname = "logos-chatsdk-ui-app";
@@ -123,12 +123,12 @@ pkgs.stdenv.mkDerivation rec {
     echo "Configuring logos-chatsdk-ui-app..."
     echo "liblogos: ${logosLiblogos}"
     echo "cpp-sdk: ${logosSdk}"
-    echo "chatsdk-ui: ${logosChatSDKUI}"
+    echo "chatsdk-ui: ${logosChatSdkUi}"
     
     # Verify that the built components exist
     test -d "${logosLiblogos}" || (echo "liblogos not found" && exit 1)
     test -d "${logosSdk}" || (echo "cpp-sdk not found" && exit 1)
-    test -d "${logosChatSDKUI}" || (echo "chatsdk-ui not found" && exit 1)
+    test -d "${logosChatSdkUi}" || (echo "chatsdk-ui not found" && exit 1)
     
     cmake -S app -B build \
       -GNinja \
@@ -193,8 +193,8 @@ pkgs.stdenv.mkDerivation rec {
     esac
 
     # Copy chatsdk_ui Qt plugin to root directory (not modules, as it's loaded differently)
-    if [ -f "${logosChatSDKUI}/lib/chatsdk_ui.$OS_EXT" ]; then
-      cp -L "${logosChatSDKUI}/lib/chatsdk_ui.$OS_EXT" "$out/"
+    if [ -f "${logosChatSdkUi}/lib/chatsdk_ui.$OS_EXT" ]; then
+      cp -L "${logosChatSdkUi}/lib/chatsdk_ui.$OS_EXT" "$out/"
     fi
 
     # Copy capability_module to modules directory (required for auth tokens)
@@ -218,9 +218,9 @@ pkgs.stdenv.mkDerivation rec {
 
     # Copy chatsdk_module backend plugin to modules directory
     # Note: The plugin file is named chatsdk_module_plugin but logos_core looks for chatsdk_module
-    ${if logosSDKModuleLib != null then ''
-    if [ -f "${logosSDKModuleLib}/lib/chatsdk_module_plugin.$OS_EXT" ]; then
-      cp -L "${logosSDKModuleLib}/lib/chatsdk_module_plugin.$OS_EXT" "$out/modules/chatsdk_module.$OS_EXT"
+    ${if logosChatSdkModule != null then ''
+    if [ -f "${logosChatSdkModule}/lib/chatsdk_module_plugin.$OS_EXT" ]; then
+      cp -L "${logosChatSdkModule}/lib/chatsdk_module_plugin.$OS_EXT" "$out/modules/chatsdk_module.$OS_EXT"
       echo "Installed chatsdk_module to modules directory"
       
       # Fix RPATH on macOS so the module can find libchat in the same directory
@@ -230,18 +230,18 @@ pkgs.stdenv.mkDerivation rec {
       echo "Fixed RPATH for chatsdk_module"
       '' else ""}
     else
-      echo "Warning: chatsdk_module_plugin not found at ${logosSDKModuleLib}/lib/"
-      ls -la "${logosSDKModuleLib}/lib/" || true
+      echo "Warning: chatsdk_module_plugin not found at ${logosChatSdkModule}/lib/"
+      ls -la "${logosChatSdkModule}/lib/" || true
     fi
-    # Copy liblogoschat (Nim) to modules and lib directories
+    # Copy liblogoschat to modules and lib directories
     # so the plugin can find it at runtime
-    if ls "${logosSDKModuleLib}/lib/"liblogoschat.* >/dev/null 2>&1; then
-      cp -L "${logosSDKModuleLib}/lib/"liblogoschat.* "$out/modules/"
-      cp -L "${logosSDKModuleLib}/lib/"liblogoschat.* "$out/lib/"
+    if ls "${logosChatSdkModule}/lib/"liblogoschat.* >/dev/null 2>&1; then
+      cp -L "${logosChatSdkModule}/lib/"liblogoschat.* "$out/modules/"
+      cp -L "${logosChatSdkModule}/lib/"liblogoschat.* "$out/lib/"
       echo "Installed liblogoschat to modules and lib directories"
     fi
     '' else ''
-    echo "Note: logosSDKModuleLib not provided, skipping chatsdk_module installation"
+    echo "Note: logosChatSdkModule not provided, skipping chatsdk_module installation"
     ''}
 
     # Create a README for reference
@@ -250,7 +250,7 @@ Logos Chat SDK UI App - Build Information
 =========================================
 liblogos: ${logosLiblogos}
 cpp-sdk: ${logosSdk}
-chatsdk-ui: ${logosChatSDKUI}
+chatsdk-ui: ${logosChatSdkUi}
 
 Runtime Layout:
 - Binary: $out/bin/logos-chatsdk-ui-app
