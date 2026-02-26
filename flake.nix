@@ -6,7 +6,7 @@
     nixpkgs.follows = "logos-liblogos/nixpkgs";
     logos-cpp-sdk.url = "github:logos-co/logos-cpp-sdk";
     logos-liblogos.url = "github:logos-co/logos-liblogos";
-    logos-chat-module.url = "github:logos-co/logos-chat-module";
+    logos-chat-module.url = "github:logos-co/logos-chat-legacy-module";
     logos-waku-module.url = "github:logos-co/logos-waku-module";
     logos-capability-module.url = "github:logos-co/logos-capability-module";
   };
