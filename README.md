@@ -1,4 +1,4 @@
-# logos-chat-ui
+# logos-mix-demo-chat-ui
 
 ## How to Build
 
@@ -43,17 +43,6 @@ nix build --extra-experimental-features 'nix-command flakes'
 ```
 
 The compiled artifacts can be found at `result/`
-
-#### Running the Standalone App
-
-After building the app with `nix build '.#app'`, you can run it:
-
-```bash
-# Run the standalone Qt application
-./result/bin/logos-chat-ui-app
-```
-
-The app will automatically load the required modules (capability_module, waku_module, chat) and the chat_ui Qt plugin. All dependencies are bundled in the Nix store layout.
 
 #### Nix Organization
 
@@ -121,3 +110,32 @@ export CHAT_UI_QML_PATH=/path/to/logos-chat-ui/src/ChatView.qml
 ```
 
 This allows you to edit the QML file and see changes by reloading the plugin without recompiling.
+
+## Running the Mix Demo Chat app
+
+### Running the Standalone App
+
+After building the app with `nix build '.#app'`, you can run it:
+
+```bash
+# Run the standalone Qt application
+./result/bin/logos-chat-ui-app
+```
+
+### Expected outputs:
+
+1.  Once the app is up and running, you should see the UI with the following:
+  - Status shown as Ready
+  - LP Peer count increasing over time before stabilizing
+  - Mix peer count increasing over time before stabilizing
+  - Warning message `Waiting for network peers...` disappears once 3 mix nodes are discovered.
+2.  After sending a message from the app (which is possible once the warning message disappears), the app should display the same message in the `Messages` section.
+    Note that it takes some time for this to happen due to latency introduced by mix nodes.
+3.  After sending a message, there are two methods to check if the message was delivered successfully:
+  - The message appears in the `Messages` section in the UI.
+  - The following logs appear in the console indicating success:
+
+    ```
+    [LOGOS_HOST "waku_module" ]: "WakuModulePlugin: Lightpush publish initiated successfully for topic: \"\""
+    ChatBackend: Sent message to channel "baixa-chiado"
+    ```
