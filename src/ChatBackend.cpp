@@ -359,54 +359,53 @@ QVariantList ChatBackend::getDefaultBootstrapNodes() const
 
     // Default bootstrap nodes with their mixnode public keys
     QVariantMap node1;
-    node1["address"] = "/ip4/127.0.0.1/tcp/60001/p2p/16Uiu2HAmPiEs2ozjjJF2iN2Pe2FYeMC9w4caRHKYdLdAfjgbWM6o";
-    node1["mixPubKey"] = "9d09ce624f76e8f606265edb9cca2b7de9b41772a6d784bddaf92ffa8fba7d2c";
+    node1["address"] = "/dns4/delivery-01.do-ams3.logos.dev.status.im/tcp/30303/p2p/16Uiu2HAmTUbnxLGT9JvV6mu9oPyDjqHK4Phs1VDJNUgESgNSkuby";
+    node1["mixPubKey"] = "c288a425a6209c74ec07e2e8b6816e9b6995d1cd59b1ab482317c3dfb3ba200f";
     nodes.append(node1);
 
     QVariantMap node2;
-    node2["address"] = "/ip4/127.0.0.1/tcp/60002/p2p/16Uiu2HAmLtKaFaSWDohToWhWUZFLtqzYZGPFuXwKrojFVF6az5UF";
-    node2["mixPubKey"] = "9231e86da6432502900a84f867004ce78632ab52cd8e30b1ec322cd795710c2a";
+    node2["address"] = "/dns4/delivery-02.do-ams3.logos.dev.status.im/tcp/30303/p2p/16Uiu2HAmMK7PYygBtKUQ8EHp7EfaD3bCEsJrkFooK8RQ2PVpJprH";
+    node2["mixPubKey"] = "9d92279057940efd2e5e98c8922c079c24e45c083b00360c8dc6a298b1661716";
     nodes.append(node2);
 
     QVariantMap node3;
-    node3["address"] = "/ip4/127.0.0.1/tcp/60003/p2p/16Uiu2HAmTEDHwAziWUSz6ZE23h5vxG2o4Nn7GazhMor4bVuMXTrA";
-    node3["mixPubKey"] = "275cd6889e1f29ca48e5b9edb800d1a94f49f13d393a0ecf1a07af753506de6c";
+    node3["address"] = "/dns4/delivery-01.gc-us-central1-a.logos.dev.status.im/tcp/30303/p2p/16Uiu2HAm4S1JYkuzDKLKQvwgAhZKs9otxXqt8SCGtB4hoJP1S397";
+    node3["mixPubKey"] = "fe60e95c50f70db9015525064e1fff962ccc982dde480f8faae30262710ece58";
     nodes.append(node3);
 
     QVariantMap node4;
-    node4["address"] = "/ip4/127.0.0.1/tcp/60004/p2p/16Uiu2HAmPwRKZajXtfb1Qsv45VVfRZgK3ENdfmnqzSrVm3BczF6f";
-    node4["mixPubKey"] = "e0ed594a8d506681be075e8e23723478388fb182477f7a469309a25e7076fc18";
+    node4["address"] = "/dns4/delivery-02.gc-us-central1-a.logos.dev.status.im/tcp/30303/p2p/16Uiu2HAm8Y9kgBNtjxvCnf1X6gnZJW5EGE4UwwCL3CCm55TwqBiH";
+    node4["mixPubKey"] = "312335324231ba7963c0c7524e042d1beac2927dbf810513a7fc8d901ab4e812";
     nodes.append(node4);
 
     QVariantMap node5;
-    node5["address"] = "/ip4/127.0.0.1/tcp/60005/p2p/16Uiu2HAmRhxmCHBYdXt1RibXrjAUNJbduAhzaTHwFCZT4qWnqZAu";
-    node5["mixPubKey"] = "8fd7a1a7c19b403d231452a9b1ea40eb1cc76f455d918ef8980e7685f9eeeb1f";
+    node5["address"] = "/dns4/delivery-01.ac-cn-hongkong-c.logos.dev.status.im/tcp/30303/p2p/16Uiu2HAm8YokiNun9BkeA1ZRmhLbtNUvcwRr64F69tYj9fkGyuEP";
+    node5["mixPubKey"] = "7d683767f23f5132a79c70587fec877575460122ebd459bb29c887b7b7a32110";
     nodes.append(node5);
+
+    QVariantMap node6;
+    node6["address"] = "/dns4/delivery-02.ac-cn-hongkong-c.logos.dev.status.im/tcp/30303/p2p/16Uiu2HAkvwhGHKNry6LACrB8TmEFoCJKEX29XR5dDUzk3UT3UNSE";
+    node6["mixPubKey"] = "0894b2852890d244e045f2ff5875e03a6b18f233ccd2e5297f62f7546e93884d";
+    nodes.append(node6);
 
     return nodes;
 }
 
 QString ChatBackend::getDefaultStoreNode() const
 {
-    return "/ip4/127.0.0.1/tcp/60001/p2p/16Uiu2HAmPiEs2ozjjJF2iN2Pe2FYeMC9w4caRHKYdLdAfjgbWM6o";
+    return "/dns4/delivery-01.do-ams3.logos.dev.status.im/tcp/30303/p2p/16Uiu2HAmTUbnxLGT9JvV6mu9oPyDjqHK4Phs1VDJNUgESgNSkuby";
 }
 
 void ChatBackend::loadSettings()
 {
+    // Always use defaults - do not persist settings across sessions
     QSettings settings("Logos", "ChatUI");
+    settings.clear();
+    settings.sync();
 
-    m_discoveryMode = static_cast<DiscoveryMode>(settings.value("discoveryMode", ExtKadOnly).toInt());
-
-    // Load bootstrap nodes - if not found or empty, use defaults
-    QVariant storedNodes = settings.value("bootstrapNodes");
-    if (storedNodes.isValid() && storedNodes.toList().size() > 0) {
-        m_bootstrapNodes = storedNodes.toList();
-    } else {
-        m_bootstrapNodes = getDefaultBootstrapNodes();
-    }
-
-    // Load store node - if not found, use default
-    m_storeNode = settings.value("storeNode", getDefaultStoreNode()).toString();
+    m_discoveryMode = ExtKadOnly;
+    m_bootstrapNodes = getDefaultBootstrapNodes();
+    m_storeNode = getDefaultStoreNode();
 
     qDebug() << "ChatBackend: Loaded settings - discoveryMode:" << m_discoveryMode
              << ", bootstrapNodes count:" << m_bootstrapNodes.size()

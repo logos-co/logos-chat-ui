@@ -140,11 +140,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1770990961,
-        "narHash": "sha256-VxKwEOZqCT/c7W07RGgZRUGuU0u/WiWka/LKB9Eh7eI=",
+        "lastModified": 1772091999,
+        "narHash": "sha256-mNya0zeGF2D0GIri7MNPzcvo/HUVj3OxgbLdWwnwGYY=",
         "owner": "logos-co",
         "repo": "logos-chat-module",
-        "rev": "673f8ec03aae9cf2af7a10d1f805cf499cb3dcae",
+        "rev": "90bd53d73339756bc2e80fd6e89903bca90d2449",
         "type": "github"
       },
       "original": {
@@ -788,20 +788,20 @@
         "zerokit": "zerokit"
       },
       "locked": {
-        "lastModified": 1770990278,
-        "narHash": "sha256-ALkvkSeSlhRan2u1bRTdpIIutVVShrag7ElAbbh1GDs=",
+        "lastModified": 1772086348,
+        "narHash": "sha256-GCmgc6/9KVvJR3YyO5I5hLf/H8B2K+M41segihFfEkI=",
         "ref": "poc/logos-testnet-mix",
-        "rev": "5a24e1cbc08142d837b86a8c62da747986a54f55",
-        "revCount": 2219,
+        "rev": "7ed4fed7d0f54ee4b06ca55c407edca031fb4cfc",
+        "revCount": 2227,
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/logos-messaging/logos-messaging-nim"
+        "url": "https://github.com/logos-messaging/logos-delivery"
       },
       "original": {
         "ref": "poc/logos-testnet-mix",
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/logos-messaging/logos-messaging-nim"
+        "url": "https://github.com/logos-messaging/logos-delivery"
       }
     },
     "logos-messaging-nim_2": {
@@ -810,20 +810,20 @@
         "zerokit": "zerokit_2"
       },
       "locked": {
-        "lastModified": 1770990278,
-        "narHash": "sha256-ALkvkSeSlhRan2u1bRTdpIIutVVShrag7ElAbbh1GDs=",
+        "lastModified": 1772086348,
+        "narHash": "sha256-GCmgc6/9KVvJR3YyO5I5hLf/H8B2K+M41segihFfEkI=",
         "ref": "poc/logos-testnet-mix",
-        "rev": "5a24e1cbc08142d837b86a8c62da747986a54f55",
-        "revCount": 2219,
+        "rev": "7ed4fed7d0f54ee4b06ca55c407edca031fb4cfc",
+        "revCount": 2227,
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/logos-messaging/logos-messaging-nim"
+        "url": "https://github.com/logos-messaging/logos-delivery"
       },
       "original": {
         "ref": "poc/logos-testnet-mix",
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/logos-messaging/logos-messaging-nim"
+        "url": "https://github.com/logos-messaging/logos-delivery"
       }
     },
     "logos-module": {
@@ -939,11 +939,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1770990617,
-        "narHash": "sha256-ylQqVshSJvB1urqavPtgGejaZx1bgfzxvwRd9xr2FIc=",
+        "lastModified": 1772091941,
+        "narHash": "sha256-NTzWNh1+j/mnzOkfV71Yv1s5OiGrzGL8ULHDbjDSAhY=",
         "owner": "logos-co",
         "repo": "logos-waku-module",
-        "rev": "fc1b928b69743060b756a22f91d9b7d693add507",
+        "rev": "8ea3dc6f68f6728247f63ba9f9d05acbc609c4e3",
         "type": "github"
       },
       "original": {
@@ -965,11 +965,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1770990617,
-        "narHash": "sha256-ylQqVshSJvB1urqavPtgGejaZx1bgfzxvwRd9xr2FIc=",
+        "lastModified": 1772091941,
+        "narHash": "sha256-NTzWNh1+j/mnzOkfV71Yv1s5OiGrzGL8ULHDbjDSAhY=",
         "owner": "logos-co",
         "repo": "logos-waku-module",
-        "rev": "fc1b928b69743060b756a22f91d9b7d693add507",
+        "rev": "8ea3dc6f68f6728247f63ba9f9d05acbc609c4e3",
         "type": "github"
       },
       "original": {
