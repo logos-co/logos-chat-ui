@@ -140,17 +140,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1772091999,
-        "narHash": "sha256-mNya0zeGF2D0GIri7MNPzcvo/HUVj3OxgbLdWwnwGYY=",
+        "lastModified": 1772172757,
+        "narHash": "sha256-og0+anaaX1mwGA+w18ju9gk4JVygorb6K8o+ZvCS3PM=",
         "owner": "logos-co",
-        "repo": "logos-chat-module",
-        "rev": "90bd53d73339756bc2e80fd6e89903bca90d2449",
+        "repo": "logos-chat-legacy-module",
+        "rev": "7d361e8257a7c68b66841a4539e8c5a0656ed2de",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
         "ref": "logos-testnet-demo",
-        "repo": "logos-chat-module",
+        "repo": "logos-chat-legacy-module",
         "type": "github"
       }
     },

@@ -169,6 +169,7 @@ void ChatBackend::initializeChat()
     config["bootstrapNodes"] = addressesList.join(",");
     config["mixnodes"] = mixnodesList.join(",");
     config["storeNode"] = m_storeNode;
+    config["nodeKey"] = m_nodeKey;
 
     QString configJson = QString::fromUtf8(QJsonDocument(config).toJson(QJsonDocument::Compact));
 
@@ -396,18 +397,36 @@ QString ChatBackend::getDefaultStoreNode() const
     return "/dns4/delivery-01.do-ams3.logos.dev.status.im/tcp/30303/p2p/16Uiu2HAmTUbnxLGT9JvV6mu9oPyDjqHK4Phs1VDJNUgESgNSkuby";
 }
 
+static QString generateNodeKey()
+{
+    QString hex;
+    hex.reserve(64);
+    auto* rng = QRandomGenerator::global();
+    for (int i = 0; i < 8; ++i) {
+        hex += QString::number(rng->generate(), 16).rightJustified(8, '0');
+    }
+    return hex;
+}
+
 void ChatBackend::loadSettings()
 {
-    // Always use defaults - do not persist settings across sessions
     QSettings settings("Logos", "ChatUI");
-    settings.clear();
-    settings.sync();
+
+    // Persist nodeKey across sessions so our libp2p identity stays stable
+    if (settings.contains("nodeKey")) {
+        m_nodeKey = settings.value("nodeKey").toString();
+    } else {
+        m_nodeKey = generateNodeKey();
+        settings.setValue("nodeKey", m_nodeKey);
+        settings.sync();
+        qDebug() << "ChatBackend: Generated new nodeKey";
+    }
 
     m_discoveryMode = ExtKadOnly;
     m_bootstrapNodes = getDefaultBootstrapNodes();
     m_storeNode = getDefaultStoreNode();
 
-    qDebug() << "ChatBackend: Loaded settings - discoveryMode:" << m_discoveryMode
+    qDebug() << "ChatBackend: Loaded settings - nodeKey present, discoveryMode:" << m_discoveryMode
              << ", bootstrapNodes count:" << m_bootstrapNodes.size()
              << ", storeNode:" << m_storeNode;
 }
@@ -416,6 +435,7 @@ void ChatBackend::saveSettings()
 {
     QSettings settings("Logos", "ChatUI");
 
+    settings.setValue("nodeKey", m_nodeKey);
     settings.setValue("discoveryMode", static_cast<int>(m_discoveryMode));
     settings.setValue("bootstrapNodes", m_bootstrapNodes);
     settings.setValue("storeNode", m_storeNode);

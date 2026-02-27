@@ -96,6 +96,7 @@ private:
     ChatStatus m_status;
     QString m_currentChannel;
     QString m_username;
+    QString m_nodeKey;
     QVariantList m_messages;
     int m_mixnodePoolSize;
     int m_lightpushPeersCount;

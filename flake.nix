@@ -8,7 +8,7 @@
     logos-liblogos.url = "github:logos-co/logos-liblogos";
     #logos-chat-module.url = "path:/Users/prem/Code/logos-chat-module";
     #logos-waku-module.url = "path:/Users/prem/Code/logos-waku-module";
-    logos-chat-module.url = "github:logos-co/logos-chat-module?ref=logos-testnet-demo";
+    logos-chat-module.url = "github:logos-co/logos-chat-legacy-module?ref=logos-testnet-demo";
     logos-waku-module.url = "github:logos-co/logos-waku-module?ref=logos-testnet-demo";
     logos-capability-module.url = "github:logos-co/logos-capability-module";
   };
