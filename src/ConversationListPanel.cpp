@@ -82,7 +82,7 @@ void ConversationListPanel::setupUI()
     );
 
     // My Bundle button at bottom
-    m_myBundleButton = new QPushButton("$ share_handle", this);
+    m_myBundleButton = new QPushButton("Generate Intro Bundle", this);
     m_myBundleButton->setFixedHeight(68);
     m_myBundleButton->setStyleSheet(
         "QPushButton {"

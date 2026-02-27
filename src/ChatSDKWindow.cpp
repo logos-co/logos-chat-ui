@@ -847,10 +847,8 @@ void ChatSDKWindow::onMessageSent(const QString &conversationId,
 }
 
 void ChatSDKWindow::onAboutAction() {
-  QMessageBox::about(this, "About Logos Chat SDK UI",
-                     "Logos Chat SDK UI\n\n"
+  QMessageBox::about(this, "About Logos Chat ",
+                     "Logos Chat App\n\n"
                      "Version 1.0.0\n\n"
-                     "A Qt-based chat interface for the Logos platform.\n\n"
-                     "Phase 1: UI Skeleton with mock data\n"
-                     "Phase 2: Backend integration (coming soon)");
+                     "A demo chat application built with Logos Chat");
 }

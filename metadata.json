@@ -1,7 +1,7 @@
 {
   "name": "chatsdk_ui",
-  "version": "1.0.0",
-  "description": "Chat SDK UI for Logos - Private messaging interface",
+  "version": "0.1.0",
+  "description": "Chat App for Logos - Private messaging interface",
   "author": "Logos Core Team",
   "type": "ui",
   "main": "chatsdk_ui",
