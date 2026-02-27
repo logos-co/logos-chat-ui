@@ -140,11 +140,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1772172757,
-        "narHash": "sha256-og0+anaaX1mwGA+w18ju9gk4JVygorb6K8o+ZvCS3PM=",
+        "lastModified": 1772193581,
+        "narHash": "sha256-EBhuQgJxTaeWYMhs6I3k/UtLO1V2b91517ubYClTP28=",
         "owner": "logos-co",
         "repo": "logos-chat-legacy-module",
-        "rev": "7d361e8257a7c68b66841a4539e8c5a0656ed2de",
+        "rev": "7f017b596dcef958a7500fb72d803649a0e88cab",
         "type": "github"
       },
       "original": {
