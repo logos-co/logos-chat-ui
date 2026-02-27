@@ -121,7 +121,7 @@ result/
 
 The module runs as a Qt plugin inside Logos Core. The standalone app (`app/`) is a thin shell that bootstraps Logos Core, loads backend modules, and hosts the UI plugin via `QPluginLoader`.
 
-See [`spec.md`](spec.md) for detailed component specifications, widget hierarchy, and signal/slot interfaces.
+See [`spec.md`](docs/spec.md) for detailed component specifications, widget hierarchy, and signal/slot interfaces.
 
 ## Related Repositories
 
