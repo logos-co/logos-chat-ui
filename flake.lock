@@ -49,16 +49,17 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1771976408,
-        "narHash": "sha256-ban1rGEI5vocSDLD+MWlPVCLzVX6d0s125wUYTzIipk=",
-        "ref": "main",
-        "rev": "a97d8c1717787e1de7e7edbe18f7889bbbf38a49",
-        "revCount": 143,
+        "lastModified": 1772217034,
+        "narHash": "sha256-bJM0F5aB47BB9K4TPM35+jwsoKOUGY5LnHtKL+BrkVs=",
+        "ref": "refs/heads/main",
+        "rev": "07da6e2decaefed65efa42407cc592be10d6f146",
+        "revCount": 145,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/logos-messaging/logos-chat"
       },
       "original": {
+        "rev": "07da6e2decaefed65efa42407cc592be10d6f146",
         "submodules": true,
         "type": "git",
         "url": "https://github.com/logos-messaging/logos-chat"
@@ -76,11 +77,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1772001804,
-        "narHash": "sha256-crv3VZm7QfjskMj/jBJoAvXThc/jA/1d1a3OFaD6ly0=",
+        "lastModified": 1772229364,
+        "narHash": "sha256-HLBAU9iW+co/U55SdjfY37Jco9xCqfCerzVyGXYUfnA=",
         "owner": "logos-co",
         "repo": "logos-chatsdk-module",
-        "rev": "cf2314c9f53dc9a943155f3256ba9aaed6f74308",
+        "rev": "4924e6dd8c88fc02f93809a9871bff48d7ccff2c",
         "type": "github"
       },
       "original": {

@@ -12,8 +12,8 @@
  * Defaults can be overridden via environment variables:
  *   - CHATSDK_NAME: Identity name (default: "LogosUser")
  *   - CHATSDK_PORT: Waku port, 0 for random (default: 0)
- *   - CHATSDK_CLUSTER_ID: Waku cluster ID (default: 42)
- *   - CHATSDK_SHARD_ID: Waku shard ID (default: 2)
+ *   - CHATSDK_CLUSTER_ID: Waku cluster ID (default: 2)
+ *   - CHATSDK_SHARD_ID: Waku shard ID (default: 1)
  *   - CHATSDK_STATIC_PEER: Static peer multiaddr (optional)
  * 
  * Configuration values from libchat.h:
@@ -28,8 +28,8 @@ namespace ChatConfig {
 
 // Default values - can be changed here for different deployments
 constexpr int DEFAULT_PORT = 0;           // 0 = random port
-constexpr int DEFAULT_CLUSTER_ID = 42;    // Waku cluster ID
-constexpr int DEFAULT_SHARD_ID = 2;       // Waku shard ID
+constexpr int DEFAULT_CLUSTER_ID = 2;    // Waku cluster ID
+constexpr int DEFAULT_SHARD_ID = 1;       // Waku shard ID
 
 inline QString defaultName() {
     // Generate a random suffix for the default name
