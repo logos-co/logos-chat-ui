@@ -49,7 +49,7 @@ void MainWindow::setupUi()
         setCentralWidget(chatWidget);
     } else {
         qWarning() << "================================================";
-        qWarning() << "Failed to load chat SDK UI plugin from:" << pluginPath;
+        qWarning() << "Failed to load Chat App plugin from:" << pluginPath;
         qWarning() << "Error:" << loader.errorString();
         qWarning() << "================================================";
         
@@ -57,7 +57,7 @@ void MainWindow::setupUi()
         QWidget* fallbackWidget = new QWidget(this);
         QVBoxLayout* layout = new QVBoxLayout(fallbackWidget);
 
-        QLabel* messageLabel = new QLabel("Chat SDK UI module not loaded", fallbackWidget);
+        QLabel* messageLabel = new QLabel("Chat App module not loaded", fallbackWidget);
         QFont font = messageLabel->font();
         font.setPointSize(14);
         messageLabel->setFont(font);
@@ -68,6 +68,6 @@ void MainWindow::setupUi()
     }
 
     // Set window title and size
-    setWindowTitle("Logos Chat SDK UI App");
+    setWindowTitle("Logos Chat App");
     resize(1000, 700);
 }
