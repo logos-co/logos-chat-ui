@@ -155,6 +155,95 @@ Rectangle {
         }
     }
 
+    Dialog {
+        id: resetPeerIdDialog
+        title: "Reset Peer ID"
+        modal: true
+        anchors.centerIn: parent
+        width: 400
+
+        background: Rectangle {
+            color: _d.surfaceColor
+            border.color: _d.borderColor
+            border.width: 1
+            radius: 8
+        }
+
+        contentItem: ColumnLayout {
+            spacing: 16
+
+            Text {
+                text: "This will generate a new Peer ID and restart the application."
+                font.pixelSize: _d.primaryFontSize
+                color: _d.textColor
+                wrapMode: Text.Wrap
+                Layout.fillWidth: true
+            }
+
+            Text {
+                text: "Are you sure?"
+                font.pixelSize: _d.primaryFontSize
+                color: _d.textSecondaryColor
+                Layout.fillWidth: true
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 10
+
+                Item { Layout.fillWidth: true }
+
+                Button {
+                    text: "Cancel"
+                    onClicked: resetPeerIdDialog.close()
+
+                    contentItem: Text {
+                        text: parent.text
+                        font.pixelSize: _d.primaryFontSize
+                        color: _d.textColor
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    background: Rectangle {
+                        implicitWidth: 80
+                        implicitHeight: 36
+                        color: parent.pressed ? _d.hoverColor : _d.buttonColor
+                        radius: 4
+                        border.color: _d.borderColor
+                        border.width: 1
+                    }
+                }
+
+                Button {
+                    text: "Reset & Restart"
+                    onClicked: {
+                        resetPeerIdDialog.close()
+                        backend.resetPeerId()
+                        Qt.quit()
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        font.pixelSize: _d.primaryFontSize
+                        color: _d.textColor
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    background: Rectangle {
+                        implicitWidth: 120
+                        implicitHeight: 36
+                        color: parent.pressed ? _d.statusErrorColor : "#8c3d3d"
+                        radius: 4
+                        border.color: _d.statusErrorColor
+                        border.width: 1
+                    }
+                }
+            }
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 20
@@ -1139,6 +1228,36 @@ Rectangle {
                                 }
                             }
                         }
+                    }
+                }
+
+                // Reset Peer ID Button
+                Button {
+                    text: "Reset Peer ID"
+                    Layout.alignment: Qt.AlignRight
+                    Layout.preferredWidth: 150
+                    Layout.preferredHeight: 40
+
+                    onClicked: resetPeerIdDialog.open()
+
+                    ToolTip.visible: hovered
+                    ToolTip.delay: 500
+                    ToolTip.text: "Generate a new Peer ID and restart"
+
+                    contentItem: Text {
+                        text: parent.text
+                        font.pixelSize: _d.primaryFontSize
+                        font.bold: true
+                        color: _d.textColor
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    background: Rectangle {
+                        color: parent.pressed ? _d.statusErrorColor : "#8c3d3d"
+                        radius: 4
+                        border.color: _d.statusErrorColor
+                        border.width: 1
                     }
                 }
 

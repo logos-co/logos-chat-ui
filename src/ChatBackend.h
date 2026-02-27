@@ -64,6 +64,7 @@ public slots:
     Q_INVOKABLE void updateBootstrapNodeMixKey(int index, const QString& mixPubKey);
     Q_INVOKABLE void removeBootstrapNode(int index);
     Q_INVOKABLE void requestRestart();
+    Q_INVOKABLE void resetPeerId();
 
 signals:
     void statusChanged();

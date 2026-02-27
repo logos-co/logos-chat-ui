@@ -512,3 +512,13 @@ void ChatBackend::requestRestart()
     qDebug() << "ChatBackend: Restart requested";
     emit restartRequested();
 }
+
+void ChatBackend::resetPeerId()
+{
+    m_nodeKey = generateNodeKey();
+    QSettings settings("Logos", "ChatUI");
+    settings.setValue("nodeKey", m_nodeKey);
+    settings.sync();
+    qDebug() << "ChatBackend: Peer ID reset, new nodeKey generated";
+    emit restartRequested();
+}
