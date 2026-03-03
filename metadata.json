@@ -1,8 +1,8 @@
 {
   "name": "chat_ui_mix",
   "version": "1.0.0",
-  "description": "Chat interface for the Logos application",
-  "author": "Logos Core Team",
+  "description": "Chat interface to send messages via mixnet",
+  "author": "Logos AnonComms Team",
   "type": "ui",
   "main": "chat_ui",
   "dependencies": [
