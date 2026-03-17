@@ -5,23 +5,23 @@
     nixpkgs.follows = "logos-liblogos/nixpkgs";
     logos-cpp-sdk.url = "github:logos-co/logos-cpp-sdk";
     logos-liblogos.url = "github:logos-co/logos-liblogos";
-    logos-chatsdk-module.url = "github:logos-co/logos-chatsdk-module?rev=1fa843b5e30a0421a6a81b6d373fb71dc29eb202";
+    logos-chat-module.url = "github:logos-co/logos-chat-module?rev=1fa843b5e30a0421a6a81b6d373fb71dc29eb202";
     logos-capability-module.url = "github:logos-co/logos-capability-module";
   };
 
-  outputs = { self, nixpkgs, logos-cpp-sdk, logos-liblogos, logos-chatsdk-module, logos-capability-module }:
+  outputs = { self, nixpkgs, logos-cpp-sdk, logos-liblogos, logos-chat-module, logos-capability-module }:
     let
       systems = [ "aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f {
         pkgs = import nixpkgs { inherit system; };
         logosSdk = logos-cpp-sdk.packages.${system}.default;
         logosLiblogos = logos-liblogos.packages.${system}.default;
-        logosChatSdkModule = logos-chatsdk-module.packages.${system}.default;
+        logosChatModule = logos-chat-module.packages.${system}.default;
         logosCapabilityModule = logos-capability-module.packages.${system}.default;
       });
     in
     {
-      packages = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosChatSdkModule, logosCapabilityModule }: 
+      packages = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosChatModule, logosCapabilityModule }: 
         let
           # Common configuration
           common = import ./nix/default.nix { 
@@ -31,12 +31,12 @@
           
           # Library package
           lib = import ./nix/lib.nix { 
-            inherit pkgs common src logosSdk logosChatSdkModule;
+            inherit pkgs common src logosSdk logosChatModule;
           };
           
           # App package
           app = import ./nix/app.nix { 
-            inherit pkgs common src logosLiblogos logosSdk logosChatSdkModule logosCapabilityModule;
+            inherit pkgs common src logosLiblogos logosSdk logosChatModule logosCapabilityModule;
             logosChatSdkUi = lib;
           };
         in
@@ -51,7 +51,7 @@
         }
       );
 
-      devShells = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosChatSdkModule, logosCapabilityModule }: {
+      devShells = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosChatModule, logosCapabilityModule }: {
         default = pkgs.mkShell {
           nativeBuildInputs = [
             pkgs.cmake

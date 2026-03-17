@@ -2,7 +2,7 @@
 
 A Qt-based UI module for the [Logos](https://logos.co) platform that provides a private messaging interface built on top of [Logos Chat](https://github.com/logos-messaging/logos-chat).
 
-The UI connects to [`logos-chatsdk-module`](https://github.com/logos-co/logos-chatsdk-module) via the Logos Core module system for all chat operations — identity, conversations, and message exchange happen over the Logos network.
+The UI connects to [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) via the Logos Core module system for all chat operations — identity, conversations, and message exchange happen over the Logos network.
 
 > **Not to be confused with** [`logos-chat-legacy-ui`](https://github.com/logos-co/logos-chat-legacy-ui), which is a legacy PoC using different backend modules. 
 > This repo is the **active** Logos Chat UI.
@@ -26,7 +26,7 @@ Core functionality:
 
 Conversations are **ephemeral** — messages and identity exist only while the app is running and are not persisted across restarts. Message storage (via the store protocol) is planned for a future release.
 
-The UI communicates with the chat backend entirely through [`logos-chatsdk-module`](https://github.com/logos-co/logos-chatsdk-module) events — it does not access the network directly.
+The UI communicates with the chat backend entirely through [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) events — it does not access the network directly.
 
 ## How to Run
 
@@ -114,7 +114,7 @@ result/
 | Qt6 RemoteObjects | LogosAPI communication |
 | [`logos-cpp-sdk`](https://github.com/logos-co/logos-cpp-sdk) | LogosAPI, module bindings generator |
 | [`logos-liblogos`](https://github.com/logos-co/logos-liblogos) | Logos Core runtime |
-| [`logos-chatsdk-module`](https://github.com/logos-co/logos-chatsdk-module) | Chat backend module |
+| [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) | Chat backend module |
 | [`logos-capability-module`](https://github.com/logos-co/logos-capability-module) | Auth/capability module (app only) |
 
 ## Architecture
@@ -127,7 +127,7 @@ See [`spec.md`](docs/spec.md) for detailed component specifications, widget hier
 
 | Repository | Role |
 |---|---|
-| [`logos-chatsdk-module`](https://github.com/logos-co/logos-chatsdk-module) | Chat backend — this UI's required dependency |
+| [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) | Chat backend — this UI's required dependency |
 | [`logos-chat`](https://github.com/logos-messaging/logos-chat) | Logos Chat application (provides `liblogoschat`) |
 | [`logos-liblogos`](https://github.com/logos-co/logos-liblogos) | Logos Core platform |
 | [`logos-chat-ui`](https://github.com/logos-co/logos-chat-ui) | Legacy PoC — unrelated to this implementation |

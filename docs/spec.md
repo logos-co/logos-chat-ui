@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Qt-based UI module for the Logos platform that provides a chat interface using the `logos-chatsdk-module` backend. This module follows the same architectural patterns as `logos-chat-ui` but implements a two-panel conversation-based chat interface.
+A Qt-based UI module for the Logos platform that provides a chat interface using the `logos-chat-module` backend. This module follows the same architectural patterns as `logos-chat-ui` but implements a two-panel conversation-based chat interface.
 
 ## Architecture
 
@@ -54,7 +54,7 @@ logos-chatsdk-ui/
 | `Qt6::RemoteObjects` | LogosAPI integration and module bindings |
 | `logos-cpp-sdk` | LogosAPI, generator for module bindings |
 | `logos-liblogos` | Core Logos library (logoscore, logos_host) |
-| `logos-chatsdk-module` | Chat SDK backend module |
+| `logos-chat-module` | Chat SDK backend module |
 | `logos-capability-module` | Capability/auth module (standalone app) |
 
 ### Build Targets
@@ -449,7 +449,7 @@ target_link_libraries(chatsdk_ui PRIVATE
 - [x] Setup flake.nix
 
 ### Phase 2: Backend Integration (Done)
-- [x] Connect to `logos-chatsdk-module`
+- [x] Connect to `logos-chat-module`
 - [x] Implement `initChat`, `startChat`, `stopChat`
 - [x] Implement `sendMessage` and receive events
 - [x] Handle chatsdk module event callbacks
@@ -511,7 +511,7 @@ inputs = {
   nixpkgs.follows = "logos-liblogos/nixpkgs";
   logos-cpp-sdk.url = "github:logos-co/logos-cpp-sdk";
   logos-liblogos.url = "github:logos-co/logos-liblogos";
-  logos-chatsdk-module.url = "git+file:///Users/sirotin/Repositories/logos/logos-chatsdk-module?submodules=1";
+  logos-chat-module.url = "git+file:///Users/sirotin/Repositories/logos/logos-chat-module?submodules=1";
   logos-capability-module.url = "github:logos-co/logos-capability-module";
 };
 ```
@@ -567,7 +567,7 @@ This follows the exact same pattern as `logos-chat-ui/app/`.
 ## Notes
 
 - Conversations and messages are ephemeral (no persistence yet)
-- Backend calls are live through `logos-chatsdk-module`
+- Backend calls are live through `logos-chat-module`
 - The module follows the same patterns as `logos-chat-ui` for consistency
 - Qt signals/slots are used for component communication to maintain loose coupling
 - The standalone app requires `logos-liblogos` for the core runtime

@@ -65,13 +65,13 @@
         "url": "https://github.com/logos-messaging/logos-chat"
       }
     },
-    "logos-chatsdk-module": {
+    "logos-chat-module": {
       "inputs": {
         "logos-chat": "logos-chat",
         "logos-cpp-sdk": "logos-cpp-sdk_3",
         "logos-liblogos": "logos-liblogos_2",
         "nixpkgs": [
-          "logos-chatsdk-module",
+          "logos-chat-module",
           "logos-liblogos",
           "nixpkgs"
         ]
@@ -80,13 +80,13 @@
         "lastModified": 1772455715,
         "narHash": "sha256-wTUJ5lfsYiWPQLvAI1mFNHqH4siKREn0j6tR1rbMyHY=",
         "owner": "logos-co",
-        "repo": "logos-chatsdk-module",
+        "repo": "logos-chat-module",
         "rev": "1fa843b5e30a0421a6a81b6d373fb71dc29eb202",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
-        "repo": "logos-chatsdk-module",
+        "repo": "logos-chat-module",
         "rev": "1fa843b5e30a0421a6a81b6d373fb71dc29eb202",
         "type": "github"
       }
@@ -227,7 +227,7 @@
       "inputs": {
         "logos-cpp-sdk": "logos-cpp-sdk_4",
         "nixpkgs": [
-          "logos-chatsdk-module",
+          "logos-chat-module",
           "logos-liblogos",
           "logos-cpp-sdk",
           "nixpkgs"
@@ -385,7 +385,7 @@
     "root": {
       "inputs": {
         "logos-capability-module": "logos-capability-module",
-        "logos-chatsdk-module": "logos-chatsdk-module",
+        "logos-chat-module": "logos-chat-module",
         "logos-cpp-sdk": "logos-cpp-sdk_5",
         "logos-liblogos": "logos-liblogos_3",
         "nixpkgs": [
@@ -397,7 +397,7 @@
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
-          "logos-chatsdk-module",
+          "logos-chat-module",
           "logos-chat",
           "nixpkgs"
         ]

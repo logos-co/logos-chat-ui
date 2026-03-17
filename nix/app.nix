@@ -1,5 +1,5 @@
 # Builds the logos-chatsdk-ui-app standalone application
-{ pkgs, common, src, logosLiblogos, logosSdk, logosChatSdkModule ? null, logosCapabilityModule ? null, logosChatSdkUi }:
+{ pkgs, common, src, logosLiblogos, logosSdk, logosChatModule ? null, logosCapabilityModule ? null, logosChatSdkUi }:
 
 pkgs.stdenv.mkDerivation rec {
   pname = "logos-chatsdk-ui-app";
@@ -218,9 +218,9 @@ pkgs.stdenv.mkDerivation rec {
 
     # Copy chatsdk_module backend plugin to modules directory
     # Note: The plugin file is named chatsdk_module_plugin but logos_core looks for chatsdk_module
-    ${if logosChatSdkModule != null then ''
-    if [ -f "${logosChatSdkModule}/lib/chatsdk_module_plugin.$OS_EXT" ]; then
-      cp -L "${logosChatSdkModule}/lib/chatsdk_module_plugin.$OS_EXT" "$out/modules/chatsdk_module.$OS_EXT"
+    ${if logosChatModule != null then ''
+    if [ -f "${logosChatModule}/lib/chatsdk_module_plugin.$OS_EXT" ]; then
+      cp -L "${logosChatModule}/lib/chatsdk_module_plugin.$OS_EXT" "$out/modules/chatsdk_module.$OS_EXT"
       echo "Installed chatsdk_module to modules directory"
       
       # Fix RPATH on macOS so the module can find libchat in the same directory
@@ -230,18 +230,18 @@ pkgs.stdenv.mkDerivation rec {
       echo "Fixed RPATH for chatsdk_module"
       '' else ""}
     else
-      echo "Warning: chatsdk_module_plugin not found at ${logosChatSdkModule}/lib/"
-      ls -la "${logosChatSdkModule}/lib/" || true
+      echo "Warning: chatsdk_module_plugin not found at ${logosChatModule}/lib/"
+      ls -la "${logosChatModule}/lib/" || true
     fi
     # Copy liblogoschat to modules and lib directories
     # so the plugin can find it at runtime
-    if ls "${logosChatSdkModule}/lib/"liblogoschat.* >/dev/null 2>&1; then
-      cp -L "${logosChatSdkModule}/lib/"liblogoschat.* "$out/modules/"
-      cp -L "${logosChatSdkModule}/lib/"liblogoschat.* "$out/lib/"
+    if ls "${logosChatModule}/lib/"liblogoschat.* >/dev/null 2>&1; then
+      cp -L "${logosChatModule}/lib/"liblogoschat.* "$out/modules/"
+      cp -L "${logosChatModule}/lib/"liblogoschat.* "$out/lib/"
       echo "Installed liblogoschat to modules and lib directories"
     fi
     '' else ''
-    echo "Note: logosChatSdkModule not provided, skipping chatsdk_module installation"
+    echo "Note: logosChatModule not provided, skipping chatsdk_module installation"
     ''}
 
     # Create a README for reference
