@@ -1,11 +1,11 @@
 {
-  description = "Logos Chat SDK UI - A Qt UI plugin for Logos Chat SDK";
+  description = "Logos Chat UI - A Qt UI plugin for Logos Chat";
 
   inputs = {
     nixpkgs.follows = "logos-liblogos/nixpkgs";
     logos-cpp-sdk.url = "github:logos-co/logos-cpp-sdk";
     logos-liblogos.url = "github:logos-co/logos-liblogos";
-    logos-chat-module.url = "github:logos-co/logos-chat-module?rev=1fa843b5e30a0421a6a81b6d373fb71dc29eb202";
+    logos-chat-module.url = "github:logos-co/logos-chat-module?rev=c22584b206ec9635bcd5ab1d5d0222911dee0d3f";
     logos-capability-module.url = "github:logos-co/logos-capability-module";
   };
 
@@ -37,12 +37,12 @@
           # App package
           app = import ./nix/app.nix { 
             inherit pkgs common src logosLiblogos logosSdk logosChatModule logosCapabilityModule;
-            logosChatSdkUi = lib;
+            logosChatUi = lib;
           };
         in
         {
           # Individual outputs
-          logos-chatsdk-ui-lib = lib;
+          logos-chat-ui-lib = lib;
           app = app;
           lib = lib;
 
@@ -70,7 +70,7 @@
           shellHook = ''
             export LOGOS_CPP_SDK_ROOT="${logosSdk}"
             export LOGOS_LIBLOGOS_ROOT="${logosLiblogos}"
-            echo "Logos Chat SDK UI development environment"
+            echo "Logos Chat UI development environment"
             echo "LOGOS_CPP_SDK_ROOT: $LOGOS_CPP_SDK_ROOT"
             echo "LOGOS_LIBLOGOS_ROOT: $LOGOS_LIBLOGOS_ROOT"
           '';

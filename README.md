@@ -1,4 +1,4 @@
-# logos-chatsdk-ui
+# logos-chat-ui
 
 A Qt-based UI module for the [Logos](https://logos.co) platform that provides a private messaging interface built on top of [Logos Chat](https://github.com/logos-messaging/logos-chat).
 
@@ -38,10 +38,10 @@ nix run '.#app'
 
 # Or build first, then run
 nix build '.#app'
-./result/bin/logos-chatsdk-ui-app
+./result/bin/logos-chat-ui-app
 ```
 
-The standalone app starts Logos Core, loads the required backend modules (`capability_module`, `chatsdk_module`), then loads the `chatsdk_ui` Qt plugin to display the UI.
+The standalone app starts Logos Core, loads the required backend modules (`capability_module`, `chat_module`), then loads the `chat_ui` Qt plugin to display the UI.
 
 ### Build Targets
 
@@ -73,7 +73,7 @@ ninja
 ```
 result/
 └── lib/
-    └── chatsdk_ui.dylib (.so on Linux)
+  └── chat_ui.dylib (.so on Linux)
 ```
 
 **App build** (`nix build '.#app'`):
@@ -81,7 +81,7 @@ result/
 ```
 result/
 ├── bin/
-│   ├── logos-chatsdk-ui-app          # Standalone executable
+│   ├── logos-chat-ui-app             # Standalone executable
 │   ├── logoscore                     # Logos Core
 │   └── logos_host                    # Logos module host
 ├── lib/
@@ -90,9 +90,9 @@ result/
 │   └── liblogoschat.dylib
 ├── modules/
 │   ├── capability_module.dylib       # Auth/capability module
-│   ├── chatsdk_module.dylib          # Chat SDK backend
+│   ├── chat_module.dylib             # Chat backend
 │   └── liblogoschat.dylib
-└── chatsdk_ui.dylib                  # UI plugin (loaded by app)
+└── chat_ui.dylib                     # UI plugin (loaded by app)
 ```
 
 ## Requirements

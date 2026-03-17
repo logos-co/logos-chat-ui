@@ -15,12 +15,12 @@
 class ConversationListPanel;
 class ChatPanel;
 
-class ChatSDKWindow : public QMainWindow {
+class ChatWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    explicit ChatSDKWindow(LogosAPI* logosAPI = nullptr, QWidget* parent = nullptr);
-    ~ChatSDKWindow();
+    explicit ChatWindow(LogosAPI* logosAPI = nullptr, QWidget* parent = nullptr);
+    ~ChatWindow();
 
 private slots:
     // Menu actions
@@ -35,16 +35,16 @@ private slots:
     void onStartChat();
     void onStopChat();
     
-    // Event handlers for chatsdk module responses
-    void onChatsdkInitResult(const QVariantList& data);
-    void onChatsdkStartResult(const QVariantList& data);
-    void onChatsdkStopResult(const QVariantList& data);
-    void onChatsdkCreateIntroBundleResult(const QVariantList& data);
-    void onChatsdkNewMessage(const QVariantList& data);
-    void onChatsdkNewConversation(const QVariantList& data);
-    void onChatsdkNewPrivateConversationResult(const QVariantList& data);
-    void onChatsdkSendMessageResult(const QVariantList& data);
-    void onChatsdkGetIdResult(const QVariantList& data);
+    // Event handlers for chat module responses
+    void onChatInitResult(const QVariantList& data);
+    void onChatStartResult(const QVariantList& data);
+    void onChatStopResult(const QVariantList& data);
+    void onChatCreateIntroBundleResult(const QVariantList& data);
+    void onChatNewMessage(const QVariantList& data);
+    void onChatNewConversation(const QVariantList& data);
+    void onChatNewPrivateConversationResult(const QVariantList& data);
+    void onChatSendMessageResult(const QVariantList& data);
+    void onChatGetIdResult(const QVariantList& data);
 
 private:
     void setupUI();

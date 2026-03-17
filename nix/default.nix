@@ -2,7 +2,7 @@
 { pkgs, logosSdk, logosLiblogos }:
 
 {
-  pname = "logos-chatsdk-ui";
+  pname = "logos-chat-ui";
   version = "1.0.0";
   
   # Common native build inputs
@@ -36,7 +36,7 @@
   
   # Metadata
   meta = with pkgs.lib; {
-    description = "Logos Chat SDK UI - A Qt UI plugin for Logos Chat SDK";
+    description = "Logos Chat UI - A Qt UI plugin for Logos Chat";
     platforms = platforms.unix;
   };
 }

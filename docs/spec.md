@@ -1,4 +1,4 @@
-# logos-chatsdk-ui Specification
+# logos-chat-ui Specification
 
 ## Overview
 
@@ -9,7 +9,7 @@ A Qt-based UI module for the Logos platform that provides a chat interface using
 ### Module Structure
 
 ```
-logos-chatsdk-ui/
+logos-chat-ui/
 ├── app/                           # Standalone app (loads the plugin)
 │   ├── CMakeLists.txt             # App build configuration
 │   ├── main.cpp                   # App entry point (starts Logos core)
@@ -23,8 +23,8 @@ logos-chatsdk-ui/
 │   └── logos_sdk.cpp              # Pre-generated Logos SDK bindings (nix)
 ├── src/                           # Plugin UI widgets
 │   ├── ChatConfig.h               # Chat configuration helpers (env-driven)
-│   ├── ChatSDKWindow.h            # Main window (QMainWindow)
-│   ├── ChatSDKWindow.cpp
+│   ├── ChatWindow.h               # Main window (QMainWindow)
+│   ├── ChatWindow.cpp
 │   ├── ConversationListPanel.h    # Left panel widget
 │   ├── ConversationListPanel.cpp
 │   ├── ChatPanel.h                # Right panel widget
@@ -35,8 +35,8 @@ logos-chatsdk-ui/
 │   ├── default.nix                # Common build configuration
 │   ├── lib.nix                    # Library/plugin build
 │   └── app.nix                    # Standalone app build
-├── ChatSDKUIComponent.h           # Plugin component header
-├── ChatSDKUIComponent.cpp         # Plugin component implementation
+├── ChatUIComponent.h              # Plugin component header
+├── ChatUIComponent.cpp            # Plugin component implementation
 ├── CMakeLists.txt                 # Root build configuration
 ├── metadata.json                  # Module metadata
 ├── flake.nix                      # Nix flake
@@ -54,15 +54,15 @@ logos-chatsdk-ui/
 | `Qt6::RemoteObjects` | LogosAPI integration and module bindings |
 | `logos-cpp-sdk` | LogosAPI, generator for module bindings |
 | `logos-liblogos` | Core Logos library (logoscore, logos_host) |
-| `logos-chat-module` | Chat SDK backend module |
+| `logos-chat-module` | Chat backend module |
 | `logos-capability-module` | Capability/auth module (standalone app) |
 
 ### Build Targets
 
 | Target | Output | Description |
 |--------|--------|-------------|
-| `chatsdk_ui` (lib) | `chatsdk_ui.dylib` / `.so` | Qt plugin library |
-| `logos-chatsdk-ui-app` (app) | `logos-chatsdk-ui-app` | Standalone executable |
+| `chat_ui` (lib) | `chat_ui.dylib` / `.so` | Qt plugin library |
+| `logos-chat-ui-app` (app) | `logos-chat-ui-app` | Standalone executable |
 
 ---
 
@@ -70,7 +70,7 @@ logos-chatsdk-ui/
 
 ### Main Window
 
-The main window (`ChatSDKWindow`) is split into two panels using a `QSplitter` and uses a dark, terminal-inspired theme with a monospace font:
+The main window (`ChatWindow`) is split into two panels using a `QSplitter` and uses a dark, terminal-inspired theme with a monospace font:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -233,9 +233,9 @@ Counterparty Message (left-aligned):
 
 ---
 
-### 4. ChatSDKWindow (Main Window)
+### 4. ChatWindow (Main Window)
 
-**Class**: `ChatSDKWindow : public QMainWindow`
+**Class**: `ChatWindow : public QMainWindow`
 
 #### Menu Structure
 - **File**
@@ -262,11 +262,11 @@ When `newConversationRequested()` is received and chat is running, a dialog requ
 - Intro bundle (multi-line)
 - Intro message (single-line)
 
-If valid, it calls `chatsdk_module.newPrivateConversation(bundle, messageHex)`.
+If valid, it calls `chat_module.newPrivateConversation(bundle, messageHex)`.
 
 ##### My Bundle Dialog
 When `myBundleRequested()` is received and chat is running, the UI calls
-`chatsdk_module.createIntroBundle()` and shows the returned bundle with
+`chat_module.createIntroBundle()` and shows the returned bundle with
 "Copy to Clipboard" support.
 
 ##### Chat Lifecycle
@@ -275,12 +275,12 @@ Menu actions enable/disable based on chat state.
 
 ---
 
-### 5. ChatSDKUIComponent (Plugin)
+### 5. ChatUIComponent (Plugin)
 
-**Class**: `ChatSDKUIComponent : public QObject, public IComponent`
+**Class**: `ChatUIComponent : public QObject, public IComponent`
 
 ```cpp
-class ChatSDKUIComponent : public QObject, public IComponent {
+class ChatUIComponent : public QObject, public IComponent {
     Q_OBJECT
     Q_INTERFACES(IComponent)
     Q_PLUGIN_METADATA(IID IComponent_iid FILE "metadata.json")
@@ -296,25 +296,25 @@ public:
 ## Chat Configuration
 
 The plugin uses `ChatConfig` to build the JSON payload passed to
-`chatsdk_module.initChat()`. Defaults can be overridden via environment variables:
+`chat_module.initChat()`. Defaults can be overridden via environment variables:
 
-- `CHATSDK_NAME` (identity name)
-- `CHATSDK_PORT` (Waku port, 0 for random)
-- `CHATSDK_CLUSTER_ID`
-- `CHATSDK_SHARD_ID`
-- `CHATSDK_STATIC_PEER` (optional multiaddr)
+- `CHAT_NAME` (identity name)
+- `CHAT_PORT` (Waku port, 0 for random)
+- `CHAT_CLUSTER_ID`
+- `CHAT_SHARD_ID`
+- `CHAT_STATIC_PEER` (optional multiaddr)
 
 ## Event Handling
 
-The UI listens to chatsdk module events and keeps local state:
+The UI listens to chat module events and keeps local state:
 
-- `chatsdkInitResult`, `chatsdkStartResult`, `chatsdkStopResult`
-- `chatsdkCreateIntroBundleResult`
-- `chatsdkNewConversation`
-- `chatsdkNewPrivateConversationResult`
-- `chatsdkNewMessage`
-- `chatsdkSendMessageResult`
-- `chatsdkGetIdResult`
+- `chatInitResult`, `chatStartResult`, `chatStopResult`
+- `chatCreateIntroBundleResult`
+- `chatNewConversation`
+- `chatNewPrivateConversationResult`
+- `chatNewMessage`
+- `chatSendMessageResult`
+- `chatGetIdResult`
 
 Message content is hex-encoded for sending and decoded on receipt when the
 payload looks like hex.
@@ -360,19 +360,19 @@ payload looks like hex.
 
 ```json
 {
-  "name": "chatsdk_ui",
+  "name": "chat_ui",
   "version": "1.0.0",
   "description": "Chat App for Logos - Private messaging interface",
   "author": "Logos Core Team",
   "type": "ui",
-  "main": "chatsdk_ui",
-  "dependencies": ["chatsdk_module"],
+  "main": "chat_ui",
+  "dependencies": ["chat_module"],
   "category": "chat",
   "build": {
     "type": "cmake",
     "files": [
-      "src/ChatSDKWindow.cpp",
-      "src/ChatSDKWindow.h",
+      "src/ChatWindow.cpp",
+      "src/ChatWindow.h",
       "src/ConversationListPanel.cpp",
       "src/ConversationListPanel.h",
       "src/ChatPanel.cpp",
@@ -392,7 +392,7 @@ payload looks like hex.
 
 ```cmake
 cmake_minimum_required(VERSION 3.16)
-project(ChatSDKUIPlugin VERSION 1.0.0 LANGUAGES CXX)
+project(ChatUIPlugin VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -411,8 +411,8 @@ if(NOT DEFINED LOGOS_CPP_SDK_ROOT)
 endif()
 
 set(SOURCES
-  ChatSDKUIComponent.cpp
-  src/ChatSDKWindow.cpp
+  ChatUIComponent.cpp
+  src/ChatWindow.cpp
   src/ConversationListPanel.cpp
   src/ChatPanel.cpp
   src/MessageBubble.cpp
@@ -420,11 +420,11 @@ set(SOURCES
   generated_code/logos_sdk.cpp
 )
 
-add_library(chatsdk_ui SHARED ${SOURCES})
+add_library(chat_ui SHARED ${SOURCES})
 
 find_library(LOGOS_SDK_LIB logos_sdk PATHS ${LOGOS_CPP_SDK_ROOT}/lib NO_DEFAULT_PATH REQUIRED)
 
-target_link_libraries(chatsdk_ui PRIVATE
+target_link_libraries(chat_ui PRIVATE
   Qt6::Core
   Qt6::Widgets
   Qt6::RemoteObjects
@@ -443,8 +443,8 @@ target_link_libraries(chatsdk_ui PRIVATE
 - [x] Implement `MessageBubble` widget
 - [x] Implement `ConversationListPanel` 
 - [x] Implement `ChatPanel`
-- [x] Implement `ChatSDKWindow`
-- [x] Implement `ChatSDKUIComponent`
+- [x] Implement `ChatWindow`
+- [x] Implement `ChatUIComponent`
 - [x] Setup CMakeLists.txt and build configuration
 - [x] Setup flake.nix
 
@@ -452,7 +452,7 @@ target_link_libraries(chatsdk_ui PRIVATE
 - [x] Connect to `logos-chat-module`
 - [x] Implement `initChat`, `startChat`, `stopChat`
 - [x] Implement `sendMessage` and receive events
-- [x] Handle chatsdk module event callbacks
+- [x] Handle chat module event callbacks
 
 ### Phase 3: Identity & Bundle (Done)
 - [x] Implement `getIdentity` → display user info
@@ -486,7 +486,7 @@ nix develop
 ### Option 2: Manual CMake Build
 
 ```bash
-cd logos-chatsdk-ui
+cd logos-chat-ui
 mkdir build && cd build
 cmake .. -GNinja \
   -DLOGOS_CPP_SDK_ROOT=/path/to/logos-cpp-sdk \
@@ -494,11 +494,11 @@ cmake .. -GNinja \
 ninja
 
 # Run the app
-./bin/logos-chatsdk-ui-app
+./bin/logos-chat-ui-app
 ```
 
 The standalone app starts Logos Core, loads `capability_module` then
-`chatsdk_module`, and finally loads the `chatsdk_ui` Qt plugin.
+`chat_module`, and finally loads the `chat_ui` Qt plugin.
 
 ---
 
@@ -520,7 +520,7 @@ inputs = {
 
 | Output | Description |
 |--------|-------------|
-| `packages.${system}.lib` | The plugin library (`chatsdk_ui.dylib`/`.so`) |
+| `packages.${system}.lib` | The plugin library (`chat_ui.dylib`/`.so`) |
 | `packages.${system}.app` | The standalone application |
 | `packages.${system}.default` | Same as `lib` |
 | `devShells.${system}.default` | Development shell with all dependencies |
@@ -534,8 +534,8 @@ The `app/` directory contains a minimal standalone application that:
 1. **Initializes Qt** - Creates `QApplication`
 2. **Sets up plugins directory** - Points to `../modules` relative to executable
 3. **Starts Logos core** - Calls `logos_core_start()`
-4. **Loads backend modules** - `capability_module`, then `chatsdk_module`
-5. **Loads the chatsdk_ui plugin** - Uses `QPluginLoader` to load the plugin
+4. **Loads backend modules** - `capability_module`, then `chat_module`
+5. **Loads the chat_ui plugin** - Uses `QPluginLoader` to load the plugin
 6. **Creates main window** - Instantiates the plugin widget via `createWidget()`
 7. **Runs event loop** - `app.exec()`
 8. **Cleans up** - Calls `logos_core_cleanup()` on exit and terminates child processes
@@ -551,9 +551,9 @@ This follows the exact same pattern as `logos-chat-ui/app/`.
 3. Create `MessageBubble` - Simplest widget, no dependencies
 4. Create `ConversationListPanel` - Left panel with signals
 5. Create `ChatPanel` - Right panel, uses MessageBubble
-6. Create `ChatSDKWindow` - Main window, connects panels
+6. Create `ChatWindow` - Main window, connects panels
 7. Create `ChatConfig.h` - Environment-driven chat configuration
-8. Create `ChatSDKUIComponent` - Plugin wrapper
+8. Create `ChatUIComponent` - Plugin wrapper
 9. Create root `CMakeLists.txt` - Build config
 10. Create `metadata.json` - Module metadata
 11. Create `app/` files - Standalone application

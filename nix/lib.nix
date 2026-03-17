@@ -1,4 +1,4 @@
-# Builds the logos-chatsdk-ui library
+# Builds the logos-chat-ui library
 { pkgs, common, src, logosChatModule ? null, logosSdk }:
 
 pkgs.stdenv.mkDerivation {
@@ -70,10 +70,10 @@ pkgs.stdenv.mkDerivation {
     
     mkdir -p $out/lib
     # Find and copy the built library file from the modules directory
-    if [ -f modules/chatsdk_ui.dylib ]; then
-      cp modules/chatsdk_ui.dylib $out/lib/
-    elif [ -f modules/chatsdk_ui.so ]; then
-      cp modules/chatsdk_ui.so $out/lib/
+    if [ -f modules/chat_ui.dylib ]; then
+      cp modules/chat_ui.dylib $out/lib/
+    elif [ -f modules/chat_ui.so ]; then
+      cp modules/chat_ui.so $out/lib/
     else
       echo "Error: No library file found"
       exit 1
