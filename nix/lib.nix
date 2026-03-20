@@ -1,5 +1,5 @@
-# Builds the logos-chatsdk-ui library
-{ pkgs, common, src, logosChatSdkModule ? null, logosSdk }:
+# Builds the logos-chat-ui library
+{ pkgs, common, src, logosChatModule ? null, logosSdk }:
 
 pkgs.stdenv.mkDerivation {
   pname = "${common.pname}-lib";
@@ -17,19 +17,19 @@ pkgs.stdenv.mkDerivation {
     # Create generated_code directory for generated files
     mkdir -p ./generated_code
     
-    # Copy include files from logos-chatsdk-module result if available
-    ${if logosChatSdkModule != null then ''
-    echo "Copying include files from logos-chatsdk-module..."
-    if [ -d "${logosChatSdkModule}/include" ]; then
-      echo "Found include directory in logos-chatsdk-module"
-      cp -r "${logosChatSdkModule}/include"/* ./generated_code/
+    # Copy include files from logos-chat-module result if available
+    ${if logosChatModule != null then ''
+    echo "Copying include files from logos-chat-module..."
+    if [ -d "${logosChatModule}/include" ]; then
+      echo "Found include directory in logos-chat-module"
+      cp -r "${logosChatModule}/include"/* ./generated_code/
       echo "Copied include files:"
       ls -la ./generated_code/
     else
-      echo "Warning: No include directory found in logos-chatsdk-module"
+      echo "Warning: No include directory found in logos-chat-module"
     fi
     '' else ''
-    echo "Note: logos-chatsdk-module not provided, skipping module include copy"
+    echo "Note: logos-chat-module not provided, skipping module include copy"
     ''}
     
     # Run logos-cpp-generator with metadata.json and --general-only flag
@@ -70,10 +70,10 @@ pkgs.stdenv.mkDerivation {
     
     mkdir -p $out/lib
     # Find and copy the built library file from the modules directory
-    if [ -f modules/chatsdk_ui.dylib ]; then
-      cp modules/chatsdk_ui.dylib $out/lib/
-    elif [ -f modules/chatsdk_ui.so ]; then
-      cp modules/chatsdk_ui.so $out/lib/
+    if [ -f modules/chat_ui.dylib ]; then
+      cp modules/chat_ui.dylib $out/lib/
+    elif [ -f modules/chat_ui.so ]; then
+      cp modules/chat_ui.so $out/lib/
     else
       echo "Error: No library file found"
       exit 1

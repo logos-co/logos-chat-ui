@@ -187,11 +187,11 @@ int main(int argc, char *argv[])
         std::cerr << "Failed to load capability_module plugin" << std::endl;
     }
     
-    // Then load chatsdk_module
-    if (logos_core_load_plugin("chatsdk_module")) {
-        std::cout << "Successfully loaded chatsdk_module plugin" << std::endl;
+    // Then load chat_module
+    if (logos_core_load_plugin("chat_module")) {
+        std::cout << "Successfully loaded chat_module plugin" << std::endl;
     } else {
-        std::cerr << "Failed to load chatsdk_module plugin" << std::endl;
+        std::cerr << "Failed to load chat_module plugin" << std::endl;
     }
 
     // Record child PIDs spawned by the core (e.g. logos_host) so we can

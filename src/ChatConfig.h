@@ -7,14 +7,14 @@
 #include <cstdlib>
 
 /**
- * Configuration for the ChatSDK/Waku connection.
+ * Configuration for the Chat/Waku connection.
  * 
  * Defaults can be overridden via environment variables:
- *   - CHATSDK_NAME: Identity name (default: "LogosUser")
- *   - CHATSDK_PORT: Waku port, 0 for random (default: 0)
- *   - CHATSDK_CLUSTER_ID: Waku cluster ID (default: 2)
- *   - CHATSDK_SHARD_ID: Waku shard ID (default: 1)
- *   - CHATSDK_STATIC_PEER: Static peer multiaddr (optional)
+ *   - CHAT_NAME: Identity name (default: "LogosUser")
+ *   - CHAT_PORT: Waku port, 0 for random (default: 0)
+ *   - CHAT_CLUSTER_ID: Waku cluster ID (default: 2)
+ *   - CHAT_SHARD_ID: Waku shard ID (default: 1)
+ *   - CHAT_STATIC_PEER: Static peer multiaddr (optional)
  * 
  * Configuration values from libchat.h:
  *   configJson: JSON object with fields:
@@ -76,33 +76,33 @@ inline QString buildConfigJson(
     if (!name.isEmpty()) {
         config["name"] = name;
     } else {
-        config["name"] = getEnvOrDefault("CHATSDK_NAME", defaultName());
+        config["name"] = getEnvOrDefault("CHAT_NAME", defaultName());
     }
     
     // Port - use parameter, then env, then default
     if (port >= 0) {
         config["port"] = port;
     } else {
-        config["port"] = getEnvOrDefault("CHATSDK_PORT", DEFAULT_PORT);
+        config["port"] = getEnvOrDefault("CHAT_PORT", DEFAULT_PORT);
     }
     
     // Cluster ID - use parameter, then env, then default
     if (clusterId >= 0) {
         config["clusterId"] = clusterId;
     } else {
-        config["clusterId"] = getEnvOrDefault("CHATSDK_CLUSTER_ID", DEFAULT_CLUSTER_ID);
+        config["clusterId"] = getEnvOrDefault("CHAT_CLUSTER_ID", DEFAULT_CLUSTER_ID);
     }
     
     // Shard ID - use parameter, then env, then default
     if (shardId >= 0) {
         config["shardId"] = shardId;
     } else {
-        config["shardId"] = getEnvOrDefault("CHATSDK_SHARD_ID", DEFAULT_SHARD_ID);
+        config["shardId"] = getEnvOrDefault("CHAT_SHARD_ID", DEFAULT_SHARD_ID);
     }
     
     // Static peer - use parameter, then env
     QString peer = staticPeer.isEmpty() 
-        ? getEnvOrDefault("CHATSDK_STATIC_PEER", QString())
+        ? getEnvOrDefault("CHAT_STATIC_PEER", QString())
         : staticPeer;
     
     if (!peer.isEmpty()) {

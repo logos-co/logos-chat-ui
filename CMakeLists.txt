@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(ChatSDKUIPlugin VERSION 1.0.0 LANGUAGES CXX)
+project(ChatUIPlugin VERSION 1.0.0 LANGUAGES CXX)
 
 # C++ and Qt settings
 set(CMAKE_CXX_STANDARD 17)
@@ -28,8 +28,8 @@ endif()
 
 # Source files (plugin only, SDK is pre-built)
 set(SOURCES
-    ChatSDKUIComponent.cpp
-    src/ChatSDKWindow.cpp
+    ChatUIComponent.cpp
+    src/ChatWindow.cpp
     src/ConversationListPanel.cpp
     src/ChatPanel.cpp
     src/MessageBubble.cpp
@@ -41,15 +41,15 @@ set(PLUGINS_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/generated_code")
 list(APPEND SOURCES ${PLUGINS_OUTPUT_DIR}/logos_sdk.cpp)
 
 # Create plugin library
-add_library(chatsdk_ui SHARED ${SOURCES})
+add_library(chat_ui SHARED ${SOURCES})
 
-set_target_properties(chatsdk_ui PROPERTIES
+set_target_properties(chat_ui PROPERTIES
     PREFIX ""
-    OUTPUT_NAME "chatsdk_ui"
+    OUTPUT_NAME "chat_ui"
 )
 
 # Include directories (installed layout)
-target_include_directories(chatsdk_ui PRIVATE
+target_include_directories(chat_ui PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     ${PLUGINS_OUTPUT_DIR}
@@ -62,7 +62,7 @@ target_include_directories(chatsdk_ui PRIVATE
 
 # Link libraries
 find_library(LOGOS_SDK_LIB logos_sdk PATHS ${LOGOS_CPP_SDK_ROOT}/lib NO_DEFAULT_PATH REQUIRED)
-target_link_libraries(chatsdk_ui PRIVATE
+target_link_libraries(chat_ui PRIVATE
     Qt6::Core
     Qt6::Widgets
     Qt6::RemoteObjects
@@ -71,7 +71,7 @@ target_link_libraries(chatsdk_ui PRIVATE
 )
 
 # Output directories
-set_target_properties(chatsdk_ui PROPERTIES
+set_target_properties(chat_ui PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules"
     BUILD_WITH_INSTALL_RPATH TRUE
@@ -80,30 +80,30 @@ set_target_properties(chatsdk_ui PROPERTIES
 
 # Platform-specific RPATH
 if(APPLE)
-    set_target_properties(chatsdk_ui PROPERTIES
+    set_target_properties(chat_ui PROPERTIES
         INSTALL_RPATH "@loader_path"
         INSTALL_NAME_DIR "@rpath"
         BUILD_WITH_INSTALL_NAME_DIR TRUE
     )
-    add_custom_command(TARGET chatsdk_ui POST_BUILD
-        COMMAND install_name_tool -id "@rpath/chatsdk_ui.dylib" $<TARGET_FILE:chatsdk_ui>
+    add_custom_command(TARGET chat_ui POST_BUILD
+        COMMAND install_name_tool -id "@rpath/chat_ui.dylib" $<TARGET_FILE:chat_ui>
     )
 else()
-    set_target_properties(chatsdk_ui PROPERTIES
+    set_target_properties(chat_ui PROPERTIES
         INSTALL_RPATH "$ORIGIN"
         INSTALL_RPATH_USE_LINK_PATH FALSE
     )
 endif()
 
 # Install rules
-install(TARGETS chatsdk_ui
+install(TARGETS chat_ui
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/logos/modules
     RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}/logos/modules
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/logos/modules
 )
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/metadata.json
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/logos-chatsdk-ui
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/logos-chat-ui
 )
 
-message(STATUS "Chat SDK UI Plugin configured successfully")
+message(STATUS "Chat UI Plugin configured successfully")

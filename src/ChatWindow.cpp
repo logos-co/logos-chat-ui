@@ -1,4 +1,4 @@
-#include "ChatSDKWindow.h"
+#include "ChatWindow.h"
 #include "ChatConfig.h"
 #include "ChatPanel.h"
 #include "ConversationListPanel.h"
@@ -22,7 +22,7 @@
 #include <QTimer>
 #include <QLabel>
 
-ChatSDKWindow::ChatSDKWindow(LogosAPI *logosAPI, QWidget *parent)
+ChatWindow::ChatWindow(LogosAPI *logosAPI, QWidget *parent)
     : QMainWindow(parent), m_logosAPI(logosAPI), m_ownsLogosAPI(false),
       m_logos(nullptr), m_chatInitialized(false), m_chatRunning(false),
   m_pendingBundleRequest(false), m_autoStartOnLaunch(true),
@@ -44,10 +44,10 @@ ChatSDKWindow::ChatSDKWindow(LogosAPI *logosAPI, QWidget *parent)
   QTimer::singleShot(0, this, [this]() { onInitChat(); });
 }
 
-ChatSDKWindow::~ChatSDKWindow() {
+ChatWindow::~ChatWindow() {
   // Stop and cleanup chat if running
   if (m_chatRunning && m_logos) {
-    m_logos->chatsdk_module.stopChat();
+    m_logos->chat_module.stopChat();
   }
 
   delete m_logos;
@@ -60,7 +60,7 @@ ChatSDKWindow::~ChatSDKWindow() {
   m_logosAPI = nullptr;
 }
 
-void ChatSDKWindow::setupUI() {
+void ChatWindow::setupUI() {
   // Set window properties
   setWindowTitle("> \xce\xbb chat");
   setMinimumSize(800, 600);
@@ -125,16 +125,16 @@ void ChatSDKWindow::setupUI() {
 
   // Connect signals
   connect(m_conversationList, &ConversationListPanel::conversationSelected,
-          this, &ChatSDKWindow::onConversationSelected);
+          this, &ChatWindow::onConversationSelected);
   connect(m_conversationList, &ConversationListPanel::newConversationRequested,
-          this, &ChatSDKWindow::onNewConversationRequested);
+          this, &ChatWindow::onNewConversationRequested);
   connect(m_conversationList, &ConversationListPanel::myBundleRequested, this,
-          &ChatSDKWindow::onMyBundleRequested);
+          &ChatWindow::onMyBundleRequested);
   connect(m_chatPanel, &ChatPanel::messageSent, this,
-          &ChatSDKWindow::onMessageSent);
+          &ChatWindow::onMessageSent);
 }
 
-void ChatSDKWindow::setupMenu() {
+void ChatWindow::setupMenu() {
   // File menu
   QMenu *fileMenu = menuBar()->addMenu("&File");
 
@@ -148,18 +148,18 @@ void ChatSDKWindow::setupMenu() {
   m_initChatAction = chatMenu->addAction("&Initialize Chat");
   m_initChatAction->setShortcut(QKeySequence("Ctrl+I"));
   connect(m_initChatAction, &QAction::triggered, this,
-          &ChatSDKWindow::onInitChat);
+          &ChatWindow::onInitChat);
 
   m_startChatAction = chatMenu->addAction("&Start Chat");
   m_startChatAction->setShortcut(QKeySequence("Ctrl+Shift+S"));
   connect(m_startChatAction, &QAction::triggered, this,
-          &ChatSDKWindow::onStartChat);
+          &ChatWindow::onStartChat);
   m_startChatAction->setEnabled(false); // Disabled until initialized
 
   m_stopChatAction = chatMenu->addAction("Sto&p Chat");
   m_stopChatAction->setShortcut(QKeySequence("Ctrl+Shift+P"));
   connect(m_stopChatAction, &QAction::triggered, this,
-          &ChatSDKWindow::onStopChat);
+          &ChatWindow::onStopChat);
   m_stopChatAction->setEnabled(false); // Disabled until started
 
   // Help menu
@@ -167,85 +167,85 @@ void ChatSDKWindow::setupMenu() {
 
   QAction *aboutAction = helpMenu->addAction("&About");
   connect(aboutAction, &QAction::triggered, this,
-          &ChatSDKWindow::onAboutAction);
+          &ChatWindow::onAboutAction);
 }
 
-void ChatSDKWindow::setupEventHandlers() {
+void ChatWindow::setupEventHandlers() {
   if (!m_logos) {
-    qWarning() << "ChatSDKWindow: LogosModules not available, event handlers "
+    qWarning() << "ChatWindow: LogosModules not available, event handlers "
                   "not set up";
     return;
   }
 
-  // Subscribe to chatsdk module events
-  m_logos->chatsdk_module.on(
-      "chatsdkInitResult", [this](const QVariantList &data) {
+  // Subscribe to chat module events
+    m_logos->chat_module.on(
+      "chatInitResult", [this](const QVariantList &data) {
         QMetaObject::invokeMethod(
-            this, [this, data]() { onChatsdkInitResult(data); },
+            this, [this, data]() { onChatInitResult(data); },
             Qt::QueuedConnection);
       });
 
-  m_logos->chatsdk_module.on(
-      "chatsdkStartResult", [this](const QVariantList &data) {
+  m_logos->chat_module.on(
+      "chatStartResult", [this](const QVariantList &data) {
         QMetaObject::invokeMethod(
-            this, [this, data]() { onChatsdkStartResult(data); },
+        this, [this, data]() { onChatStartResult(data); },
             Qt::QueuedConnection);
       });
 
-  m_logos->chatsdk_module.on(
-      "chatsdkStopResult", [this](const QVariantList &data) {
+  m_logos->chat_module.on(
+      "chatStopResult", [this](const QVariantList &data) {
         QMetaObject::invokeMethod(
-            this, [this, data]() { onChatsdkStopResult(data); },
+        this, [this, data]() { onChatStopResult(data); },
             Qt::QueuedConnection);
       });
 
-  m_logos->chatsdk_module.on(
-      "chatsdkCreateIntroBundleResult", [this](const QVariantList &data) {
+  m_logos->chat_module.on(
+      "chatCreateIntroBundleResult", [this](const QVariantList &data) {
         QMetaObject::invokeMethod(
-            this, [this, data]() { onChatsdkCreateIntroBundleResult(data); },
+        this, [this, data]() { onChatCreateIntroBundleResult(data); },
             Qt::QueuedConnection);
       });
 
-  m_logos->chatsdk_module.on(
-      "chatsdkNewMessage", [this](const QVariantList &data) {
+  m_logos->chat_module.on(
+      "chatNewMessage", [this](const QVariantList &data) {
         QMetaObject::invokeMethod(
-            this, [this, data]() { onChatsdkNewMessage(data); },
+            this, [this, data]() { onChatNewMessage(data); },
             Qt::QueuedConnection);
       });
 
-  m_logos->chatsdk_module.on(
-      "chatsdkNewConversation", [this](const QVariantList &data) {
+  m_logos->chat_module.on(
+      "chatNewConversation", [this](const QVariantList &data) {
         QMetaObject::invokeMethod(
-            this, [this, data]() { onChatsdkNewConversation(data); },
+        this, [this, data]() { onChatNewConversation(data); },
             Qt::QueuedConnection);
       });
 
-  m_logos->chatsdk_module.on(
-      "chatsdkNewPrivateConversationResult", [this](const QVariantList &data) {
+  m_logos->chat_module.on(
+      "chatNewPrivateConversationResult", [this](const QVariantList &data) {
         QMetaObject::invokeMethod(
             this,
-            [this, data]() { onChatsdkNewPrivateConversationResult(data); },
+        [this, data]() { onChatNewPrivateConversationResult(data); },
             Qt::QueuedConnection);
       });
 
-  m_logos->chatsdk_module.on(
-      "chatsdkSendMessageResult", [this](const QVariantList &data) {
+  m_logos->chat_module.on(
+      "chatSendMessageResult", [this](const QVariantList &data) {
         QMetaObject::invokeMethod(
-            this, [this, data]() { onChatsdkSendMessageResult(data); },
+        this, [this, data]() { onChatSendMessageResult(data); },
             Qt::QueuedConnection);
       });
 
-  m_logos->chatsdk_module.on(
-      "chatsdkGetIdResult", [this](const QVariantList &data) {
+  m_logos->chat_module.on(
+      "chatGetIdResult", [this](const QVariantList &data) {
         QMetaObject::invokeMethod(
-            this, [this, data]() { onChatsdkGetIdResult(data); },
+            this, [this, data]() { onChatGetIdResult(data); },
             Qt::QueuedConnection);
       });
 
-  qDebug() << "ChatSDKWindow: Event handlers set up successfully";
+  qDebug() << "ChatWindow: Event handlers set up successfully";
 }
 
-void ChatSDKWindow::updateChatMenuState() {
+void ChatWindow::updateChatMenuState() {
   if (m_initChatAction) {
     m_initChatAction->setEnabled(!m_chatInitialized);
   }
@@ -257,7 +257,7 @@ void ChatSDKWindow::updateChatMenuState() {
   }
 }
 
-void ChatSDKWindow::showConversationMessages(const QString &conversationId) {
+void ChatWindow::showConversationMessages(const QString &conversationId) {
   m_chatPanel->clearMessages();
 
   if (!m_messages.contains(conversationId)) {
@@ -271,7 +271,7 @@ void ChatSDKWindow::showConversationMessages(const QString &conversationId) {
   }
 }
 
-void ChatSDKWindow::onConversationSelected(const QString &conversationId) {
+void ChatWindow::onConversationSelected(const QString &conversationId) {
   if (!m_conversations.contains(conversationId)) {
     return;
   }
@@ -291,7 +291,7 @@ void ChatSDKWindow::onConversationSelected(const QString &conversationId) {
   m_statusBar->showMessage(statusMessage, 3000);
 }
 
-void ChatSDKWindow::onNewConversationRequested() {
+void ChatWindow::onNewConversationRequested() {
   // Check if chat is initialized and running
   if (!m_chatInitialized || !m_chatRunning) {
     QMessageBox::warning(this, "Chat Not Running",
@@ -360,7 +360,7 @@ void ChatSDKWindow::onNewConversationRequested() {
   QString initialMessageHex =
       QString::fromLatin1(initialMessage.toUtf8().toHex());
 
-  bool success = m_logos->chatsdk_module.newPrivateConversation(
+  bool success = m_logos->chat_module.newPrivateConversation(
       bundle, initialMessageHex);
 
   if (!success) {
@@ -370,10 +370,10 @@ void ChatSDKWindow::onNewConversationRequested() {
                          "the logs for details.");
     m_statusBar->showMessage("Failed to create conversation", 3000);
   }
-  // Result will come via onChatsdkNewPrivateConversationResult
+  // Result will come via onChatNewPrivateConversationResult
 }
 
-void ChatSDKWindow::onMyBundleRequested() {
+void ChatWindow::onMyBundleRequested() {
   // Check if chat is initialized and running
   if (!m_chatInitialized || !m_chatRunning) {
     QMessageBox::warning(this, "Chat Not Running",
@@ -393,7 +393,7 @@ void ChatSDKWindow::onMyBundleRequested() {
   m_statusBar->showMessage("Requesting intro bundle...");
 
   // Call the actual createIntroBundle
-  bool success = m_logos->chatsdk_module.createIntroBundle();
+  bool success = m_logos->chat_module.createIntroBundle();
   if (!success) {
     m_pendingBundleRequest = false;
     QMessageBox::warning(
@@ -407,7 +407,7 @@ void ChatSDKWindow::onMyBundleRequested() {
 // Chat Lifecycle Menu Actions
 // ============================================================================
 
-void ChatSDKWindow::onInitChat() {
+void ChatWindow::onInitChat() {
   if (!m_logos) {
     QMessageBox::warning(
         this, "Error",
@@ -426,21 +426,21 @@ void ChatSDKWindow::onInitChat() {
   QString configJson = ChatConfig::buildConfigJson();
   QString configDesc = ChatConfig::getConfigDescription(configJson);
 
-  qDebug() << "ChatSDKWindow: Initializing chat with config:" << configJson;
+  qDebug() << "ChatWindow: Initializing chat with config:" << configJson;
   m_statusBar->showMessage(
       QString("Initializing chat... (%1)").arg(configDesc));
 
-  bool success = m_logos->chatsdk_module.initChat(configJson);
+  bool success = m_logos->chat_module.initChat(configJson);
   if (!success) {
     QMessageBox::warning(
         this, "Initialization Failed",
         "Failed to initialize chat. Check the logs for details.");
     m_statusBar->showMessage("Chat initialization failed", 3000);
   }
-  // Result will come via onChatsdkInitResult
+  // Result will come via onChatInitResult
 }
 
-void ChatSDKWindow::onStartChat() {
+void ChatWindow::onStartChat() {
   if (!m_logos) {
     QMessageBox::warning(this, "Error", "LogosAPI not available.");
     return;
@@ -458,22 +458,22 @@ void ChatSDKWindow::onStartChat() {
     return;
   }
 
-  qDebug() << "ChatSDKWindow: Starting chat...";
+  qDebug() << "ChatWindow: Starting chat...";
   m_statusBar->showMessage("Starting chat...");
 
   // Set the event callback before starting
-  m_logos->chatsdk_module.setEventCallback();
+  m_logos->chat_module.setEventCallback();
 
-  bool success = m_logos->chatsdk_module.startChat();
+  bool success = m_logos->chat_module.startChat();
   if (!success) {
     QMessageBox::warning(this, "Start Failed",
                          "Failed to start chat. Check the logs for details.");
     m_statusBar->showMessage("Chat start failed", 3000);
   }
-  // Result will come via onChatsdkStartResult
+  // Result will come via onChatStartResult
 }
 
-void ChatSDKWindow::onStopChat() {
+void ChatWindow::onStopChat() {
   if (!m_logos) {
     QMessageBox::warning(this, "Error", "LogosAPI not available.");
     return;
@@ -484,24 +484,24 @@ void ChatSDKWindow::onStopChat() {
     return;
   }
 
-  qDebug() << "ChatSDKWindow: Stopping chat...";
+  qDebug() << "ChatWindow: Stopping chat...";
   m_statusBar->showMessage("Stopping chat...");
 
-  bool success = m_logos->chatsdk_module.stopChat();
+  bool success = m_logos->chat_module.stopChat();
   if (!success) {
     QMessageBox::warning(this, "Stop Failed",
                          "Failed to stop chat. Check the logs for details.");
     m_statusBar->showMessage("Chat stop failed", 3000);
   }
-  // Result will come via onChatsdkStopResult
+  // Result will come via onChatStopResult
 }
 
 // ============================================================================
-// Event Handlers for ChatSDK Module
+// Event handlers for the chat module
 // ============================================================================
 
-void ChatSDKWindow::onChatsdkInitResult(const QVariantList &data) {
-  qDebug() << "ChatSDKWindow: Init result received:" << data;
+void ChatWindow::onChatInitResult(const QVariantList &data) {
+  qDebug() << "ChatWindow: Init result received:" << data;
 
   // data format: [success (bool), returnCode (int), message (QString),
   // timestamp (QString)]
@@ -538,8 +538,8 @@ void ChatSDKWindow::onChatsdkInitResult(const QVariantList &data) {
   }
 }
 
-void ChatSDKWindow::onChatsdkStartResult(const QVariantList &data) {
-  qDebug() << "ChatSDKWindow: Start result received:" << data;
+void ChatWindow::onChatStartResult(const QVariantList &data) {
+  qDebug() << "ChatWindow: Start result received:" << data;
 
   // data format: [success (bool), returnCode (int), message (QString),
   // timestamp (QString)]
@@ -552,7 +552,7 @@ void ChatSDKWindow::onChatsdkStartResult(const QVariantList &data) {
     m_statusBar->showMessage("Chat started - connected to network", 5000);
     updateChatMenuState();
 
-    m_logos->chatsdk_module.getId();
+    m_logos->chat_module.getId();
   } else {
     m_statusBar->showMessage(
         QString("Chat start failed (code: %1)").arg(returnCode), 5000);
@@ -563,8 +563,8 @@ void ChatSDKWindow::onChatsdkStartResult(const QVariantList &data) {
   }
 }
 
-void ChatSDKWindow::onChatsdkStopResult(const QVariantList &data) {
-  qDebug() << "ChatSDKWindow: Stop result received:" << data;
+void ChatWindow::onChatStopResult(const QVariantList &data) {
+  qDebug() << "ChatWindow: Stop result received:" << data;
 
   // data format: [success (bool), returnCode (int), message (QString),
   // timestamp (QString)]
@@ -581,8 +581,8 @@ void ChatSDKWindow::onChatsdkStopResult(const QVariantList &data) {
   }
 }
 
-void ChatSDKWindow::onChatsdkCreateIntroBundleResult(const QVariantList &data) {
-  qDebug() << "ChatSDKWindow: Create intro bundle result received:" << data;
+void ChatWindow::onChatCreateIntroBundleResult(const QVariantList &data) {
+  qDebug() << "ChatWindow: Create intro bundle result received:" << data;
 
   if (!m_pendingBundleRequest) {
     // Bundle request wasn't from us
@@ -623,8 +623,8 @@ void ChatSDKWindow::onChatsdkCreateIntroBundleResult(const QVariantList &data) {
   }
 }
 
-void ChatSDKWindow::onChatsdkNewMessage(const QVariantList &data) {
-  qDebug() << "ChatSDKWindow: New message received:" << data;
+void ChatWindow::onChatNewMessage(const QVariantList &data) {
+  qDebug() << "ChatWindow: New message received:" << data;
 
   if (data.isEmpty())
     return;
@@ -677,8 +677,8 @@ void ChatSDKWindow::onChatsdkNewMessage(const QVariantList &data) {
   m_statusBar->showMessage(QString("New message from %1").arg(sender), 3000);
 }
 
-void ChatSDKWindow::onChatsdkNewConversation(const QVariantList &data) {
-  qDebug() << "ChatSDKWindow: New conversation received:" << data;
+void ChatWindow::onChatNewConversation(const QVariantList &data) {
+  qDebug() << "ChatWindow: New conversation received:" << data;
 
   if (data.isEmpty())
     return;
@@ -716,7 +716,7 @@ void ChatSDKWindow::onChatsdkNewConversation(const QVariantList &data) {
   if (!peerId.isEmpty()) {
     m_peerIdentities[conversationId] = peerId;
     displayName = peerId.left(6);
-    qDebug() << "ChatSDKWindow: Peer identity:" << displayName;
+    qDebug() << "ChatWindow: Peer identity:" << displayName;
   } else {
     displayName = conversationId.left(8);
   }
@@ -754,9 +754,9 @@ void ChatSDKWindow::onChatsdkNewConversation(const QVariantList &data) {
 }
 
 
-void ChatSDKWindow::onChatsdkNewPrivateConversationResult(
+void ChatWindow::onChatNewPrivateConversationResult(
     const QVariantList &data) {
-  qDebug() << "ChatSDKWindow: New private conversation result:" << data;
+  qDebug() << "ChatWindow: New private conversation result:" << data;
 
   // data format: [success (bool), returnCode (int), conversationJson (QString),
   // timestamp (QString)]
@@ -776,15 +776,15 @@ void ChatSDKWindow::onChatsdkNewPrivateConversationResult(
 
   // WORKAROUND: newPrivateConversationResult doesn't reliably return the conversation ID,
   // so we can't match the initial message to the correct conversation here.
-  // Instead, we keep m_pendingInitialMessage and let onChatsdkNewConversation
+  // Instead, we keep m_pendingInitialMessage and let onChatNewConversation
   // push it to the first newly created conversation.
   // See: https://github.com/logos-messaging/logos-chat/issues/86
   
   m_statusBar->showMessage("Conversation created successfully", 3000);
 }
 
-void ChatSDKWindow::onChatsdkSendMessageResult(const QVariantList &data) {
-  qDebug() << "ChatSDKWindow: Send message result:" << data;
+void ChatWindow::onChatSendMessageResult(const QVariantList &data) {
+  qDebug() << "ChatWindow: Send message result:" << data;
 
   // data format: [success (bool), returnCode (int), resultJson (QString),
   // timestamp (QString)]
@@ -799,8 +799,8 @@ void ChatSDKWindow::onChatsdkSendMessageResult(const QVariantList &data) {
   }
 }
 
-void ChatSDKWindow::onChatsdkGetIdResult(const QVariantList &data) {
-  qDebug() << "ChatSDKWindow: Get ID result:" << data;
+void ChatWindow::onChatGetIdResult(const QVariantList &data) {
+  qDebug() << "ChatWindow: Get ID result:" << data;
 
   // data format: [identity (QString), timestamp (QString)]
   if (data.size() > 0) {
@@ -808,12 +808,12 @@ void ChatSDKWindow::onChatsdkGetIdResult(const QVariantList &data) {
     if (!identity.isEmpty()) {
       m_myIdentity = identity;
       m_identityLabel->setText(QString("ID: %1").arg(identity));
-      qDebug() << "ChatSDKWindow: My identity set to:" << identity;
+      qDebug() << "ChatWindow: My identity set to:" << identity;
     }
   }
 }
 
-void ChatSDKWindow::onMessageSent(const QString &conversationId,
+void ChatWindow::onMessageSent(const QString &conversationId,
                                   const QString &content) {
   if (!m_chatRunning || !m_logos) {
     m_statusBar->showMessage("Cannot send - chat not running", 3000);
@@ -825,7 +825,7 @@ void ChatSDKWindow::onMessageSent(const QString &conversationId,
     return;
   }
 
-  qDebug() << "ChatSDKWindow: Sending message to conversation:"
+  qDebug() << "ChatWindow: Sending message to conversation:"
            << conversationId << "content:" << content;
 
   QDateTime sentAt = QDateTime::currentDateTime();
@@ -834,19 +834,19 @@ void ChatSDKWindow::onMessageSent(const QString &conversationId,
   // Content must be hex-encoded for the libchat API
   QString contentHex = QString::fromLatin1(content.toUtf8().toHex());
 
-  // Send via the chatsdk_module
+    // Send via the chat_module
   bool success =
-      m_logos->chatsdk_module.sendMessage(conversationId, contentHex);
+      m_logos->chat_module.sendMessage(conversationId, contentHex);
 
   if (success) {
     m_statusBar->showMessage("Sending message...", 2000);
   } else {
     m_statusBar->showMessage("Failed to send message", 3000);
   }
-  // Result will come via onChatsdkSendMessageResult
+  // Result will come via onChatSendMessageResult
 }
 
-void ChatSDKWindow::onAboutAction() {
+void ChatWindow::onAboutAction() {
   QMessageBox::about(this, "About Logos Chat ",
                      "Logos Chat App\n\n"
                      "Version 1.0.0\n\n"

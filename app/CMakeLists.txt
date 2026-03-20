@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(LogosChatSDKUIApp LANGUAGES CXX)
+project(LogosChatUIApp LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -51,14 +51,14 @@ link_directories(
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Create the executable
-add_executable(logos-chatsdk-ui-app
+add_executable(logos-chat-ui-app
     main.cpp
     mainwindow.cpp
     mainwindow.h
 )
 
 # Link libraries
-target_link_libraries(logos-chatsdk-ui-app PRIVATE
+target_link_libraries(logos-chat-ui-app PRIVATE
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Widgets
     logos_core
@@ -67,18 +67,18 @@ target_link_libraries(logos-chatsdk-ui-app PRIVATE
 
 # Set RPATH settings for the executable
 if(APPLE)
-    set_target_properties(logos-chatsdk-ui-app PROPERTIES
+    set_target_properties(logos-chat-ui-app PROPERTIES
         INSTALL_RPATH "@executable_path/../lib"
         BUILD_WITH_INSTALL_RPATH TRUE
     )
 elseif(UNIX)
-    set_target_properties(logos-chatsdk-ui-app PROPERTIES
+    set_target_properties(logos-chat-ui-app PROPERTIES
         INSTALL_RPATH "$ORIGIN/../lib"
         BUILD_WITH_INSTALL_RPATH TRUE
     )
 endif()
 
 # Install rules
-install(TARGETS logos-chatsdk-ui-app
+install(TARGETS logos-chat-ui-app
     RUNTIME DESTINATION bin
 )
