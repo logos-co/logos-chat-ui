@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Qt-based UI module for the Logos platform that provides a chat interface using the `logos-chat-module` backend. This module follows the same architectural patterns as `logos-chat-ui` but implements a two-panel conversation-based chat interface.
+A Qt-based UI module for the Logos platform that provides a chat interface using the `logos-chat-module` backend. This module follows the same architectural patterns as `logos-chat-legacy-ui` but implements a two-panel conversation-based chat interface.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ logos-chat-ui/
 │   ├── mainwindow.h               # App main window header
 │   └── mainwindow.cpp             # App main window (loads plugin via QPluginLoader)
 ├── interfaces/
-│   └── IComponent.h               # Component interface (same as logos-chat-ui)
+│   └── IComponent.h               # Component interface (same as logos-chat-legacy-ui)
 ├── resources/
 │   └── resources.qrc              # Qt resource file (empty root)
 ├── generated_code/
@@ -540,7 +540,7 @@ The `app/` directory contains a minimal standalone application that:
 7. **Runs event loop** - `app.exec()`
 8. **Cleans up** - Calls `logos_core_cleanup()` on exit and terminates child processes
 
-This follows the exact same pattern as `logos-chat-ui/app/`.
+This follows the exact same pattern as `logos-chat-legacy-ui/app/`.
 
 ---
 
@@ -568,7 +568,7 @@ This follows the exact same pattern as `logos-chat-ui/app/`.
 
 - Conversations and messages are ephemeral (no persistence yet)
 - Backend calls are live through `logos-chat-module`
-- The module follows the same patterns as `logos-chat-ui` for consistency
+- The module follows the same patterns as `logos-chat-legacy-ui` for consistency
 - Qt signals/slots are used for component communication to maintain loose coupling
 - The standalone app requires `logos-liblogos` for the core runtime
 - The plugin can also be loaded by other Logos applications

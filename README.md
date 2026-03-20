@@ -130,4 +130,4 @@ See [`spec.md`](docs/spec.md) for detailed component specifications, widget hier
 | [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) | Chat backend — this UI's required dependency |
 | [`logos-chat`](https://github.com/logos-messaging/logos-chat) | Logos Chat application (provides `liblogoschat`) |
 | [`logos-liblogos`](https://github.com/logos-co/logos-liblogos) | Logos Core platform |
-| [`logos-chat-ui`](https://github.com/logos-co/logos-chat-ui) | Legacy PoC — unrelated to this implementation |
+| [`logos-chat-legacy-ui`](https://github.com/logos-co/logos-chat-legacy-ui) | Legacy PoC — unrelated to this implementation |
