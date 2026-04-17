@@ -1,0 +1,36 @@
+class ChatBackend
+{
+    ENUM ChatStatus {
+        Disconnected = 0,
+        Initializing = 1,
+        Initialized = 2,
+        Starting = 3,
+        Running = 4,
+        Stopping = 5
+    }
+
+    // State
+    PROP(ChatStatus chatStatus READONLY)
+    PROP(QString myIdentity READONLY)
+    PROP(QString statusMessage READONLY)
+    PROP(QString currentConversationId)
+
+    // Chat lifecycle
+    SLOT(void initChat())
+    SLOT(void startChat())
+    SLOT(void stopChat())
+
+    // Conversations
+    SLOT(void createConversation(QString introBundle, QString initialMessage))
+    SLOT(void requestMyBundle())
+
+    // Messaging
+    SLOT(void sendMessage(QString conversationId, QString content))
+    SLOT(void selectConversation(QString conversationId))
+
+    // Signals (backend -> QML)
+    SIGNAL(bundleReady(QString bundle))
+    SIGNAL(error(QString message))
+    SIGNAL(conversationCreated(QString conversationId, QString displayName))
+    SIGNAL(messageReceived(QString conversationId, QString sender, QString content, bool isMe))
+}
