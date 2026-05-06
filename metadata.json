@@ -1,18 +1,10 @@
 {
   "name": "chat_ui",
-  "version": "1.0.0",
+  "version": "0.1.0",
+  "description": "Logos Chat — QML UI App for chat_module",
+  "author": "Logos Core Team",
   "type": "ui_qml",
-  "category": "chat",
-  "description": "Chat App for Logos - Private messaging interface",
-  "main": "chat_ui_plugin",
-  "view": "qml/ChatView.qml",
-  "dependencies": ["chat_module"],
-  "nix": {
-    "packages": {
-      "build": [],
-      "runtime": ["qt6.qtdeclarative", "zstd", "krb5", "abseil-cpp"]
-    },
-    "external_libraries": [],
-    "cmake": { "find_packages": [], "extra_sources": [] }
-  }
+  "category": "messaging",
+  "view": "Chat.qml",
+  "dependencies": ["chat_module"]
 }
