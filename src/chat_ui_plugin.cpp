@@ -8,12 +8,7 @@ ChatUiPlugin::ChatUiPlugin(QObject* parent)
 {
 }
 
-ChatUiPlugin::~ChatUiPlugin()
-{
-    if (m_backend) {
-        m_backend->stopChat();
-    }
-}
+ChatUiPlugin::~ChatUiPlugin() = default;
 
 void ChatUiPlugin::initLogos(LogosAPI* api)
 {

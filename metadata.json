@@ -6,7 +6,7 @@
   "description": "Chat App for Logos - Private messaging interface",
   "main": "chat_ui_plugin",
   "view": "qml/ChatView.qml",
-  "dependencies": ["chat_module"],
+  "dependencies": ["chat_module", "delivery_module"],
   "nix": {
     "packages": {
       "build": [],

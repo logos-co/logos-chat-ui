@@ -35,18 +35,16 @@ Item {
         function statusText() {
             if (!backend) return "No backend"
             switch (backend.chatStatus) {
-            case ChatBackend.Disconnected:  return "Disconnected"
-            case ChatBackend.Initializing:  return "Initializing..."
-            case ChatBackend.Initialized:   return "Initialized"
-            case ChatBackend.Starting:      return "Starting..."
-            case ChatBackend.Running:       return "Connected"
-            case ChatBackend.Stopping:      return "Stopping..."
+            case ChatBackend.Stopped:       return "Stopped"
+            case ChatBackend.Initialising:  return "Initialising..."
+            case ChatBackend.Online:        return "Online"
+            case ChatBackend.Error:         return "Error"
             default: return ""
             }
         }
 
         function isRunning() {
-            return backend && backend.chatStatus === ChatBackend.Running
+            return backend && backend.chatStatus === ChatBackend.Online
         }
     }
 
