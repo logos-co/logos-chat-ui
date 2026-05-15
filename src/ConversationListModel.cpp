@@ -20,7 +20,6 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     switch (role) {
     case ConversationIdRole: return item.conversationId;
     case DisplayNameRole:    return item.displayName;
-    case PeerIdRole:         return item.peerId;
     case LastActivityRole:   return item.lastActivity;
     case UnreadCountRole:    return item.unreadCount;
     default:                 return {};
@@ -32,20 +31,29 @@ QHash<int, QByteArray> ConversationListModel::roleNames() const
     return {
         { ConversationIdRole, "conversationId" },
         { DisplayNameRole,    "displayName" },
-        { PeerIdRole,         "peerId" },
         { LastActivityRole,   "lastActivity" },
         { UnreadCountRole,    "unreadCount" }
     };
 }
 
 void ConversationListModel::addConversation(const QString& id, const QString& displayName,
-                                            const QString& peerId, const QDateTime& lastActivity)
+                                            const QDateTime& lastActivity)
 {
     if (contains(id)) return;
 
     beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
-    m_items.append({ id, displayName, peerId, lastActivity, 0 });
+    m_items.append({ id, displayName, lastActivity, 0 });
     endInsertRows();
+}
+
+void ConversationListModel::updateDisplayName(const QString& id, const QString& displayName)
+{
+    int idx = indexOf(id);
+    if (idx < 0) return;
+
+    if (m_items[idx].displayName == displayName) return;
+    m_items[idx].displayName = displayName;
+    emit dataChanged(index(idx), index(idx), { DisplayNameRole });
 }
 
 void ConversationListModel::updateLastActivity(const QString& id, const QDateTime& lastActivity)
@@ -74,6 +82,24 @@ void ConversationListModel::clearUnread(const QString& id)
     if (m_items[idx].unreadCount == 0) return;
     m_items[idx].unreadCount = 0;
     emit dataChanged(index(idx), index(idx), { UnreadCountRole });
+}
+
+void ConversationListModel::removeConversation(const QString& id)
+{
+    int idx = indexOf(id);
+    if (idx < 0) return;
+
+    beginRemoveRows(QModelIndex(), idx, idx);
+    m_items.removeAt(idx);
+    endRemoveRows();
+}
+
+void ConversationListModel::clear()
+{
+    if (m_items.isEmpty()) return;
+    beginResetModel();
+    m_items.clear();
+    endResetModel();
 }
 
 bool ConversationListModel::contains(const QString& id) const

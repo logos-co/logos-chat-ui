@@ -16,7 +16,6 @@ logos_module(
         src/chat_ui_plugin.cpp
         src/ChatBackend.h
         src/ChatBackend.cpp
-        src/ChatConfig.h
         src/ConversationListModel.h
         src/ConversationListModel.cpp
         src/MessageListModel.h

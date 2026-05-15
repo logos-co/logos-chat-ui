@@ -1,14 +1,16 @@
 #ifndef CHAT_BACKEND_H
 #define CHAT_BACKEND_H
 
+#include <QJsonObject>
 #include <QObject>
-#include <QMap>
-#include <QDateTime>
+#include <QString>
 #include "rep_ChatBackend_source.h"
 #include "logos_api.h"
 #include "logos_sdk.h"
 #include "ConversationListModel.h"
 #include "MessageListModel.h"
+
+class QTimer;
 
 class ChatBackend : public ChatBackendSimpleSource
 {
@@ -24,29 +26,33 @@ public:
     MessageListModel* messageModel() const;
 
 public slots:
-    // .rep slot overrides
-    void initChat() override;
-    void startChat() override;
-    void stopChat() override;
     void createConversation(QString introBundle, QString initialMessage) override;
     void requestMyBundle() override;
     void sendMessage(QString conversationId, QString content) override;
     void selectConversation(QString conversationId) override;
 
 private:
-    void setupEventHandlers();
-    void showConversationMessages(const QString& conversationId);
+    // Honours $CHAT_MODULE_INSTANCE_PATH, otherwise QStandardPaths::AppDataLocation.
+    // Creates the directory if missing.
+    static QString resolveInstancePath();
 
-    // Event handlers for chat_module responses
-    void onChatInitResult(const QVariantList& data);
-    void onChatStartResult(const QVariantList& data);
-    void onChatStopResult(const QVariantList& data);
-    void onChatCreateIntroBundleResult(const QVariantList& data);
-    void onChatNewMessage(const QVariantList& data);
-    void onChatNewConversation(const QVariantList& data);
-    void onChatNewPrivateConversationResult(const QVariantList& data);
-    void onChatSendMessageResult(const QVariantList& data);
-    void onChatGetIdResult(const QVariantList& data);
+    // Honours $CHAT_MODULE_DELIVERY_PORT, otherwise the compiled-in default.
+    // Lets multiple instances coexist on one host.
+    static int resolveDeliveryPort();
+
+    void initialiseModule();
+    void rehydrateConversations();
+    void showConversationMessages(const QString& convoId);
+    void pollEvents();
+
+    void applyDeliveryState(const QString& state, const QString& detail);
+    void applyMessageReceived(const QJsonObject& evt);
+    void applyMessageSent(const QJsonObject& evt);
+    void applyConversationCreated(const QJsonObject& evt);
+    void applyConversationUpdated(const QJsonObject& evt);
+    void applyConversationDeleted(const QJsonObject& evt);
+
+    static QString fallbackDisplayName(const QString& convoId, const QString& peerLabel = QString());
 
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;
@@ -54,18 +60,9 @@ private:
     ConversationListModel* m_conversationModel;
     MessageListModel* m_messageModel;
 
-    // Per-conversation message storage
-    struct MessageInfo {
-        QString sender;
-        QString content;
-        QDateTime timestamp;
-        bool isMe;
-    };
-    QMap<QString, QList<MessageInfo>> m_messages;
-    QMap<QString, QString> m_peerIdentities;
-
-    bool m_pendingBundleRequest = false;
-    QString m_pendingInitialMessage;
+    QTimer* m_eventPollTimer = nullptr;
+    QString m_instancePath;
+    bool m_moduleInitialised = false;
 };
 
 #endif
