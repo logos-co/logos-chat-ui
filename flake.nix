@@ -5,7 +5,7 @@
     logos-module-builder.url = "github:logos-co/logos-module-builder";
     nix-bundle-lgx.url = "github:logos-co/nix-bundle-lgx";
     chat_module.url = "github:logos-co/logos-chat-module/rust-bindings-exploration";
-    logos-delivery-module.url = "github:logos-co/logos-delivery-module/fix/send-api-qstring";
+    logos-delivery-module.url = "github:logos-co/logos-delivery-module/v0.1.2";
   };
 
   outputs = inputs@{ logos-module-builder, logos-delivery-module, ... }:
