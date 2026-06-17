@@ -714,8 +714,8 @@ Item {
             QrCard {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter
-                title: "My Chat ID"
-                description: "Scan to start a private chat"
+                title: "Intro Bundle"
+                description: "Scan to connect in Logos Chat"
                 payload: bundleDialog.bundleText
                 // theme to the chat palette
                 cardBg: root.bgPrimary

@@ -50,7 +50,7 @@ Item {
     property bool   _saveOk: false
 
     implicitWidth: 360
-    implicitHeight: bg.height
+    implicitHeight: outer.height
 
     onPayloadChanged:     regenerate()
     onTitleChanged:       regenerate()
@@ -75,13 +75,13 @@ Item {
         _n = res.n; _cells = res.cells
     }
 
-    // Grab the whole card (title + description + QR) to a PNG and save it via the qr core.
+    // Grab the card (title + description + QR — NOT the Save button) and save via qr core.
     function saveImage() {
         _saveMsg = ""
         if (_n <= 0 || typeof logos === "undefined") return
         var name = "qr-" + Qt.formatDateTime(new Date(), "yyyyMMdd-hhmmss")
         var tmp  = "/tmp/" + name + ".png"
-        bg.grabToImage(function(result) {
+        captureCard.grabToImage(function(result) {
             if (!result.saveToFile(tmp)) { card._saveOk = false; card._saveMsg = "Could not capture image."; return }
             var res = card.callModuleParse(logos.callModule("qr", "savePng", [tmp, name]))
             if (res && res.ok) { card._saveOk = true;  card._saveMsg = "Saved: " + res.path }
@@ -89,90 +89,99 @@ Item {
         })
     }
 
-    Rectangle {
-        id: bg
+    Column {
+        id: outer
         width: parent.width
-        height: col.implicitHeight + 32
-        radius: 12
-        color: card.cardBg
+        spacing: 10
 
-        ColumnLayout {
-            id: col
-            x: 16; y: 16
-            width: parent.width - 32
-            spacing: 12
+        // ── Captured card: title + description + QR (this is what Save grabs) ──
+        Rectangle {
+            id: captureCard
+            width: parent.width
+            height: innerCol.implicitHeight + 32
+            radius: 12
+            color: card.cardBg
 
-            Label {
-                text: card.title
-                visible: card.title.length > 0
-                color: card.titleColor
-                font.pixelSize: 18; font.bold: true
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-            }
-            Label {
-                text: card.description
-                visible: card.description.length > 0
-                color: card.descColor
-                font.pixelSize: 13
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-            }
+            ColumnLayout {
+                id: innerCol
+                x: 16; y: 16
+                width: parent.width - 32
+                spacing: 12
 
-            // QR frame — fixed square, matrix centred (symmetric quiet zone).
-            Rectangle {
-                id: frame
-                visible: card._n > 0
-                Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: 260
-                Layout.preferredHeight: 260
-                radius: 8
-                color: card.qrBg
-                readonly property int cell: card._n > 0 ? Math.max(1, Math.floor((width - 32) / card._n)) : 1
-                Grid {
-                    anchors.centerIn: parent
-                    columns: card._n; rows: card._n
-                    Repeater {
-                        model: card._cells
-                        delegate: Rectangle {
-                            width:  frame.cell; height: frame.cell
-                            color: modelData ? card.qrFg : card.qrBg
+                Label {
+                    text: card.title
+                    visible: card.title.length > 0
+                    color: card.titleColor
+                    font.pixelSize: 18; font.bold: true
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                }
+                Label {
+                    text: card.description
+                    visible: card.description.length > 0
+                    color: card.descColor
+                    font.pixelSize: 13
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                }
+
+                // QR frame — fixed square, matrix centred (symmetric quiet zone).
+                Rectangle {
+                    id: frame
+                    visible: card._n > 0
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 260
+                    Layout.preferredHeight: 260
+                    radius: 8
+                    color: card.qrBg
+                    readonly property int cell: card._n > 0 ? Math.max(1, Math.floor((width - 32) / card._n)) : 1
+                    Grid {
+                        anchors.centerIn: parent
+                        columns: card._n; rows: card._n
+                        Repeater {
+                            model: card._cells
+                            delegate: Rectangle {
+                                width:  frame.cell; height: frame.cell
+                                color: modelData ? card.qrFg : card.qrBg
+                            }
                         }
                     }
                 }
-            }
 
-            Label {
-                text: card._err
-                visible: card._err.length > 0
-                color: card.errorColor; font.pixelSize: 12
-                Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
-            }
-
-            Button {
-                id: saveBtn
-                text: "Save as image"
-                visible: card.showSaveButton && card._n > 0
-                Layout.fillWidth: true; Layout.preferredHeight: 38
-                onClicked: card.saveImage()
-                contentItem: Text {
-                    text: saveBtn.text; color: card.titleColor; font.pixelSize: 13
-                    horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    radius: 8; color: "transparent"
-                    border.color: saveBtn.hovered ? card.accent : card.borderColor; border.width: 1
+                Label {
+                    text: card._err
+                    visible: card._err.length > 0
+                    color: card.errorColor; font.pixelSize: 12
+                    Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
                 }
             }
-            Label {
-                text: card._saveMsg
-                visible: card._saveMsg.length > 0
-                color: card._saveOk ? card.okColor : card.errorColor
-                font.pixelSize: 11
-                Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WrapAnywhere
+        }
+
+        // ── Save controls (deliberately OUTSIDE captureCard — not in the saved image) ──
+        Button {
+            id: saveBtn
+            width: parent.width; height: 38
+            visible: card.showSaveButton && card._n > 0
+            text: "Save as image"
+            onClicked: card.saveImage()
+            contentItem: Text {
+                text: saveBtn.text; color: card.titleColor; font.pixelSize: 13
+                horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
             }
+            background: Rectangle {
+                radius: 8; color: "transparent"
+                border.color: saveBtn.hovered ? card.accent : card.borderColor; border.width: 1
+            }
+        }
+        Label {
+            width: parent.width
+            text: card._saveMsg
+            visible: card._saveMsg.length > 0
+            color: card._saveOk ? card.okColor : card.errorColor
+            font.pixelSize: 11
+            horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WrapAnywhere
         }
     }
 }
