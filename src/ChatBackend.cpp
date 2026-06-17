@@ -335,8 +335,21 @@ void ChatBackend::onChatCreateIntroBundleResult(const QVariantList& data)
     if (!m_pendingBundleRequest) return;
     m_pendingBundleRequest = false;
 
-    bool success = data.size() > 0 ? data[0].toBool() : false;
-    QString bundleStr = data.size() > 2 ? data[2].toString() : QString();
+    // Newer chat_module emits a single JSON string {"success":bool,"introBundle":str,...};
+    // older builds emitted a [bool, int, str, ...] array. Handle both.
+    bool success = false;
+    QString bundleStr;
+    if (!data.isEmpty()) {
+        const QJsonDocument doc = QJsonDocument::fromJson(data[0].toString().toUtf8());
+        if (doc.isObject()) {
+            const QJsonObject o = doc.object();
+            success   = o.value("success").toBool();
+            bundleStr = o.value("introBundle").toString();
+        } else if (data.size() > 2) {                 // legacy array format
+            success   = data[0].toBool();
+            bundleStr = data[2].toString();
+        }
+    }
 
     if (success && !bundleStr.isEmpty()) {
         setStatusMessage(QStringLiteral("Bundle ready"));
