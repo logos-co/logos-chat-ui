@@ -714,13 +714,11 @@ Item {
             QrCard {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignHCenter
-                title: "Intro Bundle"
-                description: "Scan to connect in Logos Chat"
+                // No title/description — the dialog header already says "My Bundle";
+                // keeping the card compact (just the QR).
                 payload: bundleDialog.bundleText
                 // theme to the chat palette
                 cardBg: root.bgPrimary
-                titleColor: root.textPrimary
-                descColor: root.textSecond
                 accent: root.accent
                 borderColor: root.border
             }
