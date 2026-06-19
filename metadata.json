@@ -1,5 +1,6 @@
 {
   "name": "chat_ui",
+  "display_name": "Chat",
   "version": "1.0.0",
   "type": "ui_qml",
   "category": "chat",
