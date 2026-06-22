@@ -709,8 +709,22 @@ Item {
             anchors.fill: parent
             spacing: 12
 
+            // Scannable QR of the intro bundle (qr-basecamp drop-in component).
+            // Requires the `qr` core module (declared in metadata dependencies).
+            QrCard {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+                // No title/description — the dialog header already says "My Bundle";
+                // keeping the card compact (just the QR).
+                payload: bundleDialog.bundleText
+                // theme to the chat palette
+                cardBg: root.bgPrimary
+                accent: root.accent
+                borderColor: root.border
+            }
+
             Text {
-                text: "Share this bundle with others to start a conversation:"
+                text: "…or share the bundle text directly:"
                 color: root.textSecond
                 font.family: "JetBrains Mono"
                 font.pixelSize: 12
