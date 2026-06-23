@@ -35,18 +35,16 @@ Item {
         function statusText() {
             if (!backend) return "No backend"
             switch (backend.chatStatus) {
-            case ChatBackend.Disconnected:  return "Disconnected"
-            case ChatBackend.Initializing:  return "Initializing..."
-            case ChatBackend.Initialized:   return "Initialized"
-            case ChatBackend.Starting:      return "Starting..."
-            case ChatBackend.Running:       return "Connected"
-            case ChatBackend.Stopping:      return "Stopping..."
+            case ChatBackend.Stopped:       return "Stopped"
+            case ChatBackend.Initialising:  return "Initialising..."
+            case ChatBackend.Online:        return "Online"
+            case ChatBackend.Error:         return "Error"
             default: return ""
             }
         }
 
         function isRunning() {
-            return backend && backend.chatStatus === ChatBackend.Running
+            return backend && backend.chatStatus === ChatBackend.Online
         }
     }
 
@@ -162,8 +160,8 @@ Item {
                                 width: convList.width
                                 height: 56
                                 color: model.conversationId === (d.backend ? d.backend.currentConversationId : "")
-                                       ? Qt.rgba(16/255, 185/255, 129/255, 0.1)
-                                       : mouseArea.containsMouse ? Qt.rgba(255,255,255,0.03) : "transparent"
+                                       ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.1)
+                                       : mouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.03) : "transparent"
 
                                 MouseArea {
                                     id: mouseArea
@@ -298,12 +296,9 @@ Item {
                                 anchors.rightMargin: 16
 
                                 Text {
-                                    text: {
-                                        if (!d.convModel || !d.backend) return ""
-                                        // We don't have a direct name lookup, show conversation ID
-                                        return d.backend.currentConversationId
-                                               ? "Conversation active" : ""
-                                    }
+                                    text: (d.backend && d.convModel)
+                                          ? d.convModel.displayNameFor(d.backend.currentConversationId)
+                                          : ""
                                     color: root.textPrimary
                                     font.family: "JetBrains Mono"
                                     font.pixelSize: 13
@@ -761,8 +756,10 @@ Item {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 40
         anchors.horizontalCenter: parent.horizontalCenter
-        width: toastText.implicitWidth + 32
-        height: 36
+        // Clamp to the view and let long backend error strings wrap, instead of
+        // growing a single line off-screen (mirrors the message-bubble sizing).
+        width: toastText.width + 32
+        height: toastText.height + 20
         radius: 6
         color: "#5c1a1a"
         border.color: "#C62828"
@@ -772,6 +769,9 @@ Item {
         Text {
             id: toastText
             anchors.centerIn: parent
+            width: Math.min(implicitWidth, root.width - 56)
+            wrapMode: Text.Wrap
+            horizontalAlignment: Text.AlignHCenter
             color: "#EF4444"
             font.family: "JetBrains Mono"
             font.pixelSize: 12
