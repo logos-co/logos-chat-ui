@@ -11,14 +11,12 @@ logos_module(
     NAME chat_ui
     REP_FILE src/ChatBackend.rep
     SOURCES
-        src/chat_ui_interface.h
-        src/chat_ui_plugin.h
-        src/chat_ui_plugin.cpp
         src/ChatBackend.h
         src/ChatBackend.cpp
-        src/ChatConfig.h
         src/ConversationListModel.h
         src/ConversationListModel.cpp
         src/MessageListModel.h
         src/MessageListModel.cpp
+    INCLUDE_DIRS
+        src
 )

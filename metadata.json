@@ -1,13 +1,25 @@
 {
   "name": "chat_ui",
   "display_name": "Chat",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "type": "ui_qml",
+  "interface": "universal",
   "category": "chat",
   "description": "Chat App for Logos - Private messaging interface",
   "main": "chat_ui_plugin",
   "view": "qml/ChatView.qml",
-  "dependencies": ["chat_module"],
+  "dependencies": ["chat_module", "delivery_module"],
+  "codegen": {
+    "rep": "src/ChatBackend.rep",
+    "backend_class": "ChatBackend",
+    "backend_header": "ChatBackend.h"
+  },
+  "dependency_overrides": {
+    "delivery_module": {
+      "input": "chat_module",
+      "file": "rust-lib/deps/delivery_module.lidl"
+    }
+  },
   "nix": {
     "packages": {
       "build": [],
