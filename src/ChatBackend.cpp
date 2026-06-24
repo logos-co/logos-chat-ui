@@ -65,6 +65,10 @@ MessageListModel* ChatBackend::messageModel() const
 
 // ── instance path ───────────────────────────────────────────────────────────
 
+// The chat_module's own persistence directory (identity.db + history.json),
+// passed to it via init(). The UI only chooses the location — it never reads
+// the contents. Override with CHAT_MODULE_INSTANCE_PATH to run side-by-side
+// instances; otherwise it defaults under the app's data location.
 QString ChatBackend::resolveInstancePath()
 {
     if (const char* env = std::getenv(kInstancePathEnvVar); env && *env) {
