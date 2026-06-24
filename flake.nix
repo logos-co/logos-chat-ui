@@ -11,7 +11,7 @@
     # the chat_module contract can't shift under a `nix flake update`. Re-pin to
     # the new rev whenever chat_module is pushed; switch to a release tag once
     # the migration merges.
-    chat_module.url = "github:logos-co/logos-chat-module/c9242c43ad8e3a98926fdf6b3f45eb53ee8058b8";
+    chat_module.url = "github:logos-co/logos-chat-module/5380e9eded09802d75fb37571f782baea8751f28";
     # Pinned to the commit (post-v0.1.2) carrying the zerokit/RLN nix build fix:
     # delivery-module #49 bumps logos-delivery so zerokit's cargo vendor no longer
     # hits crates.io's python-requests 403. Not yet tagged — re-pin to the release
