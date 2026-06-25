@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QMap>
 #include <QDateTime>
+#include <QTimer>
 #include "rep_ChatBackend_source.h"
 #include "logos_api.h"
 #include "logos_sdk.h"
@@ -32,6 +33,7 @@ public slots:
     void requestMyBundle() override;
     void sendMessage(QString conversationId, QString content) override;
     void selectConversation(QString conversationId) override;
+    void setMixMode(bool required) override;
 
 private:
     void setupEventHandlers();
@@ -47,9 +49,14 @@ private:
     void onChatNewPrivateConversationResult(const QVariantList& data);
     void onChatSendMessageResult(const QVariantList& data);
     void onChatGetIdResult(const QVariantList& data);
+    void onChatGetMixStatusResult(const QVariantList& data);
 
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;
+
+    // Polls chat_module.getMixStatus() while running so the UI can reflect the
+    // live mix pool size (and grey out sending while it is below the minimum).
+    QTimer* m_mixStatusTimer = nullptr;
 
     ConversationListModel* m_conversationModel;
     MessageListModel* m_messageModel;

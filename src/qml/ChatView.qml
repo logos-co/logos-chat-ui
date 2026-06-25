@@ -48,6 +48,18 @@ Item {
         function isRunning() {
             return backend && backend.chatStatus === ChatBackend.Running
         }
+
+        // Mix sender-anonymity: when active, sending is blocked while the mix
+        // peer pool is below the configured minimum.
+        function mixBlocksSend() {
+            return backend && backend.mixActive
+                   && backend.mixPoolSize < backend.minMixPoolSize
+        }
+
+        function mixPoolText() {
+            if (!backend) return ""
+            return "MIX " + backend.mixPoolSize + "/" + backend.minMixPoolSize
+        }
     }
 
     // ── Backend signal handlers ──────────────────────────────────────────
@@ -421,8 +433,9 @@ Item {
                                     id: msgInput
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
-                                    placeholderText: d.isRunning() ? "Type a message..."
-                                                                   : "Chat not connected"
+                                    placeholderText: !d.isRunning() ? "Chat not connected"
+                                                     : d.mixBlocksSend() ? "Waiting for mix peers..."
+                                                     : "Type a message..."
                                     enabled: d.isRunning()
                                              && d.backend
                                              && d.backend.currentConversationId !== ""
@@ -445,6 +458,7 @@ Item {
                                     Layout.fillHeight: true
                                     text: ">>"
                                     enabled: msgInput.enabled && msgInput.text.trim() !== ""
+                                             && !d.mixBlocksSend()
                                     font.family: "JetBrains Mono"
                                     font.pixelSize: 14
                                     font.bold: true
@@ -499,6 +513,32 @@ Item {
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
+
+                    // Mix mode toggle (restart-based) — click to switch Required/None.
+                    Text {
+                        text: (d.backend && d.backend.mixRequired) ? "MIX: REQUIRED" : "MIX: NONE"
+                        color: d.mixBlocksSend() ? root.unreadBadge
+                               : (d.backend && d.backend.mixRequired) ? root.accent
+                               : root.textTertiary
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 11
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: if (d.backend) d.backend.setMixMode(!d.backend.mixRequired)
+                        }
+                    }
+
+                    // Live mix pool indicator — red while below the minimum.
+                    Text {
+                        visible: d.backend && d.backend.mixActive
+                        text: d.mixPoolText()
+                        color: d.mixBlocksSend() ? root.unreadBadge : root.accent
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 11
+                    }
+
+                    Rectangle { width: 8; height: 1; color: "transparent" }
 
                     Text {
                         text: d.statusText()

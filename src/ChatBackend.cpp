@@ -7,6 +7,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <QSettings>
 #include <QTimer>
 
 namespace {
@@ -44,6 +45,23 @@ ChatBackend::ChatBackend(LogosAPI* logosAPI, QObject* parent)
     setMyIdentity(QString());
     setStatusMessage(QStringLiteral("Ready"));
     setCurrentConversationId(QString());
+
+    // Mix sender-anonymity state. mixRequired is the persisted Required/None
+    // setting (applied at the next initChat); the rest reflect the live session.
+    QSettings settings(QStringLiteral("Logos"), QStringLiteral("ChatUI"));
+    setMixRequired(settings.value(QStringLiteral("mix/required"), false).toBool());
+    setMixActive(false);
+    setMixReady(false);
+    setMixPoolSize(0);
+    setMinMixPoolSize(0);
+
+    // Poll the live mix status while running (see onChatStartResult).
+    m_mixStatusTimer = new QTimer(this);
+    m_mixStatusTimer->setInterval(3000);
+    connect(m_mixStatusTimer, &QTimer::timeout, this, [this]() {
+        if (m_logos && chatStatus() == ChatBackendSimpleSource::Running)
+            m_logos->chat_module.getMixStatus();
+    });
 
     // Defer to the next event-loop iteration so the ui-host can finish exposing
     // this object to Qt Remote Objects before we subscribe to chat_module events
@@ -86,7 +104,8 @@ void ChatBackend::initChat()
         return;
     }
 
-    QString configJson = ChatConfig::buildConfigJson();
+    QString configJson = ChatConfig::buildConfigJson(
+        QString(), -1, -1, -1, QString(), /*mixEnabled=*/mixRequired());
     qDebug() << "ChatBackend: Initializing chat with config:" << configJson;
 
     setChatStatus(ChatBackendSimpleSource::Initializing);
@@ -231,6 +250,20 @@ void ChatBackend::selectConversation(QString conversationId)
     showConversationMessages(conversationId);
 }
 
+void ChatBackend::setMixMode(bool required)
+{
+    QSettings settings(QStringLiteral("Logos"), QStringLiteral("ChatUI"));
+    settings.setValue(QStringLiteral("mix/required"), required);
+    setMixRequired(required);
+
+    // Mix mode is applied at init; changing it mid-session needs a restart.
+    if (required != mixActive()) {
+        setStatusMessage(required
+            ? QStringLiteral("Mix set to Required — restart to apply")
+            : QStringLiteral("Mix set to None — restart to apply"));
+    }
+}
+
 // ── Event handlers ───────────────────────────────────────────────────────────
 
 void ChatBackend::setupEventHandlers()
@@ -254,6 +287,7 @@ void ChatBackend::setupEventHandlers()
     m_logos->chat_module.on("chatNewPrivateConversationResult",  safeInvoke(&ChatBackend::onChatNewPrivateConversationResult));
     m_logos->chat_module.on("chatSendMessageResult",             safeInvoke(&ChatBackend::onChatSendMessageResult));
     m_logos->chat_module.on("chatGetIdResult",                   safeInvoke(&ChatBackend::onChatGetIdResult));
+    m_logos->chat_module.on("chatGetMixStatusResult",            safeInvoke(&ChatBackend::onChatGetMixStatusResult));
 
     qDebug() << "ChatBackend: Event handlers set up";
 }
@@ -305,6 +339,9 @@ void ChatBackend::onChatStartResult(const QVariantList& data)
         setChatStatus(ChatBackendSimpleSource::Running);
         setStatusMessage(QStringLiteral("Connected to network"));
         m_logos->chat_module.getId();
+        // Prime the mix status now and keep it fresh while running.
+        m_logos->chat_module.getMixStatus();
+        if (m_mixStatusTimer) m_mixStatusTimer->start();
     } else {
         setChatStatus(ChatBackendSimpleSource::Initialized);
         setStatusMessage(QString("Start failed (code: %1)").arg(returnCode));
@@ -322,6 +359,10 @@ void ChatBackend::onChatStopResult(const QVariantList& data)
     if (success) {
         setChatStatus(ChatBackendSimpleSource::Disconnected);
         setStatusMessage(QStringLiteral("Chat stopped"));
+        if (m_mixStatusTimer) m_mixStatusTimer->stop();
+        setMixActive(false);
+        setMixReady(false);
+        setMixPoolSize(0);
     } else {
         setChatStatus(ChatBackendSimpleSource::Running);
         setStatusMessage(QString("Stop failed (code: %1)").arg(returnCode));
@@ -478,4 +519,19 @@ void ChatBackend::onChatGetIdResult(const QVariantList& data)
             qDebug() << "ChatBackend: Identity:" << identity;
         }
     }
+}
+
+void ChatBackend::onChatGetMixStatusResult(const QVariantList& data)
+{
+    // data[0] is a JSON object: { mixEnabled, mixReady, mixPoolSize, minPoolSize }.
+    if (data.isEmpty()) return;
+
+    const QJsonDocument doc = QJsonDocument::fromJson(data[0].toString().toUtf8());
+    if (!doc.isObject()) return;
+    const QJsonObject obj = doc.object();
+
+    setMixActive(obj.value(QStringLiteral("mixEnabled")).toBool());
+    setMixReady(obj.value(QStringLiteral("mixReady")).toBool());
+    setMixPoolSize(obj.value(QStringLiteral("mixPoolSize")).toInt());
+    setMinMixPoolSize(obj.value(QStringLiteral("minPoolSize")).toInt());
 }

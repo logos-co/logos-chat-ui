@@ -15,10 +15,25 @@ class ChatBackend
     PROP(QString statusMessage READONLY)
     PROP(QString currentConversationId)
 
+    // Mix sender-anonymity.
+    //   mixRequired   - persisted Required/None setting; applied on (re)start.
+    //   mixActive     - whether the running session is actually routing via mix.
+    //   mixReady      - RLN spam-protection is ready.
+    //   mixPoolSize   - current number of reachable mix nodes.
+    //   minMixPoolSize- minimum healthy pool; sending is blocked below it.
+    PROP(bool mixRequired READONLY)
+    PROP(bool mixActive READONLY)
+    PROP(bool mixReady READONLY)
+    PROP(int mixPoolSize READONLY)
+    PROP(int minMixPoolSize READONLY)
+
     // Chat lifecycle
     SLOT(void initChat())
     SLOT(void startChat())
     SLOT(void stopChat())
+
+    // Set the Required/None mix mode. Persisted; takes effect after a restart.
+    SLOT(void setMixMode(bool required))
 
     // Conversations
     SLOT(void createConversation(QString introBundle, QString initialMessage))

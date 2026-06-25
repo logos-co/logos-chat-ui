@@ -2,6 +2,7 @@
 
 #include <QString>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QRandomGenerator>
 #include <cstdlib>
@@ -68,7 +69,8 @@ inline QString buildConfigJson(
     int port = -1,
     int clusterId = -1,
     int shardId = -1,
-    const QString& staticPeer = QString())
+    const QString& staticPeer = QString(),
+    bool mixEnabled = false)
 {
     QJsonObject config;
     
@@ -108,7 +110,24 @@ inline QString buildConfigJson(
     if (!peer.isEmpty()) {
         config["staticPeer"] = peer;
     }
-    
+
+    // Mix sender-anonymity (global Required/None mode, applied at init).
+    // When Required, route via the mixnet; the mix node multiaddrs come from
+    // CHAT_MIX_NODES (comma-separated) and the minimum healthy pool size from
+    // CHAT_MIN_MIX_POOL (default 4). logos-chat refuses to send while the pool
+    // is below the minimum.
+    config["mixEnabled"] = mixEnabled;
+    if (mixEnabled) {
+        QJsonArray mixNodes;
+        const QString nodes = getEnvOrDefault("CHAT_MIX_NODES", QString());
+        for (const QString& node : nodes.split(',', Qt::SkipEmptyParts)) {
+            const QString trimmed = node.trimmed();
+            if (!trimmed.isEmpty()) mixNodes.append(trimmed);
+        }
+        config["mixNodes"] = mixNodes;
+        config["minMixPoolSize"] = getEnvOrDefault("CHAT_MIN_MIX_POOL", 4);
+    }
+
     return QJsonDocument(config).toJson(QJsonDocument::Compact);
 }
 
