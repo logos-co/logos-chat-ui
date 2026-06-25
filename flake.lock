@@ -7,18 +7,18 @@
         "nix-bundle-lgx": "nix-bundle-lgx_10"
       },
       "locked": {
-        "lastModified": 1782374994,
-        "narHash": "sha256-9Iyf5yHiOoKcCFq4App6e3QnlwDbnBXkrT9mI8RK9Yo=",
+        "lastModified": 1782393242,
+        "narHash": "sha256-OxCg47Au6G7rOpl6sFFKsXHpNKuOhGdTfGm7ykInJkc=",
         "ref": "feat/logos-testnetv02-mix",
-        "rev": "a8e9cf1c9e02f923b3ebe467de21302eb7b34a98",
-        "revCount": 66,
+        "rev": "44ecc8b383874e9c541af85fae7f45437fbf2356",
+        "revCount": 67,
         "type": "git",
-        "url": "file:///Users/prem/Code/logos-chat-module-canonical"
+        "url": "https://github.com/logos-co/logos-chat-module"
       },
       "original": {
         "ref": "feat/logos-testnetv02-mix",
         "type": "git",
-        "url": "file:///Users/prem/Code/logos-chat-module-canonical"
+        "url": "https://github.com/logos-co/logos-chat-module"
       }
     },
     "flake-utils": {
@@ -405,13 +405,13 @@
         "revCount": 198,
         "submodules": true,
         "type": "git",
-        "url": "file:///Users/prem/Code/logos-chat-canonical"
+        "url": "https://github.com/logos-messaging/logos-chat"
       },
       "original": {
         "ref": "feat/logos-testnetv02-mix",
         "submodules": true,
         "type": "git",
-        "url": "file:///Users/prem/Code/logos-chat-canonical"
+        "url": "https://github.com/logos-messaging/logos-chat"
       }
     },
     "logos-cpp-sdk": {
