@@ -1,65 +1,56 @@
 #include "ChatBackend.h"
-#include "ChatConfig.h"
 #include "ConversationListModel.h"
 #include "MessageListModel.h"
 
+// Generated umbrella: LogosModules (behind modules()) from
+// metadata.json#dependencies — the Qt-typed chat_module wrapper.
+#include "logos_sdk.h"
+
+#include <QDateTime>
 #include <QDebug>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QRegularExpression>
-#include <QTimer>
+#include <QDir>
+#include <QStandardPaths>
+#include <QVariantMap>
+#include <cstdlib>
 
 namespace {
 
-/** If @p content looks like hex (optional 0x), decode to UTF-8; otherwise return as-is. */
-QString decodeMessageContent(const QString& content)
+constexpr int kDefaultDeliveryPort = 60000;
+constexpr const char* kDefaultDeliveryPreset = "logos.test";
+constexpr const char* kInstancePathEnvVar = "CHAT_MODULE_INSTANCE_PATH";
+constexpr const char* kDeliveryPortEnvVar = "CHAT_MODULE_DELIVERY_PORT";
+
+QDateTime msToDateTime(qint64 ms)
 {
-    const QString trimmed = content.trimmed();
-    QString hex = trimmed;
-    if (hex.startsWith(QLatin1String("0x"), Qt::CaseInsensitive))
-        hex = hex.mid(2).trimmed();
-    if (hex.length() < 2 || (hex.length() % 2) != 0)
-        return content;
-
-    static const QRegularExpression kHexOnly(QStringLiteral("^[0-9a-fA-F]+$"));
-    if (!kHexOnly.match(hex).hasMatch())
-        return content;
-
-    const QByteArray bytes = QByteArray::fromHex(hex.toLatin1());
-    if (bytes.isEmpty())
-        return content;
-    return QString::fromUtf8(bytes);
+    return ms > 0 ? QDateTime::fromMSecsSinceEpoch(ms) : QDateTime::currentDateTime();
 }
 
 } // namespace
 
-ChatBackend::ChatBackend(LogosAPI* logosAPI, QObject* parent)
+ChatBackend::ChatBackend(QObject* parent)
     : ChatBackendSimpleSource(parent)
-    , m_logosAPI(logosAPI ? logosAPI : new LogosAPI("chat_ui", this))
-    , m_logos(new LogosModules(m_logosAPI))
     , m_conversationModel(new ConversationListModel(this))
     , m_messageModel(new MessageListModel(this))
+    , m_instancePath(resolveInstancePath())
 {
-    setChatStatus(ChatBackendSimpleSource::Disconnected);
+    setChatStatus(ChatBackendSimpleSource::Stopped);
     setMyIdentity(QString());
     setStatusMessage(QStringLiteral("Ready"));
     setCurrentConversationId(QString());
+}
 
-    // Defer to the next event-loop iteration so the ui-host can finish exposing
-    // this object to Qt Remote Objects before we subscribe to chat_module events
-    // (avoids a fixed wall-clock delay).
-    QTimer::singleShot(0, this, [this]() {
-        setupEventHandlers();
-        initChat();
-    });
+void ChatBackend::onContextReady()
+{
+    // Fires after the framework has wired modules(), so the typed chat_module
+    // surface is live and the QtRO source is registered — the right point to
+    // initialise the module and arm event subscriptions.
+    initialiseModule();
 }
 
 ChatBackend::~ChatBackend()
 {
-    if (chatStatus() == ChatBackendSimpleSource::Running && m_logos) {
-        m_logos->chat_module.stopChat();
-    }
-    delete m_logos;
+    if (isContextReady())
+        modules().chat_module.shutdown();
 }
 
 ConversationListModel* ChatBackend::conversationModel() const
@@ -72,154 +63,209 @@ MessageListModel* ChatBackend::messageModel() const
     return m_messageModel;
 }
 
-// ── .rep slot implementations ────────────────────────────────────────────────
+// ── instance path ───────────────────────────────────────────────────────────
 
-void ChatBackend::initChat()
+// The chat_module's own persistence directory (identity.db + history.json),
+// passed to it via init(). The UI only chooses the location — it never reads
+// the contents. Override with CHAT_MODULE_INSTANCE_PATH to run side-by-side
+// instances; otherwise it defaults under the app's data location.
+QString ChatBackend::resolveInstancePath()
 {
-    if (!m_logos) {
-        emit error(QStringLiteral("LogosAPI not available"));
+    if (const char* env = std::getenv(kInstancePathEnvVar); env && *env) {
+        QString path = QString::fromUtf8(env);
+        QDir().mkpath(path);
+        return path;
+    }
+
+    QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (base.isEmpty())
+        base = QDir::homePath() + QStringLiteral("/.local/share");
+    const QString path = base + QStringLiteral("/chat_module");
+    QDir().mkpath(path);
+    return path;
+}
+
+int ChatBackend::resolveDeliveryPort()
+{
+    const char* env = std::getenv(kDeliveryPortEnvVar);
+    if (!env || !*env) return kDefaultDeliveryPort;
+
+    bool ok = false;
+    const int parsed = QString::fromUtf8(env).toInt(&ok);
+    if (!ok) {
+        qWarning() << "ChatBackend: ignoring non-integer" << kDeliveryPortEnvVar << "=" << env;
+        return kDefaultDeliveryPort;
+    }
+    return parsed;
+}
+
+// ── lifecycle ───────────────────────────────────────────────────────────────
+
+void ChatBackend::initialiseModule()
+{
+    setChatStatus(ChatBackendSimpleSource::Initialising);
+    setStatusMessage(QStringLiteral("Initialising chat..."));
+    const int port = resolveDeliveryPort();
+    qDebug() << "ChatBackend: init at" << m_instancePath << "port" << port;
+
+    const LogosResult res = modules().chat_module.init(m_instancePath,
+                                                      QString::fromLatin1(kDefaultDeliveryPreset),
+                                                      port);
+    if (!res.success) {
+        const QString reason = res.getError<QString>();
+        setChatStatus(ChatBackendSimpleSource::Error);
+        setStatusMessage(QStringLiteral("init failed: ") + reason);
+        emit error(QStringLiteral("Failed to initialise chat: ") + reason);
         return;
     }
 
-    if (chatStatus() != ChatBackendSimpleSource::Disconnected) {
-        setStatusMessage(QStringLiteral("Chat already initialized"));
-        return;
-    }
+    m_moduleInitialised = true;
 
-    QString configJson = ChatConfig::buildConfigJson();
-    qDebug() << "ChatBackend: Initializing chat with config:" << configJson;
+    const QString identity = modules().chat_module.get_installation_name();
+    if (!identity.isEmpty())
+        setMyIdentity(identity);
 
-    setChatStatus(ChatBackendSimpleSource::Initializing);
-    setStatusMessage(QStringLiteral("Initializing chat..."));
+    // Subscribe before the initial snapshot so no event fires in the gap
+    // between snapshotting and registering the listeners.
+    subscribeToEvents();
 
-    bool success = m_logos->chat_module.initChat(configJson);
-    if (!success) {
-        setChatStatus(ChatBackendSimpleSource::Disconnected);
-        setStatusMessage(QStringLiteral("Chat initialization failed"));
-        emit error(QStringLiteral("Failed to initialize chat"));
+    // Take the initial snapshot and mark it done *before* seeding delivery
+    // state. If status() already reports online (re-attaching to a still-running,
+    // already-connected module), the seed's online transition then drives the
+    // recovery refetch through applyDeliveryState instead of being dropped by
+    // the m_initialSnapshotDone gate — which previously left history missing
+    // until a reconnect that never came.
+    rehydrateConversations();
+    m_initialSnapshotDone = true;
+
+    // Seed delivery state from the snapshot in case delivery_state_changed
+    // fired during init(), before subscribeToEvents() registered the listener.
+    const QVariantMap status = modules().chat_module.status().toMap();
+    applyDeliveryState(status.value(QStringLiteral("delivery_state")).toString(),
+                       status.value(QStringLiteral("detail")).toString());
+}
+
+void ChatBackend::subscribeToEvents()
+{
+    auto& chat = modules().chat_module;
+    chat.on(QStringLiteral("message_received"),
+            [this](const QVariantList& a) { applyMessageReceived(a); });
+    chat.on(QStringLiteral("message_sent"),
+            [this](const QVariantList& a) { applyMessageSent(a); });
+    chat.on(QStringLiteral("conversation_created"),
+            [this](const QVariantList& a) { applyConversationCreated(a); });
+    chat.on(QStringLiteral("conversation_updated"),
+            [this](const QVariantList& a) { applyConversationUpdated(a); });
+    chat.on(QStringLiteral("conversation_deleted"),
+            [this](const QVariantList& a) { applyConversationDeleted(a); });
+    chat.on(QStringLiteral("delivery_state_changed"), [this](const QVariantList& a) {
+        applyDeliveryState(a.value(0).toString(), a.value(1).toString());
+    });
+}
+
+void ChatBackend::rehydrateConversations()
+{
+    if (!m_moduleInitialised) return;
+
+    const QVariantList convos = modules().chat_module.list_conversations();
+    m_conversationModel->clear();
+    for (const QVariant& v : convos) {
+        const QVariantMap obj = v.toMap();
+        const QString convoId = obj.value(QStringLiteral("convo_id")).toString();
+        if (convoId.isEmpty()) continue;
+        const QString nickname = obj.value(QStringLiteral("nickname")).toString();
+        const qint64 lastActivity = obj.value(QStringLiteral("last_activity_ms")).toLongLong();
+        m_conversationModel->addConversation(convoId,
+                                             nickname.isEmpty() ? fallbackDisplayName(convoId)
+                                                                : nickname,
+                                             msToDateTime(lastActivity));
     }
 }
 
-void ChatBackend::startChat()
+void ChatBackend::showConversationMessages(const QString& convoId)
 {
-    if (!m_logos) {
-        emit error(QStringLiteral("LogosAPI not available"));
-        return;
+    m_messageModel->clear();
+    if (!m_moduleInitialised || convoId.isEmpty()) return;
+
+    const QVariantList msgs = modules().chat_module.get_messages(convoId);
+    QVector<MessageItem> rows;
+    rows.reserve(msgs.size());
+    for (const QVariant& v : msgs) {
+        const QVariantMap obj = v.toMap();
+        const bool fromSelf = obj.value(QStringLiteral("from_self")).toBool();
+        const QString content = obj.value(QStringLiteral("content")).toString();
+        const qint64 ts = obj.value(QStringLiteral("timestamp_ms")).toLongLong();
+        rows.append({ fromSelf ? QStringLiteral("Me") : QStringLiteral("Peer"),
+                      content, msToDateTime(ts), fromSelf });
     }
-
-    if (chatStatus() != ChatBackendSimpleSource::Initialized) {
-        setStatusMessage(QStringLiteral("Chat not initialized"));
-        return;
-    }
-
-    qDebug() << "ChatBackend: Starting chat...";
-    setChatStatus(ChatBackendSimpleSource::Starting);
-    setStatusMessage(QStringLiteral("Starting chat..."));
-
-    m_logos->chat_module.setEventCallback();
-
-    bool success = m_logos->chat_module.startChat();
-    if (!success) {
-        setChatStatus(ChatBackendSimpleSource::Initialized);
-        setStatusMessage(QStringLiteral("Chat start failed"));
-        emit error(QStringLiteral("Failed to start chat"));
-    }
+    m_messageModel->addMessages(std::move(rows));
 }
 
-void ChatBackend::stopChat()
+void ChatBackend::deferToEventLoop(std::function<void()> work)
 {
-    if (!m_logos) return;
-
-    if (chatStatus() != ChatBackendSimpleSource::Running) {
-        setStatusMessage(QStringLiteral("Chat is not running"));
-        return;
-    }
-
-    qDebug() << "ChatBackend: Stopping chat...";
-    setChatStatus(ChatBackendSimpleSource::Stopping);
-    setStatusMessage(QStringLiteral("Stopping chat..."));
-
-    bool success = m_logos->chat_module.stopChat();
-    if (!success) {
-        setChatStatus(ChatBackendSimpleSource::Running);
-        setStatusMessage(QStringLiteral("Chat stop failed"));
-        emit error(QStringLiteral("Failed to stop chat"));
-    }
+    QMetaObject::invokeMethod(this, std::move(work), Qt::QueuedConnection);
 }
+
+// ── .rep slot implementations ───────────────────────────────────────────────
 
 void ChatBackend::createConversation(QString introBundle, QString initialMessage)
 {
-    if (chatStatus() != ChatBackendSimpleSource::Running || !m_logos) {
-        emit error(QStringLiteral("Chat not running"));
+    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
+        emit error(QStringLiteral("Chat not online"));
         return;
     }
-
     if (introBundle.isEmpty() || initialMessage.isEmpty()) {
         emit error(QStringLiteral("Bundle and message cannot be empty"));
         return;
     }
 
-    m_pendingInitialMessage = initialMessage;
     setStatusMessage(QStringLiteral("Creating new conversation..."));
-
-    // Content must be hex-encoded for the libchat API
-    QString initialMessageHex = QString::fromLatin1(initialMessage.toUtf8().toHex());
-
-    bool success = m_logos->chat_module.newPrivateConversation(introBundle, initialMessageHex);
-    if (!success) {
-        m_pendingInitialMessage.clear();
-        setStatusMessage(QStringLiteral("Failed to create conversation"));
-        emit error(QStringLiteral("Failed to create conversation"));
+    const LogosResult res = modules().chat_module.create_conversation(introBundle, initialMessage);
+    if (!res.success) {
+        const QString reason = res.getError<QString>();
+        setStatusMessage(QStringLiteral("Failed to create conversation: ") + reason);
+        emit error(QStringLiteral("Failed to create conversation: ") + reason);
     }
+    // The conversation_created event (and the initial message recorded in
+    // module history) surface via the push subscription — the appliers handle
+    // the UI side from there.
 }
 
 void ChatBackend::requestMyBundle()
 {
-    if (chatStatus() != ChatBackendSimpleSource::Running || !m_logos) {
-        emit error(QStringLiteral("Chat not running"));
+    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
+        emit error(QStringLiteral("Chat not online"));
         return;
     }
 
-    m_pendingBundleRequest = true;
     setStatusMessage(QStringLiteral("Requesting intro bundle..."));
-
-    bool success = m_logos->chat_module.createIntroBundle();
-    if (!success) {
-        m_pendingBundleRequest = false;
-        setStatusMessage(QStringLiteral("Failed to request bundle"));
-        emit error(QStringLiteral("Failed to request intro bundle"));
+    const LogosResult res = modules().chat_module.create_intro_bundle();
+    if (!res.success) {
+        const QString reason = res.getError<QString>();
+        setStatusMessage(QStringLiteral("Failed to get bundle: ") + reason);
+        emit error(QStringLiteral("Failed to create intro bundle: ") + reason);
+        return;
     }
+    setStatusMessage(QStringLiteral("Bundle ready"));
+    emit bundleReady(res.getValue<QString>());
 }
 
 void ChatBackend::sendMessage(QString conversationId, QString content)
 {
-    if (chatStatus() != ChatBackendSimpleSource::Running || !m_logos) {
-        emit error(QStringLiteral("Chat not running"));
+    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
+        emit error(QStringLiteral("Chat not online"));
         return;
     }
-
     if (conversationId.isEmpty() || content.isEmpty()) return;
 
-    qDebug() << "ChatBackend: Sending message to:" << conversationId;
-
-    QDateTime sentAt = QDateTime::currentDateTime();
-    m_messages[conversationId].append({ QStringLiteral("Me"), content, sentAt, true });
-
-    // Update message model if this is the current conversation
-    if (conversationId == currentConversationId()) {
-        m_messageModel->addMessage(QStringLiteral("Me"), content, sentAt, true);
+    const LogosResult res = modules().chat_module.send_message(conversationId, content);
+    if (!res.success) {
+        const QString reason = res.getError<QString>();
+        setStatusMessage(QStringLiteral("Send failed: ") + reason);
+        emit error(QStringLiteral("Failed to send message: ") + reason);
     }
-
-    emit messageReceived(conversationId, QStringLiteral("Me"), content, true);
-
-    // Content must be hex-encoded for the libchat API
-    QString contentHex = QString::fromLatin1(content.toUtf8().toHex());
-
-    bool success = m_logos->chat_module.sendMessage(conversationId, contentHex);
-    if (!success) {
-        setStatusMessage(QStringLiteral("Failed to send message"));
-        emit error(QStringLiteral("Failed to send message"));
-    }
+    // On success the module emits a message_sent event, which applyMessageSent
+    // appends to the model.
 }
 
 void ChatBackend::selectConversation(QString conversationId)
@@ -231,251 +277,136 @@ void ChatBackend::selectConversation(QString conversationId)
     showConversationMessages(conversationId);
 }
 
-// ── Event handlers ───────────────────────────────────────────────────────────
+// ── event handlers ────────────────────────────────────────────────────────────
 
-void ChatBackend::setupEventHandlers()
+void ChatBackend::applyDeliveryState(const QString& state, const QString& detail)
 {
-    if (!m_logos) return;
-
-    auto safeInvoke = [this](auto handler) {
-        return [this, handler](const QVariantList& data) {
-            QMetaObject::invokeMethod(this, [this, handler, data]() {
-                (this->*handler)(data);
-            }, Qt::QueuedConnection);
-        };
-    };
-
-    m_logos->chat_module.on("chatInitResult",                    safeInvoke(&ChatBackend::onChatInitResult));
-    m_logos->chat_module.on("chatStartResult",                   safeInvoke(&ChatBackend::onChatStartResult));
-    m_logos->chat_module.on("chatStopResult",                    safeInvoke(&ChatBackend::onChatStopResult));
-    m_logos->chat_module.on("chatCreateIntroBundleResult",       safeInvoke(&ChatBackend::onChatCreateIntroBundleResult));
-    m_logos->chat_module.on("chatNewMessage",                    safeInvoke(&ChatBackend::onChatNewMessage));
-    m_logos->chat_module.on("chatNewConversation",               safeInvoke(&ChatBackend::onChatNewConversation));
-    m_logos->chat_module.on("chatNewPrivateConversationResult",  safeInvoke(&ChatBackend::onChatNewPrivateConversationResult));
-    m_logos->chat_module.on("chatSendMessageResult",             safeInvoke(&ChatBackend::onChatSendMessageResult));
-    m_logos->chat_module.on("chatGetIdResult",                   safeInvoke(&ChatBackend::onChatGetIdResult));
-
-    qDebug() << "ChatBackend: Event handlers set up";
-}
-
-void ChatBackend::showConversationMessages(const QString& conversationId)
-{
-    m_messageModel->clear();
-    if (!m_messages.contains(conversationId))
-        return;
-
-    const QList<MessageInfo>& messages = m_messages[conversationId];
-    QVector<MessageItem> rows;
-    rows.reserve(messages.size());
-    for (const MessageInfo& msg : messages) {
-        rows.append({ msg.sender, msg.content, msg.timestamp, msg.isMe });
-    }
-    m_messageModel->addMessages(std::move(rows));
-}
-
-void ChatBackend::onChatInitResult(const QVariantList& data)
-{
-    qDebug() << "ChatBackend: Init result:" << data;
-
-    bool success = data.size() > 0 ? data[0].toBool() : false;
-    int returnCode = data.size() > 1 ? data[1].toInt() : -1;
-    QString message = data.size() > 2 ? data[2].toString() : QString();
-
-    if (success) {
-        setChatStatus(ChatBackendSimpleSource::Initialized);
-        setStatusMessage(QStringLiteral("Chat initialized"));
-        // Auto-start after init
-        startChat();
+    ChatBackendSimpleSource::ChatStatus next = ChatBackendSimpleSource::Stopped;
+    QString msg;
+    if (state == QStringLiteral("online")) {
+        next = ChatBackendSimpleSource::Online;
+        msg = QStringLiteral("Connected to network");
+    } else if (state == QStringLiteral("initialising")) {
+        next = ChatBackendSimpleSource::Initialising;
+        msg = QStringLiteral("Initialising chat...");
+    } else if (state == QStringLiteral("error")) {
+        next = ChatBackendSimpleSource::Error;
+        msg = detail.isEmpty() ? QStringLiteral("Delivery error") : detail;
+    } else if (state == QStringLiteral("stopped")) {
+        next = ChatBackendSimpleSource::Stopped;
+        msg = QStringLiteral("Chat stopped");
     } else {
-        setChatStatus(ChatBackendSimpleSource::Disconnected);
-        setStatusMessage(QString("Init failed (code: %1)").arg(returnCode));
-        emit error(QString("Failed to initialize chat: %1").arg(message));
-    }
-}
-
-void ChatBackend::onChatStartResult(const QVariantList& data)
-{
-    qDebug() << "ChatBackend: Start result:" << data;
-
-    bool success = data.size() > 0 ? data[0].toBool() : false;
-    int returnCode = data.size() > 1 ? data[1].toInt() : -1;
-    QString message = data.size() > 2 ? data[2].toString() : QString();
-
-    if (success) {
-        setChatStatus(ChatBackendSimpleSource::Running);
-        setStatusMessage(QStringLiteral("Connected to network"));
-        m_logos->chat_module.getId();
-    } else {
-        setChatStatus(ChatBackendSimpleSource::Initialized);
-        setStatusMessage(QString("Start failed (code: %1)").arg(returnCode));
-        emit error(QString("Failed to start chat: %1").arg(message));
-    }
-}
-
-void ChatBackend::onChatStopResult(const QVariantList& data)
-{
-    qDebug() << "ChatBackend: Stop result:" << data;
-
-    bool success = data.size() > 0 ? data[0].toBool() : false;
-    int returnCode = data.size() > 1 ? data[1].toInt() : -1;
-
-    if (success) {
-        setChatStatus(ChatBackendSimpleSource::Disconnected);
-        setStatusMessage(QStringLiteral("Chat stopped"));
-    } else {
-        setChatStatus(ChatBackendSimpleSource::Running);
-        setStatusMessage(QString("Stop failed (code: %1)").arg(returnCode));
-    }
-}
-
-void ChatBackend::onChatCreateIntroBundleResult(const QVariantList& data)
-{
-    qDebug() << "ChatBackend: Bundle result:" << data;
-
-    if (!m_pendingBundleRequest) return;
-    m_pendingBundleRequest = false;
-
-    bool success = data.size() > 0 ? data[0].toBool() : false;
-    QString bundleStr = data.size() > 2 ? data[2].toString() : QString();
-
-    if (success && !bundleStr.isEmpty()) {
-        setStatusMessage(QStringLiteral("Bundle ready"));
-        emit bundleReady(bundleStr);
-    } else {
-        setStatusMessage(QStringLiteral("Failed to get bundle"));
-        emit error(QStringLiteral("Failed to create intro bundle"));
-    }
-}
-
-void ChatBackend::onChatNewMessage(const QVariantList& data)
-{
-    qDebug() << "ChatBackend: New message:" << data;
-    if (data.isEmpty()) return;
-
-    QString jsonStr = data[0].toString();
-    QJsonDocument doc = QJsonDocument::fromJson(jsonStr.toUtf8());
-    if (!doc.isObject()) return;
-
-    QJsonObject obj = doc.object();
-    QString conversationId = obj["conversationId"].toString();
-    if (conversationId.isEmpty())
-        conversationId = obj["conversation_id"].toString();
-
-    QString content = obj["content"].toString();
-    content = decodeMessageContent(content);
-
-    QString sender = obj["sender"].toString();
-    if (sender.isEmpty()) sender = obj["from"].toString();
-    if (sender.isEmpty()) sender = QStringLiteral("Peer");
-
-    QDateTime receivedAt = QDateTime::currentDateTime();
-
-    m_conversationModel->updateLastActivity(conversationId, receivedAt);
-    m_messages[conversationId].append({ sender, content, receivedAt, false });
-
-    if (conversationId == currentConversationId()) {
-        m_messageModel->addMessage(sender, content, receivedAt, false);
-    } else {
-        m_conversationModel->incrementUnread(conversationId);
-    }
-
-    emit messageReceived(conversationId, sender, content, false);
-    setStatusMessage(QString("New message from %1").arg(sender));
-}
-
-void ChatBackend::onChatNewConversation(const QVariantList& data)
-{
-    qDebug() << "ChatBackend: New conversation:" << data;
-    if (data.isEmpty()) return;
-
-    QString jsonStr = data[0].toString();
-    QJsonDocument doc = QJsonDocument::fromJson(jsonStr.toUtf8());
-    if (!doc.isObject()) return;
-
-    QJsonObject obj = doc.object();
-    QString conversationId = obj["conversationId"].toString();
-    if (conversationId.isEmpty()) return;
-
-    if (m_conversationModel->contains(conversationId)) {
-        m_conversationModel->updateLastActivity(conversationId, QDateTime::currentDateTime());
         return;
     }
 
-    // Extract peer identity
-    QString peerId;
-    if (obj.contains("peerId"))
-        peerId = obj["peerId"].toString();
-    else if (obj.contains("peerIdentity"))
-        peerId = obj["peerIdentity"].toString();
+    const bool becameOnline =
+        next == ChatBackendSimpleSource::Online && chatStatus() != ChatBackendSimpleSource::Online;
 
-    QString displayName;
-    if (!peerId.isEmpty()) {
-        m_peerIdentities[conversationId] = peerId;
-        displayName = QString("Chat %1").arg(peerId.left(6));
-    } else {
-        displayName = QString("Chat %1").arg(conversationId.left(8));
-    }
+    setChatStatus(next);
+    setStatusMessage(msg);
 
-    m_conversationModel->addConversation(conversationId, displayName, peerId,
-                                         QDateTime::currentDateTime());
-
-    // If there's a pending initial message, attach it to this conversation
-    if (!m_pendingInitialMessage.isEmpty()) {
-        QDateTime createdAt = QDateTime::currentDateTime();
-        m_messages[conversationId].append({
-            QStringLiteral("Me"), m_pendingInitialMessage, createdAt, true
+    // Events are push-only, so a fresh online transition (reconnect) is our
+    // cue to refetch the lists and recover anything missed while offline.
+    // Deferred: this runs inside a module event callback and the refetch makes
+    // synchronous module reads (see deferToEventLoop).
+    if (becameOnline && m_initialSnapshotDone) {
+        deferToEventLoop([this] {
+            rehydrateConversations();
+            if (!currentConversationId().isEmpty())
+                showConversationMessages(currentConversationId());
         });
-        m_pendingInitialMessage.clear();
-
-        // Auto-select the conversation we just initiated
-        selectConversation(conversationId);
     }
-
-    emit conversationCreated(conversationId, displayName);
-    setStatusMessage(QString("New conversation created"));
 }
 
-void ChatBackend::onChatNewPrivateConversationResult(const QVariantList& data)
+void ChatBackend::applyMessageReceived(const QVariantList& args)
 {
-    qDebug() << "ChatBackend: Private conversation result:" << data;
+    const QString convoId = args.value(0).toString();
+    if (convoId.isEmpty()) return;
+    const QString content = args.value(1).toString();
+    const qint64 ts = args.value(2).toLongLong();
+    const QDateTime when = msToDateTime(ts);
 
-    bool success = data.size() > 0 ? data[0].toBool() : false;
-    int returnCode = data.size() > 1 ? data[1].toInt() : -1;
-    bool effectiveSuccess = success || returnCode == 0;
-
-    if (!effectiveSuccess) {
-        m_pendingInitialMessage.clear();
-        setStatusMessage(QStringLiteral("Failed to create conversation"));
-        emit error(QString("Failed to create conversation (code: %1)").arg(returnCode));
-        return;
-    }
-
-    setStatusMessage(QStringLiteral("Conversation created successfully"));
-}
-
-void ChatBackend::onChatSendMessageResult(const QVariantList& data)
-{
-    qDebug() << "ChatBackend: Send result:" << data;
-
-    bool success = data.size() > 0 ? data[0].toBool() : false;
-    int returnCode = data.size() > 1 ? data[1].toInt() : -1;
-
-    if (success) {
-        setStatusMessage(QStringLiteral("Message sent"));
+    if (!m_conversationModel->contains(convoId)) {
+        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), when);
     } else {
-        setStatusMessage(QString("Send failed (code: %1)").arg(returnCode));
+        m_conversationModel->updateLastActivity(convoId, when);
+    }
+
+    if (convoId == currentConversationId()) {
+        m_messageModel->addMessage(QStringLiteral("Peer"), content, when, false);
+    } else {
+        m_conversationModel->incrementUnread(convoId);
+    }
+
+    setStatusMessage(QStringLiteral("New message"));
+}
+
+void ChatBackend::applyMessageSent(const QVariantList& args)
+{
+    const QString convoId = args.value(0).toString();
+    if (convoId.isEmpty()) return;
+    const QString content = args.value(1).toString();
+    const qint64 ts = args.value(2).toLongLong();
+    const QDateTime when = msToDateTime(ts);
+
+    if (!m_conversationModel->contains(convoId)) {
+        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), when);
+    } else {
+        m_conversationModel->updateLastActivity(convoId, when);
+    }
+
+    if (convoId == currentConversationId())
+        m_messageModel->addMessage(QStringLiteral("Me"), content, when, true);
+
+    setStatusMessage(QStringLiteral("Message sent"));
+}
+
+void ChatBackend::applyConversationCreated(const QVariantList& args)
+{
+    const QString convoId = args.value(0).toString();
+    if (convoId.isEmpty()) return;
+    const bool isOutgoing = args.value(1).toBool();
+    const QString peerLabel = args.value(2).toString();
+    const QString displayName = fallbackDisplayName(convoId, peerLabel);
+    const QDateTime now = QDateTime::currentDateTime();
+
+    if (!m_conversationModel->contains(convoId)) {
+        m_conversationModel->addConversation(convoId, displayName, now);
+    } else {
+        m_conversationModel->updateDisplayName(convoId, displayName);
+        m_conversationModel->updateLastActivity(convoId, now);
+    }
+
+    if (isOutgoing && currentConversationId().isEmpty())
+        // Deferred: selectConversation makes a synchronous module read and this
+        // runs inside a module event callback (see deferToEventLoop).
+        deferToEventLoop([this, convoId] { selectConversation(convoId); });
+}
+
+void ChatBackend::applyConversationUpdated(const QVariantList& args)
+{
+    Q_UNUSED(args);
+    // Cheapest correct option: refresh the whole list (the read is cheap and
+    // conversation counts are small). Deferred — this runs inside a module event
+    // callback (see deferToEventLoop).
+    deferToEventLoop([this] { rehydrateConversations(); });
+}
+
+void ChatBackend::applyConversationDeleted(const QVariantList& args)
+{
+    const QString convoId = args.value(0).toString();
+    if (convoId.isEmpty()) return;
+
+    m_conversationModel->removeConversation(convoId);
+    if (convoId == currentConversationId()) {
+        setCurrentConversationId(QString());
+        m_messageModel->clear();
     }
 }
 
-void ChatBackend::onChatGetIdResult(const QVariantList& data)
+QString ChatBackend::fallbackDisplayName(const QString& convoId, const QString& peerLabel)
 {
-    qDebug() << "ChatBackend: ID result:" << data;
-
-    if (data.size() > 0) {
-        QString identity = data[0].toString();
-        if (!identity.isEmpty()) {
-            setMyIdentity(identity);
-            qDebug() << "ChatBackend: Identity:" << identity;
-        }
-    }
+    if (!peerLabel.isEmpty())
+        return QStringLiteral("Chat ") + peerLabel;
+    return QStringLiteral("Chat ") + convoId.left(8);
 }

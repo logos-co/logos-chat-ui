@@ -39,6 +39,17 @@ QHash<int, QByteArray> MessageListModel::roleNames() const
 void MessageListModel::addMessage(const QString& sender, const QString& content,
                                   const QDateTime& timestamp, bool isMe)
 {
+    // Drop an exact duplicate of the current tail. A reconnect resync reloads
+    // the active thread via get_messages while live events still push, so a
+    // message persisted just before the reload and delivered just after would
+    // otherwise append twice; distinct messages never share content + timestamp
+    // + sender.
+    if (!m_items.isEmpty()) {
+        const MessageItem& last = m_items.last();
+        if (last.isMe == isMe && last.timestamp == timestamp && last.content == content)
+            return;
+    }
+
     beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
     m_items.append({ sender, content, timestamp, isMe });
     endInsertRows();
