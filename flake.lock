@@ -7,11 +7,11 @@
         "nix-bundle-lgx": "nix-bundle-lgx_10"
       },
       "locked": {
-        "lastModified": 1782393242,
-        "narHash": "sha256-OxCg47Au6G7rOpl6sFFKsXHpNKuOhGdTfGm7ykInJkc=",
+        "lastModified": 1782402513,
+        "narHash": "sha256-1w39PWuvSRLKZnDkcfC03zB5ZhX74M/W0LlgffD4Nc0=",
         "ref": "feat/logos-testnetv02-mix",
-        "rev": "44ecc8b383874e9c541af85fae7f45437fbf2356",
-        "revCount": 67,
+        "rev": "ff7357c9ba6c94641bfe81aa300bca35615f7931",
+        "revCount": 68,
         "type": "git",
         "url": "https://github.com/logos-co/logos-chat-module"
       },
@@ -398,11 +398,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1782380359,
-        "narHash": "sha256-e1ji6BaUmBEn9WgERrXrdisAkIvgVe98aCvxqsmYgiA=",
+        "lastModified": 1782402426,
+        "narHash": "sha256-5GDWbLOEe6uy9kHAt/4K4OVR1VXgWtswDRv+0CslIpg=",
         "ref": "feat/logos-testnetv02-mix",
-        "rev": "0591caa230067c2cc96b975246d9c5ccbb31c94c",
-        "revCount": 198,
+        "rev": "aed0c87a41ddbf2f60dd670efc571028c44854e0",
+        "revCount": 199,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/logos-messaging/logos-chat"
