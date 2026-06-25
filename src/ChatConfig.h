@@ -107,8 +107,17 @@ inline QString buildConfigJson(
         ? getEnvOrDefault("CHAT_STATIC_PEER", QString())
         : staticPeer;
     
+    // logos-chat parses "staticPeers" (an array), so emit the plural key.
     if (!peer.isEmpty()) {
-        config["staticPeer"] = peer;
+        config["staticPeers"] = QJsonArray{ peer };
+    }
+
+    // Optional fixed identity: a 64-char hex secp256k1 key. Used to adopt a
+    // provisioned identity (e.g. a mix-sim chat credential) so the peer-ID-
+    // derived RLN keystore resolves. Empty => random identity.
+    const QString nodekey = getEnvOrDefault("CHAT_NODEKEY", QString());
+    if (!nodekey.isEmpty()) {
+        config["nodekey"] = nodekey;
     }
 
     // Mix sender-anonymity (global Required/None mode, applied at init).

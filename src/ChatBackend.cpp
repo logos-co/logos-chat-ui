@@ -48,8 +48,15 @@ ChatBackend::ChatBackend(LogosAPI* logosAPI, QObject* parent)
 
     // Mix sender-anonymity state. mixRequired is the persisted Required/None
     // setting (applied at the next initChat); the rest reflect the live session.
+    // CHAT_MIX_REQUIRED overrides the persisted setting (handy for scripted runs).
     QSettings settings(QStringLiteral("Logos"), QStringLiteral("ChatUI"));
-    setMixRequired(settings.value(QStringLiteral("mix/required"), false).toBool());
+    bool mixReq = settings.value(QStringLiteral("mix/required"), false).toBool();
+    if (qEnvironmentVariableIsSet("CHAT_MIX_REQUIRED")) {
+        const QString v = qEnvironmentVariable("CHAT_MIX_REQUIRED");
+        mixReq = (v == QLatin1String("1")
+                  || v.compare(QLatin1String("true"), Qt::CaseInsensitive) == 0);
+    }
+    setMixRequired(mixReq);
     setMixActive(false);
     setMixReady(false);
     setMixPoolSize(0);
