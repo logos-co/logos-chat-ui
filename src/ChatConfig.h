@@ -135,6 +135,18 @@ inline QString buildConfigJson(
         }
         config["mixNodes"] = mixNodes;
         config["minMixPoolSize"] = getEnvOrDefault("CHAT_MIN_MIX_POOL", 4);
+
+        // Fleet mode: discover mix nodes via kad service discovery instead of a
+        // static CHAT_MIX_NODES list with pubkeys. CHAT_KAD_BOOTSTRAP is the
+        // comma-separated fleet bootstrap multiaddrs; logos-chat discovers the mix
+        // nodes + their curve25519 pubkeys from them. Leave CHAT_MIX_NODES empty.
+        QJsonArray kadBootstrap;
+        const QString kadNodes = getEnvOrDefault("CHAT_KAD_BOOTSTRAP", QString());
+        for (const QString& node : kadNodes.split(',', Qt::SkipEmptyParts)) {
+            const QString trimmed = node.trimmed();
+            if (!trimmed.isEmpty()) kadBootstrap.append(trimmed);
+        }
+        if (!kadBootstrap.isEmpty()) config["kadBootstrapNodes"] = kadBootstrap;
     }
 
     return QJsonDocument(config).toJson(QJsonDocument::Compact);
