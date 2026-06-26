@@ -68,17 +68,46 @@ inline int getEnvOrDefault(const char* envName, int defaultValue) {
  */
 inline bool stageDemoUserCreds(int index) {
     if (index <= 0) return false;
-    const QString credsDir = getEnvOrDefault("CHAT_CREDS_DIR", QString());
-    if (credsDir.isEmpty()) {
-        qWarning("stageDemoUserCreds: CHAT_CREDS_DIR not set; cannot load demo user %d", index);
+    const QString cwd = QDir::currentPath();
+    const QString envDir = getEnvOrDefault("CHAT_CREDS_DIR", QString());
+
+    // Pick the creds source: an explicit CHAT_CREDS_DIR (dev override) wins; otherwise
+    // fall back to the creds embedded in the app (Qt resource ":/fleet-creds"), so the
+    // app is self-contained with no manual setup. QFile reads ":/..." resources and
+    // filesystem paths transparently.
+    QString credsRoot;     // dir holding rln_tree.db + fleet_bootstrap.txt
+    QString keystoreSrc;   // the chosen user's keystore file
+    bool fromResource = false;
+    if (!envDir.isEmpty()) {
+        credsRoot = envDir;
+        const QString userDir = envDir + "/users/user" + QString::number(index);
+        const QStringList keystores =
+            QDir(userDir).entryList(QStringList() << "rln_keystore_*.json", QDir::Files);
+        if (keystores.isEmpty()) {
+            qWarning("stageDemoUserCreds: no keystore in %s", qPrintable(userDir));
+            return false;
+        }
+        keystoreSrc = userDir + "/" + keystores.first();
+    }
+#ifdef EMBEDDED_CREDS
+    else {
+        credsRoot = QStringLiteral(":/fleet-creds");
+        keystoreSrc = QStringLiteral(":/fleet-creds/users/user%1/keystore.json").arg(index);
+        fromResource = true;
+        if (!QFile::exists(keystoreSrc)) {
+            qWarning("stageDemoUserCreds: embedded keystore missing for user %d", index);
+            return false;
+        }
+    }
+#endif
+    if (credsRoot.isEmpty()) {
+        qWarning("stageDemoUserCreds: no creds source (set CHAT_CREDS_DIR or build with embedded creds)");
         return false;
     }
-    const QString userDir = credsDir + "/users/user" + QString::number(index);
-    const QString cwd = QDir::currentPath();
 
     // fleet kad bootstrap multiaddrs (skip comments/blanks)
     QStringList kad;
-    QFile bsFile(credsDir + "/fleet_bootstrap.txt");
+    QFile bsFile(credsRoot + "/fleet_bootstrap.txt");
     if (bsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         const QStringList lines = QString::fromUtf8(bsFile.readAll()).split('\n');
         for (const QString& raw : lines) {
@@ -88,30 +117,30 @@ inline bool stageDemoUserCreds(int index) {
         bsFile.close();
     }
 
-    // The chosen membership keystore -> staged as a peerId-agnostic source file.
-    // logos-chat copies it to rln_keystore_<itsOwnRandomPeerId>.json before mountMix,
-    // so the libp2p identity stays UNIQUE while the RLN membership is the chosen one
-    // (multiple instances can share a membership without sharing a peerId).
-    QDir uDir(userDir);
-    const QStringList keystores = uDir.entryList(QStringList() << "rln_keystore_*.json", QDir::Files);
-    if (keystores.isEmpty()) {
-        qWarning("stageDemoUserCreds: no keystore in %s", qPrintable(userDir));
-        return false;
+    // Stage the chosen membership keystore (peerId-agnostic source) + the shared tree
+    // into cwd, where mountMix loads them. logos-chat copies the keystore to
+    // rln_keystore_<itsOwnRandomPeerId>.json before mountMix, so the libp2p identity
+    // stays UNIQUE while the RLN membership is the chosen one (instances can share a
+    // membership without sharing a peerId).
+    const QString memb = cwd + "/rln_membership.json";
+    const QString tree = cwd + "/rln_tree.db";
+    QFile::remove(memb);
+    QFile::remove(tree);
+    QFile::copy(keystoreSrc, memb);
+    QFile::copy(credsRoot + "/rln_tree.db", tree);
+    if (fromResource) {
+        // Files copied out of a Qt resource inherit read-only perms; make them
+        // writable so the RLN keystore/tree can be opened/locked normally.
+        QFile::setPermissions(memb, QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+        QFile::setPermissions(tree, QFileDevice::ReadOwner | QFileDevice::WriteOwner);
     }
-    const QString src = cwd + "/rln_membership.json";
-    QFile::remove(src);
-    QFile::copy(userDir + "/" + keystores.first(), src);
-
-    // shared tree (loaded by mountMix from cwd)
-    QFile::remove(cwd + "/rln_tree.db");
-    QFile::copy(credsDir + "/rln_tree.db", cwd + "/rln_tree.db");
 
     // Feed the credential source + kad bootstrap to buildConfigJson (read from env).
     // CHAT_NODEKEY is deliberately NOT set -> the node gets a fresh RANDOM peerId.
-    qputenv("CHAT_RLN_KEYSTORE", src.toUtf8());
+    qputenv("CHAT_RLN_KEYSTORE", memb.toUtf8());
     qputenv("CHAT_KAD_BOOTSTRAP", kad.join(',').toUtf8());
-    qInfo("stageDemoUserCreds: demo user %d -> membership staged (random peerId, %lld kad bootstraps)",
-          index, static_cast<long long>(kad.size()));
+    qInfo("stageDemoUserCreds: demo user %d -> membership staged (%s, random peerId, %lld kad bootstraps)",
+          index, fromResource ? "embedded" : "CHAT_CREDS_DIR", static_cast<long long>(kad.size()));
     return true;
 }
 

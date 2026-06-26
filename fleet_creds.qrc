@@ -1,0 +1,23 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<!--
+  Embedded testnet-0.2 fleet credentials so the app is self-contained (no manual
+  CHAT_CREDS_DIR / bundle extraction). These are DISPOSABLE testnet demo memberships
+  (10 shared RLN credentials + the shared tree + fleet bootstrap list) for the
+  public testnet-0.2 mix fleet — intentionally shipped with the app. The tree holds
+  only public commitments. CHAT_CREDS_DIR still overrides this for dev.
+-->
+<qresource prefix="/fleet-creds">
+    <file alias="rln_tree.db">fleet-creds/rln_tree.db</file>
+    <file alias="fleet_bootstrap.txt">fleet-creds/fleet_bootstrap.txt</file>
+    <file alias="users/user1/keystore.json">fleet-creds/users/user1/keystore.json</file>
+    <file alias="users/user2/keystore.json">fleet-creds/users/user2/keystore.json</file>
+    <file alias="users/user3/keystore.json">fleet-creds/users/user3/keystore.json</file>
+    <file alias="users/user4/keystore.json">fleet-creds/users/user4/keystore.json</file>
+    <file alias="users/user5/keystore.json">fleet-creds/users/user5/keystore.json</file>
+    <file alias="users/user6/keystore.json">fleet-creds/users/user6/keystore.json</file>
+    <file alias="users/user7/keystore.json">fleet-creds/users/user7/keystore.json</file>
+    <file alias="users/user8/keystore.json">fleet-creds/users/user8/keystore.json</file>
+    <file alias="users/user9/keystore.json">fleet-creds/users/user9/keystore.json</file>
+    <file alias="users/user10/keystore.json">fleet-creds/users/user10/keystore.json</file>
+</qresource>
+</RCC>

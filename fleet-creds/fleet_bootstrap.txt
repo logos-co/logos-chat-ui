@@ -1,0 +1,8 @@
+# testnet-0.2 fleet bootstrap multiaddrs
+# Use as KAD_BOOTSTRAP_NODES (comma-separated, or as repeated --kad-bootstrap-node= flags) for the chat-app's wakunode.
+
+/dns4/node-01.ih-eu-mda1.misc.vaclab.status.im/tcp/30304/p2p/16Uiu2HAm8PDGahpTZ86SKxBqFodPVxpGonXLucUR9bscFWxqJuZr
+/dns4/node-02.ih-eu-mda1.misc.vaclab.status.im/tcp/30304/p2p/16Uiu2HAm4zb5euksTuNvzVUsmoYYW3kaSdyn4vkbN3BxobUoh4WJ
+/dns4/node-03.ih-eu-mda1.misc.vaclab.status.im/tcp/30304/p2p/16Uiu2HAmMgeAACqTTEKVuyBmbtyAqg6qznevmyF5k6qRcL6eXsqS
+/dns4/node-04.ih-eu-mda1.misc.vaclab.status.im/tcp/30304/p2p/16Uiu2HAmMryXZ2y7AXVHP9Wqmp5YeNQLKrYx56gtoCE2RkimmUru
+/dns4/node-05.ih-eu-mda1.misc.vaclab.status.im/tcp/30304/p2p/16Uiu2HAmEe1HArVTkgNsdp3jTkPof6erL2mTKxLYxMAwVLKfYdHM
