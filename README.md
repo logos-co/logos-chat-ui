@@ -2,32 +2,11 @@
 
 A QML + C++ backend UI module for the [Logos](https://logos.co) platform that provides a private messaging interface built on top of [Logos Chat](https://github.com/logos-messaging/logos-chat).
 
-> **This is the `chat_ui_mix` variant** — **sender-anonymous** messaging routed over the Logos **testnet-0.2 mix fleet** (3-hop Sphinx mixnet + RLN spam protection). It ships **self-contained** (bundled testnet credentials, no setup) — see **[Try it](#try-it)** below.
+> **This is the `chat_ui_mix` variant** — **sender-anonymous** messaging over the Logos **testnet-0.2 mix fleet**. It's **self-contained**: ships with testnet credentials and connects automatically, so you just `nix run` (see [How to Run](#how-to-run)) and **pick a demo user (1–10)** at startup — no other setup.
 
 The UI connects to [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) via the Logos Core module system for all chat operations — identity, conversations, and message exchange happen over the Logos network.
 
 Built with [`logos-module-builder`](https://github.com/logos-co/logos-module-builder) using the `mkLogosQmlModule` pattern (QML frontend + C++ backend with Qt Remote Objects).
-
-## Try it
-
-This build is **self-contained** — it ships with disposable testnet credentials and connects to the live mix fleet automatically. **No config files, no `CHAT_CREDS_DIR`, no bundle to download.**
-
-```bash
-nix run 'github:logos-co/logos-chat-ui?ref=feat/logos-testnetv02-mix' --accept-flake-config
-```
-
-On launch:
-
-1. **Pick a demo user (1–10)** in the startup popup → **Start**. Each maps to one pre-provisioned RLN membership; your libp2p identity is randomized per run (so the identity isn't tied to the credential).
-2. The app **discovers the 5 fleet mix nodes** and loads your credential automatically — watch the bottom status bar fill to **`MIX 4/4`**. The send box enables once the mix pool is ready.
-3. **Message anonymously:** in one instance click **My Bundle** and share it; in another, **+ new** → paste the bundle + a first message → create. Messages route **sender-unlinkably** through the 3-hop mixnet (the recipient can't see who sent them).
-
-> **Testnet demo notes:**
-> - The bundled credentials are **shared and disposable** — everyone running this build has them. Don't treat them as private.
-> - Conversations are **ephemeral** (gone when the app closes).
-> - Running **multiple** instances? Pick **different** user indices (1–10) — sharing one index can collide on the RLN per-epoch rate limit.
-
-Once published to [`logos-modules-release`](https://github.com/logos-co/logos-modules-release) it can also be installed into **Logos Basecamp** via the package manager (module id `chat_ui_mix`).
 
 ## What It Does
 
@@ -60,6 +39,8 @@ nix run --override-input chat_module_mix path:../logos-chat-module \
 ```
 
 The standalone app starts Logos Core, loads `capability_module` and `chat_module_mix`, then launches the QML UI via an isolated `ui-host` process.
+
+> **Mix variant:** at startup, pick a demo user (1–10) in the popup (the bundled testnet creds are shared/disposable). To run **multiple instances**, give each its **own directory** (creds stage into the working dir) and a **different** user index.
 
 ### In Basecamp
 

@@ -139,6 +139,13 @@ inline bool stageDemoUserCreds(int index) {
     // CHAT_NODEKEY is deliberately NOT set -> the node gets a fresh RANDOM peerId.
     qputenv("CHAT_RLN_KEYSTORE", memb.toUtf8());
     qputenv("CHAT_KAD_BOOTSTRAP", kad.join(',').toUtf8());
+    // Receive path: the chat is a filter light-client, so it must filter-subscribe to
+    // fleet node(s) to RECEIVE (kad discovery only fills the mix pool for *sending*).
+    // Default CHAT_STATIC_PEER to 2 fleet nodes (from the bundle) when not already set,
+    // so the self-contained flow does 2-way out of the box — 2 gives redundancy against
+    // a flaky node without subscribing to the whole fleet.
+    if (!qEnvironmentVariableIsSet("CHAT_STATIC_PEER") && !kad.isEmpty())
+        qputenv("CHAT_STATIC_PEER", kad.mid(0, 2).join(',').toUtf8());
     qInfo("stageDemoUserCreds: demo user %d -> membership staged (%s, random peerId, %lld kad bootstraps)",
           index, fromResource ? "embedded" : "CHAT_CREDS_DIR", static_cast<long long>(kad.size()));
     return true;
@@ -191,14 +198,19 @@ inline QString buildConfigJson(
         config["shardId"] = getEnvOrDefault("CHAT_SHARD_ID", DEFAULT_SHARD_ID);
     }
     
-    // Static peer - use parameter, then env
-    QString peer = staticPeer.isEmpty() 
+    // Static peer(s) - use parameter, then env. CHAT_STATIC_PEER may be a single
+    // multiaddr or a comma-separated list; the self-contained flow sets all fleet
+    // nodes here so the filter-subscribe / receive path is robust to a flaky node.
+    const QString peerStr = staticPeer.isEmpty()
         ? getEnvOrDefault("CHAT_STATIC_PEER", QString())
         : staticPeer;
-    
-    // logos-chat parses "staticPeers" (an array), so emit the plural key.
-    if (!peer.isEmpty()) {
-        config["staticPeers"] = QJsonArray{ peer };
+    QJsonArray staticPeers;
+    for (const QString& p : peerStr.split(',', Qt::SkipEmptyParts)) {
+        const QString t = p.trimmed();
+        if (!t.isEmpty()) staticPeers.append(t);
+    }
+    if (!staticPeers.isEmpty()) {
+        config["staticPeers"] = staticPeers;
     }
 
     // Optional fixed identity: a 64-char hex secp256k1 key. Used to adopt a
