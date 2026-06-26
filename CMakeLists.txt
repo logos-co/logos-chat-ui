@@ -18,7 +18,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/fleet-creds/rln_tree.db")
 endif()
 
 logos_module(
-    NAME chat_ui
+    NAME chat_ui_mix
     REP_FILE src/ChatBackend.rep
     SOURCES
         src/chat_ui_interface.h
@@ -34,6 +34,6 @@ logos_module(
 )
 
 if(CHAT_EMBED_CREDS)
-    target_sources(chat_ui_module_plugin PRIVATE fleet_creds.qrc)
-    target_compile_definitions(chat_ui_module_plugin PRIVATE EMBEDDED_CREDS)
+    target_sources(chat_ui_mix_module_plugin PRIVATE fleet_creds.qrc)
+    target_compile_definitions(chat_ui_mix_module_plugin PRIVATE EMBEDDED_CREDS)
 endif()

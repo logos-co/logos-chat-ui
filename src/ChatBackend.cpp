@@ -36,7 +36,7 @@ QString decodeMessageContent(const QString& content)
 
 ChatBackend::ChatBackend(LogosAPI* logosAPI, QObject* parent)
     : ChatBackendSimpleSource(parent)
-    , m_logosAPI(logosAPI ? logosAPI : new LogosAPI("chat_ui", this))
+    , m_logosAPI(logosAPI ? logosAPI : new LogosAPI("chat_ui_mix", this))
     , m_logos(new LogosModules(m_logosAPI))
     , m_conversationModel(new ConversationListModel(this))
     , m_messageModel(new MessageListModel(this))
@@ -73,7 +73,7 @@ ChatBackend::ChatBackend(LogosAPI* logosAPI, QObject* parent)
     m_mixStatusTimer->setInterval(3000);
     connect(m_mixStatusTimer, &QTimer::timeout, this, [this]() {
         if (m_logos && chatStatus() == ChatBackendSimpleSource::Running)
-            m_logos->chat_module.getMixStatus();
+            m_logos->chat_module_mix.getMixStatus();
     });
 
     // Defer to the next event-loop iteration so the ui-host can finish exposing
@@ -89,7 +89,7 @@ ChatBackend::ChatBackend(LogosAPI* logosAPI, QObject* parent)
 ChatBackend::~ChatBackend()
 {
     if (chatStatus() == ChatBackendSimpleSource::Running && m_logos) {
-        m_logos->chat_module.stopChat();
+        m_logos->chat_module_mix.stopChat();
     }
     delete m_logos;
 }
@@ -130,7 +130,7 @@ void ChatBackend::initChat()
     setChatStatus(ChatBackendSimpleSource::Initializing);
     setStatusMessage(QStringLiteral("Initializing chat..."));
 
-    bool success = m_logos->chat_module.initChat(configJson);
+    bool success = m_logos->chat_module_mix.initChat(configJson);
     if (!success) {
         setChatStatus(ChatBackendSimpleSource::Disconnected);
         setStatusMessage(QStringLiteral("Chat initialization failed"));
@@ -154,9 +154,9 @@ void ChatBackend::startChat()
     setChatStatus(ChatBackendSimpleSource::Starting);
     setStatusMessage(QStringLiteral("Starting chat..."));
 
-    m_logos->chat_module.setEventCallback();
+    m_logos->chat_module_mix.setEventCallback();
 
-    bool success = m_logos->chat_module.startChat();
+    bool success = m_logos->chat_module_mix.startChat();
     if (!success) {
         setChatStatus(ChatBackendSimpleSource::Initialized);
         setStatusMessage(QStringLiteral("Chat start failed"));
@@ -177,7 +177,7 @@ void ChatBackend::stopChat()
     setChatStatus(ChatBackendSimpleSource::Stopping);
     setStatusMessage(QStringLiteral("Stopping chat..."));
 
-    bool success = m_logos->chat_module.stopChat();
+    bool success = m_logos->chat_module_mix.stopChat();
     if (!success) {
         setChatStatus(ChatBackendSimpleSource::Running);
         setStatusMessage(QStringLiteral("Chat stop failed"));
@@ -203,7 +203,7 @@ void ChatBackend::createConversation(QString introBundle, QString initialMessage
     // Content must be hex-encoded for the libchat API
     QString initialMessageHex = QString::fromLatin1(initialMessage.toUtf8().toHex());
 
-    bool success = m_logos->chat_module.newPrivateConversation(introBundle, initialMessageHex);
+    bool success = m_logos->chat_module_mix.newPrivateConversation(introBundle, initialMessageHex);
     if (!success) {
         m_pendingInitialMessage.clear();
         setStatusMessage(QStringLiteral("Failed to create conversation"));
@@ -221,7 +221,7 @@ void ChatBackend::requestMyBundle()
     m_pendingBundleRequest = true;
     setStatusMessage(QStringLiteral("Requesting intro bundle..."));
 
-    bool success = m_logos->chat_module.createIntroBundle();
+    bool success = m_logos->chat_module_mix.createIntroBundle();
     if (!success) {
         m_pendingBundleRequest = false;
         setStatusMessage(QStringLiteral("Failed to request bundle"));
@@ -253,7 +253,7 @@ void ChatBackend::sendMessage(QString conversationId, QString content)
     // Content must be hex-encoded for the libchat API
     QString contentHex = QString::fromLatin1(content.toUtf8().toHex());
 
-    bool success = m_logos->chat_module.sendMessage(conversationId, contentHex);
+    bool success = m_logos->chat_module_mix.sendMessage(conversationId, contentHex);
     if (!success) {
         setStatusMessage(QStringLiteral("Failed to send message"));
         emit error(QStringLiteral("Failed to send message"));
@@ -309,16 +309,16 @@ void ChatBackend::setupEventHandlers()
         };
     };
 
-    m_logos->chat_module.on("chatInitResult",                    safeInvoke(&ChatBackend::onChatInitResult));
-    m_logos->chat_module.on("chatStartResult",                   safeInvoke(&ChatBackend::onChatStartResult));
-    m_logos->chat_module.on("chatStopResult",                    safeInvoke(&ChatBackend::onChatStopResult));
-    m_logos->chat_module.on("chatCreateIntroBundleResult",       safeInvoke(&ChatBackend::onChatCreateIntroBundleResult));
-    m_logos->chat_module.on("chatNewMessage",                    safeInvoke(&ChatBackend::onChatNewMessage));
-    m_logos->chat_module.on("chatNewConversation",               safeInvoke(&ChatBackend::onChatNewConversation));
-    m_logos->chat_module.on("chatNewPrivateConversationResult",  safeInvoke(&ChatBackend::onChatNewPrivateConversationResult));
-    m_logos->chat_module.on("chatSendMessageResult",             safeInvoke(&ChatBackend::onChatSendMessageResult));
-    m_logos->chat_module.on("chatGetIdResult",                   safeInvoke(&ChatBackend::onChatGetIdResult));
-    m_logos->chat_module.on("chatGetMixStatusResult",            safeInvoke(&ChatBackend::onChatGetMixStatusResult));
+    m_logos->chat_module_mix.on("chatInitResult",                    safeInvoke(&ChatBackend::onChatInitResult));
+    m_logos->chat_module_mix.on("chatStartResult",                   safeInvoke(&ChatBackend::onChatStartResult));
+    m_logos->chat_module_mix.on("chatStopResult",                    safeInvoke(&ChatBackend::onChatStopResult));
+    m_logos->chat_module_mix.on("chatCreateIntroBundleResult",       safeInvoke(&ChatBackend::onChatCreateIntroBundleResult));
+    m_logos->chat_module_mix.on("chatNewMessage",                    safeInvoke(&ChatBackend::onChatNewMessage));
+    m_logos->chat_module_mix.on("chatNewConversation",               safeInvoke(&ChatBackend::onChatNewConversation));
+    m_logos->chat_module_mix.on("chatNewPrivateConversationResult",  safeInvoke(&ChatBackend::onChatNewPrivateConversationResult));
+    m_logos->chat_module_mix.on("chatSendMessageResult",             safeInvoke(&ChatBackend::onChatSendMessageResult));
+    m_logos->chat_module_mix.on("chatGetIdResult",                   safeInvoke(&ChatBackend::onChatGetIdResult));
+    m_logos->chat_module_mix.on("chatGetMixStatusResult",            safeInvoke(&ChatBackend::onChatGetMixStatusResult));
 
     qDebug() << "ChatBackend: Event handlers set up";
 }
@@ -369,9 +369,9 @@ void ChatBackend::onChatStartResult(const QVariantList& data)
     if (success) {
         setChatStatus(ChatBackendSimpleSource::Running);
         setStatusMessage(QStringLiteral("Connected to network"));
-        m_logos->chat_module.getId();
+        m_logos->chat_module_mix.getId();
         // Prime the mix status now and keep it fresh while running.
-        m_logos->chat_module.getMixStatus();
+        m_logos->chat_module_mix.getMixStatus();
         if (m_mixStatusTimer) m_mixStatusTimer->start();
     } else {
         setChatStatus(ChatBackendSimpleSource::Initialized);

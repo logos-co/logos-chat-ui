@@ -22,7 +22,7 @@ public:
     explicit ChatUiPlugin(QObject* parent = nullptr);
     ~ChatUiPlugin() override;
 
-    QString name()    const override { return "chat_ui"; }
+    QString name()    const override { return "chat_ui_mix"; }
     QString version() const override { return "1.0.0"; }
 
     Q_INVOKABLE void initLogos(LogosAPI* api);

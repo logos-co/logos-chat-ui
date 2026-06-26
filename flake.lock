@@ -1,17 +1,17 @@
 {
   "nodes": {
-    "chat_module": {
+    "chat_module_mix": {
       "inputs": {
         "logos-chat": "logos-chat",
         "logos-module-builder": "logos-module-builder",
         "nix-bundle-lgx": "nix-bundle-lgx_10"
       },
       "locked": {
-        "lastModified": 1782466076,
-        "narHash": "sha256-41yltdpDW5cnsu0pf6hNplsKdA5UZyl30zYw2ggb6d8=",
+        "lastModified": 1782475349,
+        "narHash": "sha256-dOHz1pKMOJu+QnuGqx+02w3Xzx3K2Iu2xU0LJVdk8ew=",
         "ref": "feat/logos-testnetv02-mix",
-        "rev": "4421c7311a2eefdfa04c3f738bf718c143546842",
-        "revCount": 70,
+        "rev": "e187825577575e4637e1e70acf3af01f83b4c714",
+        "revCount": 71,
         "type": "git",
         "url": "https://github.com/logos-co/logos-chat-module"
       },
@@ -148,7 +148,7 @@
     "logos-capability-module_2": {
       "inputs": {
         "logos-cpp-sdk": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -159,7 +159,7 @@
         "logos-module": "logos-module_7",
         "logos-nix": "logos-nix_16",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -189,7 +189,7 @@
         "logos-module": "logos-module_8",
         "logos-nix": "logos-nix_21",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -236,7 +236,7 @@
     "logos-capability-module_5": {
       "inputs": {
         "logos-cpp-sdk": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -248,7 +248,7 @@
         "logos-module": "logos-module_13",
         "logos-nix": "logos-nix_60",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -279,7 +279,7 @@
         "logos-module": "logos-module_14",
         "logos-nix": "logos-nix_65",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -418,7 +418,7 @@
       "inputs": {
         "logos-nix": "logos-nix",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-cpp-sdk",
           "logos-nix",
@@ -443,7 +443,7 @@
       "inputs": {
         "logos-nix": "logos-nix_66",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -474,7 +474,7 @@
       "inputs": {
         "logos-nix": "logos-nix_94",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -500,14 +500,14 @@
     "logos-cpp-sdk_12": {
       "inputs": {
         "logos-nix": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-view-module-runtime",
           "logos-nix"
         ],
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-view-module-runtime",
@@ -730,7 +730,7 @@
       "inputs": {
         "logos-nix": "logos-nix_8",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -905,7 +905,7 @@
       "inputs": {
         "logos-nix": "logos-nix_17",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -934,7 +934,7 @@
       "inputs": {
         "logos-nix": "logos-nix_19",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -965,7 +965,7 @@
       "inputs": {
         "logos-nix": "logos-nix_22",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -995,7 +995,7 @@
       "inputs": {
         "logos-nix": "logos-nix_50",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-cpp-sdk",
@@ -1021,7 +1021,7 @@
       "inputs": {
         "logos-nix": "logos-nix_52",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1050,7 +1050,7 @@
       "inputs": {
         "logos-nix": "logos-nix_61",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1080,7 +1080,7 @@
       "inputs": {
         "logos-nix": "logos-nix_63",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1112,7 +1112,7 @@
       "inputs": {
         "logos-nix": "logos-nix_18",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -1141,7 +1141,7 @@
       "inputs": {
         "logos-nix": "logos-nix_51",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-design-system",
@@ -1167,7 +1167,7 @@
       "inputs": {
         "logos-nix": "logos-nix_62",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1283,7 +1283,7 @@
         "logos-nix": "logos-nix_24",
         "logos-package-manager": "logos-package-manager",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -1316,7 +1316,7 @@
         "logos-nix": "logos-nix_96",
         "logos-package-manager": "logos-package-manager_5",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1347,7 +1347,7 @@
         "logos-nix": "logos-nix_68",
         "logos-package-manager": "logos-package-manager_3",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1559,7 +1559,7 @@
       "inputs": {
         "logos-nix": "logos-nix_2",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-module",
           "logos-nix",
@@ -1592,7 +1592,7 @@
         "nix-bundle-lgx": "nix-bundle-lgx_8",
         "nix-bundle-logos-module-install": "nix-bundle-logos-module-install_3",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-nix",
           "nixpkgs"
@@ -1625,7 +1625,7 @@
         "nix-bundle-lgx": "nix-bundle-lgx_2",
         "nix-bundle-logos-module-install": "nix-bundle-logos-module-install",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -1660,7 +1660,7 @@
         "nix-bundle-lgx": "nix-bundle-lgx_5",
         "nix-bundle-logos-module-install": "nix-bundle-logos-module-install_2",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1792,7 +1792,7 @@
       "inputs": {
         "logos-nix": "logos-nix_53",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1821,7 +1821,7 @@
       "inputs": {
         "logos-nix": "logos-nix_55",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1851,7 +1851,7 @@
       "inputs": {
         "logos-nix": "logos-nix_57",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1881,7 +1881,7 @@
       "inputs": {
         "logos-nix": "logos-nix_59",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1912,7 +1912,7 @@
       "inputs": {
         "logos-nix": "logos-nix_64",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1944,7 +1944,7 @@
       "inputs": {
         "logos-nix": "logos-nix_67",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -1975,7 +1975,7 @@
       "inputs": {
         "logos-nix": "logos-nix_95",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -2076,7 +2076,7 @@
       "inputs": {
         "logos-nix": "logos-nix_4",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-plugin-core",
           "logos-module",
@@ -2389,7 +2389,7 @@
       "inputs": {
         "logos-nix": "logos-nix_6",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-plugin-qt",
           "logos-module",
@@ -2502,7 +2502,7 @@
       "inputs": {
         "logos-nix": "logos-nix_9",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -2530,7 +2530,7 @@
       "inputs": {
         "logos-nix": "logos-nix_11",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -2559,7 +2559,7 @@
       "inputs": {
         "logos-nix": "logos-nix_13",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -2588,7 +2588,7 @@
       "inputs": {
         "logos-nix": "logos-nix_15",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -2618,7 +2618,7 @@
       "inputs": {
         "logos-nix": "logos-nix_20",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -2649,7 +2649,7 @@
       "inputs": {
         "logos-nix": "logos-nix_23",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -7179,7 +7179,7 @@
       "inputs": {
         "logos-nix": "logos-nix_26",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -7213,7 +7213,7 @@
         "nix-bundle-appimage": "nix-bundle-appimage",
         "nix-bundle-dir": "nix-bundle-dir_2",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -7335,7 +7335,7 @@
         "nix-bundle-appimage": "nix-bundle-appimage_2",
         "nix-bundle-dir": "nix-bundle-dir_6",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -7367,7 +7367,7 @@
         "nix-bundle-appimage": "nix-bundle-appimage_3",
         "nix-bundle-dir": "nix-bundle-dir_9",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -7401,7 +7401,7 @@
         "nix-bundle-appimage": "nix-bundle-appimage_4",
         "nix-bundle-dir": "nix-bundle-dir_13",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -7434,7 +7434,7 @@
         "nix-bundle-appimage": "nix-bundle-appimage_5",
         "nix-bundle-dir": "nix-bundle-dir_16",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -7464,7 +7464,7 @@
         "nix-bundle-appimage": "nix-bundle-appimage_6",
         "nix-bundle-dir": "nix-bundle-dir_20",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-logos-module-install",
           "logos-package-manager",
@@ -7586,7 +7586,7 @@
       "inputs": {
         "logos-nix": "logos-nix_92",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -7617,7 +7617,7 @@
       "inputs": {
         "logos-nix": "logos-nix_98",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -7645,7 +7645,7 @@
       "inputs": {
         "logos-nix": "logos-nix_107",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "nix-bundle-lgx",
@@ -7672,7 +7672,7 @@
       "inputs": {
         "logos-nix": "logos-nix_111",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-lgx",
           "logos-package",
@@ -7698,7 +7698,7 @@
       "inputs": {
         "logos-nix": "logos-nix_115",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-logos-module-install",
           "logos-package-manager",
@@ -7725,7 +7725,7 @@
       "inputs": {
         "logos-nix": "logos-nix_120",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-logos-module-install",
           "nix-bundle-lgx",
@@ -7752,7 +7752,7 @@
       "inputs": {
         "logos-nix": "logos-nix_123",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "nix-bundle-lgx",
           "logos-package",
           "logos-nix",
@@ -7864,7 +7864,7 @@
       "inputs": {
         "logos-nix": "logos-nix_35",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -8180,7 +8180,7 @@
       "inputs": {
         "logos-nix": "logos-nix_39",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -8285,7 +8285,7 @@
       "inputs": {
         "logos-nix": "logos-nix_43",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -8315,7 +8315,7 @@
       "inputs": {
         "logos-nix": "logos-nix_48",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -8345,7 +8345,7 @@
       "inputs": {
         "logos-nix": "logos-nix_70",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -8377,7 +8377,7 @@
       "inputs": {
         "logos-nix": "logos-nix_79",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -8408,7 +8408,7 @@
       "inputs": {
         "logos-nix": "logos-nix_83",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -8438,7 +8438,7 @@
       "inputs": {
         "logos-nix": "logos-nix_87",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -8470,7 +8470,7 @@
         "logos-module": "logos-module_2",
         "logos-nix": "logos-nix_5",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-plugin-core",
           "logos-nix",
@@ -8496,7 +8496,7 @@
         "logos-module": "logos-module_5",
         "logos-nix": "logos-nix_12",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -8525,7 +8525,7 @@
         "logos-module": "logos-module_11",
         "logos-nix": "logos-nix_56",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -8637,7 +8637,7 @@
         "logos-module": "logos-module_3",
         "logos-nix": "logos-nix_7",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-plugin-qt",
           "logos-nix",
@@ -8663,7 +8663,7 @@
         "logos-module": "logos-module_6",
         "logos-nix": "logos-nix_14",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -8692,7 +8692,7 @@
         "logos-module": "logos-module_12",
         "logos-nix": "logos-nix_58",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -8854,7 +8854,7 @@
       "inputs": {
         "logos-nix": "logos-nix_32",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -8882,7 +8882,7 @@
       "inputs": {
         "logos-nix": "logos-nix_76",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -8911,7 +8911,7 @@
       "inputs": {
         "logos-nix": "logos-nix_104",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-qt-mcp",
@@ -9135,7 +9135,7 @@
         "logos-view-module-runtime": "logos-view-module-runtime_3",
         "nix-bundle-lgx": "nix-bundle-lgx_7",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-nix",
@@ -9167,7 +9167,7 @@
         "logos-view-module-runtime": "logos-view-module-runtime",
         "nix-bundle-lgx": "nix-bundle-lgx",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -9202,7 +9202,7 @@
         "logos-view-module-runtime": "logos-view-module-runtime_2",
         "nix-bundle-lgx": "nix-bundle-lgx_4",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -9330,7 +9330,7 @@
     "logos-test-framework": {
       "inputs": {
         "logos-cpp-sdk": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -9339,7 +9339,7 @@
         ],
         "logos-nix": "logos-nix_37",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -9366,7 +9366,7 @@
     "logos-test-framework_2": {
       "inputs": {
         "logos-cpp-sdk": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -9376,7 +9376,7 @@
         ],
         "logos-nix": "logos-nix_81",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -9404,13 +9404,13 @@
     "logos-test-framework_3": {
       "inputs": {
         "logos-cpp-sdk": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-cpp-sdk"
         ],
         "logos-nix": "logos-nix_109",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-test-framework",
           "logos-nix",
@@ -9534,7 +9534,7 @@
     "logos-view-module-runtime": {
       "inputs": {
         "logos-cpp-sdk": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -9544,7 +9544,7 @@
         ],
         "logos-nix": "logos-nix_33",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -9571,7 +9571,7 @@
     "logos-view-module-runtime_2": {
       "inputs": {
         "logos-cpp-sdk": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -9582,7 +9582,7 @@
         ],
         "logos-nix": "logos-nix_77",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -9612,7 +9612,7 @@
         "logos-cpp-sdk": "logos-cpp-sdk_12",
         "logos-nix": "logos-nix_105",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-view-module-runtime",
@@ -9737,7 +9737,7 @@
         "logos-nix": "logos-nix_27",
         "nix-bundle-dir": "nix-bundle-dir",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -9855,7 +9855,7 @@
         "logos-nix": "logos-nix_44",
         "nix-bundle-dir": "nix-bundle-dir_5",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -9886,7 +9886,7 @@
         "logos-nix": "logos-nix_71",
         "nix-bundle-dir": "nix-bundle-dir_8",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -9919,7 +9919,7 @@
         "logos-nix": "logos-nix_88",
         "nix-bundle-dir": "nix-bundle-dir_12",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -9951,7 +9951,7 @@
         "logos-nix": "logos-nix_99",
         "nix-bundle-dir": "nix-bundle-dir_15",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -9980,7 +9980,7 @@
         "logos-nix": "logos-nix_116",
         "nix-bundle-dir": "nix-bundle-dir_19",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-logos-module-install",
           "logos-package-manager",
@@ -10100,7 +10100,7 @@
       "inputs": {
         "logos-nix": "logos-nix_28",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -10130,7 +10130,7 @@
       "inputs": {
         "logos-nix": "logos-nix_80",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -10161,7 +10161,7 @@
       "inputs": {
         "logos-nix": "logos-nix_84",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -10191,7 +10191,7 @@
       "inputs": {
         "logos-nix": "logos-nix_89",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -10221,7 +10221,7 @@
       "inputs": {
         "logos-nix": "logos-nix_90",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -10252,7 +10252,7 @@
       "inputs": {
         "logos-nix": "logos-nix_93",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -10283,7 +10283,7 @@
       "inputs": {
         "logos-nix": "logos-nix_100",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -10310,7 +10310,7 @@
       "inputs": {
         "logos-nix": "logos-nix_101",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -10338,7 +10338,7 @@
       "inputs": {
         "logos-nix": "logos-nix_108",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "nix-bundle-lgx",
@@ -10365,7 +10365,7 @@
       "inputs": {
         "logos-nix": "logos-nix_112",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-lgx",
           "nix-bundle-dir",
@@ -10391,7 +10391,7 @@
       "inputs": {
         "logos-nix": "logos-nix_117",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-logos-module-install",
           "logos-package-manager",
@@ -10417,7 +10417,7 @@
       "inputs": {
         "logos-nix": "logos-nix_29",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -10448,7 +10448,7 @@
       "inputs": {
         "logos-nix": "logos-nix_118",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-logos-module-install",
           "logos-package-manager",
@@ -10475,7 +10475,7 @@
       "inputs": {
         "logos-nix": "logos-nix_121",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-logos-module-install",
           "nix-bundle-lgx",
@@ -10502,7 +10502,7 @@
       "inputs": {
         "logos-nix": "logos-nix_124",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "nix-bundle-lgx",
           "nix-bundle-dir",
           "logos-nix",
@@ -10729,7 +10729,7 @@
       "inputs": {
         "logos-nix": "logos-nix_36",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -11047,7 +11047,7 @@
       "inputs": {
         "logos-nix": "logos-nix_40",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -11202,7 +11202,7 @@
       "inputs": {
         "logos-nix": "logos-nix_45",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -11231,7 +11231,7 @@
       "inputs": {
         "logos-nix": "logos-nix_46",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -11261,7 +11261,7 @@
       "inputs": {
         "logos-nix": "logos-nix_49",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -11291,7 +11291,7 @@
       "inputs": {
         "logos-nix": "logos-nix_72",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -11322,7 +11322,7 @@
       "inputs": {
         "logos-nix": "logos-nix_73",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -11356,7 +11356,7 @@
         "logos-package": "logos-package_2",
         "nix-bundle-dir": "nix-bundle-dir_3",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -11386,7 +11386,7 @@
         "logos-package": "logos-package_16",
         "nix-bundle-dir": "nix-bundle-dir_22",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "nix-bundle-lgx",
           "logos-nix",
           "nixpkgs"
@@ -11671,7 +11671,7 @@
         "logos-package": "logos-package_3",
         "nix-bundle-dir": "nix-bundle-dir_4",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -11726,7 +11726,7 @@
         "logos-package": "logos-package_5",
         "nix-bundle-dir": "nix-bundle-dir_7",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -11757,7 +11757,7 @@
         "logos-package": "logos-package_7",
         "nix-bundle-dir": "nix-bundle-dir_10",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -11788,7 +11788,7 @@
         "logos-package": "logos-package_8",
         "nix-bundle-dir": "nix-bundle-dir_11",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -11819,7 +11819,7 @@
         "logos-package": "logos-package_10",
         "nix-bundle-dir": "nix-bundle-dir_14",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -11851,7 +11851,7 @@
         "logos-package": "logos-package_12",
         "nix-bundle-dir": "nix-bundle-dir_17",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "nix-bundle-lgx",
@@ -11879,7 +11879,7 @@
         "logos-package": "logos-package_13",
         "nix-bundle-dir": "nix-bundle-dir_18",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-lgx",
           "logos-nix",
@@ -11906,7 +11906,7 @@
         "logos-package": "logos-package_15",
         "nix-bundle-dir": "nix-bundle-dir_21",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-logos-module-install",
           "nix-bundle-lgx",
@@ -11934,7 +11934,7 @@
         "logos-package-manager": "logos-package-manager_2",
         "nix-bundle-lgx": "nix-bundle-lgx_3",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -11964,7 +11964,7 @@
         "logos-package-manager": "logos-package-manager_4",
         "nix-bundle-lgx": "nix-bundle-lgx_6",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -11995,7 +11995,7 @@
         "logos-package-manager": "logos-package-manager_6",
         "nix-bundle-lgx": "nix-bundle-lgx_9",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "nix-bundle-logos-module-install",
           "logos-nix",
@@ -16121,7 +16121,7 @@
       "inputs": {
         "logos-nix": "logos-nix_30",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-capability-module",
@@ -16151,7 +16151,7 @@
       "inputs": {
         "logos-nix": "logos-nix_74",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -16182,7 +16182,7 @@
       "inputs": {
         "logos-nix": "logos-nix_102",
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-module-builder",
           "logos-standalone-app",
           "logos-liblogos",
@@ -16292,7 +16292,7 @@
     },
     "root": {
       "inputs": {
-        "chat_module": "chat_module",
+        "chat_module_mix": "chat_module_mix",
         "logos-module-builder": "logos-module-builder_4",
         "nix-bundle-lgx": "nix-bundle-lgx_20"
       }
@@ -16300,7 +16300,7 @@
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
-          "chat_module",
+          "chat_module_mix",
           "logos-chat",
           "nixpkgs"
         ]

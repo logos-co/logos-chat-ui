@@ -26,11 +26,11 @@ Item {
     QtObject {
         id: d
         readonly property var backend: typeof logos !== "undefined" && logos
-                                       ? logos.module("chat_ui") : null
+                                       ? logos.module("chat_ui_mix") : null
         readonly property var convModel: typeof logos !== "undefined" && logos
-                                         ? logos.model("chat_ui", "conversationModel") : null
+                                         ? logos.model("chat_ui_mix", "conversationModel") : null
         readonly property var msgModel:  typeof logos !== "undefined" && logos
-                                         ? logos.model("chat_ui", "messageModel") : null
+                                         ? logos.model("chat_ui_mix", "messageModel") : null
 
         function statusText() {
             if (!backend) return "No backend"
@@ -131,6 +131,25 @@ Item {
                                     font.family: "JetBrains Mono"
                                     font.pixelSize: 14
                                     font.bold: true
+                                }
+                                // Variant badge — marks this as the mix (sender-anonymity) build
+                                Rectangle {
+                                    Layout.leftMargin: 4
+                                    Layout.preferredHeight: 16
+                                    Layout.preferredWidth: badgeTxt.implicitWidth + 12
+                                    radius: 8
+                                    color: "transparent"
+                                    border.color: root.accent
+                                    border.width: 1
+                                    Text {
+                                        id: badgeTxt
+                                        anchors.centerIn: parent
+                                        text: "mix"
+                                        color: root.accent
+                                        font.family: "JetBrains Mono"
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                    }
                                 }
                                 // Status dot
                                 Rectangle {
