@@ -34,6 +34,7 @@ public slots:
     void sendMessage(QString conversationId, QString content) override;
     void selectConversation(QString conversationId) override;
     void setMixMode(bool required) override;
+    void setDemoUser(int index) override;
 
 private:
     void setupEventHandlers();

@@ -49,6 +49,13 @@ Item {
             return backend && backend.chatStatus === ChatBackend.Running
         }
 
+        // Transient "coming up" states — the status label pulses amber while here.
+        function isStarting() {
+            return backend && (backend.chatStatus === ChatBackend.Initializing
+                               || backend.chatStatus === ChatBackend.Initialized
+                               || backend.chatStatus === ChatBackend.Starting)
+        }
+
         // Mix sender-anonymity: when active, sending is blocked while the mix
         // peer pool is below the configured minimum.
         function mixBlocksSend() {
@@ -514,19 +521,22 @@ Item {
                         Layout.fillWidth: true
                     }
 
-                    // Mix mode toggle (restart-based) — click to switch Required/None.
+                    // Mix is always on — shown, not toggled.
                     Text {
-                        text: (d.backend && d.backend.mixRequired) ? "MIX: REQUIRED" : "MIX: NONE"
-                        color: d.mixBlocksSend() ? root.unreadBadge
-                               : (d.backend && d.backend.mixRequired) ? root.accent
-                               : root.textTertiary
+                        text: "MIX: ENABLED"
+                        color: root.accent
                         font.family: "JetBrains Mono"
                         font.pixelSize: 11
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: if (d.backend) d.backend.setMixMode(!d.backend.mixRequired)
-                        }
+                    }
+
+                    // Active demo user (chosen at startup) — read-only indicator.
+                    Text {
+                        text: "USER: " + ((d.backend && d.backend.demoUserIndex > 0)
+                                          ? d.backend.demoUserIndex : "—")
+                        color: (d.backend && d.backend.demoUserIndex > 0) ? root.accent
+                                                                          : root.textTertiary
+                        font.family: "JetBrains Mono"
+                        font.pixelSize: 11
                     }
 
                     // Live mix pool indicator — red while below the minimum.
@@ -541,10 +551,20 @@ Item {
                     Rectangle { width: 8; height: 1; color: "transparent" }
 
                     Text {
+                        id: statusLabel
                         text: d.statusText()
-                        color: d.isRunning() ? root.accent : root.textTertiary
+                        color: d.isStarting() ? "#F59E0B"
+                               : (d.isRunning() ? root.accent : root.textTertiary)
                         font.family: "JetBrains Mono"
                         font.pixelSize: 11
+                        // Pulse amber while the node is coming up.
+                        SequentialAnimation {
+                            running: d.isStarting()
+                            loops: Animation.Infinite
+                            alwaysRunToEnd: true
+                            NumberAnimation { target: statusLabel; property: "opacity"; to: 0.35; duration: 550 }
+                            NumberAnimation { target: statusLabel; property: "opacity"; to: 1.0; duration: 550 }
+                        }
                     }
 
                     Rectangle { width: 8; height: 1; color: "transparent" }
@@ -822,5 +842,98 @@ Item {
             interval: 4000
             onTriggered: errorToast.visible = false
         }
+    }
+
+    // ── Startup identity picker — gates init: nothing initializes until the user
+    //    picks (or reuses) a demo user; Start then triggers initChat. ───────────
+    Dialog {
+        id: startupDialog
+        anchors.centerIn: Overlay.overlay
+        modal: true
+        closePolicy: Popup.NoAutoClose
+        width: 320
+        padding: 20
+        background: Rectangle { color: root.bgPanel; border.color: root.border; radius: 8 }
+
+        contentItem: ColumnLayout {
+            spacing: 14
+            Text {
+                text: "Select your demo identity"
+                color: root.textPrimary
+                font.family: "JetBrains Mono"; font.pixelSize: 14; font.bold: true
+            }
+            Text {
+                visible: d.backend && d.backend.demoUserIndex > 0
+                text: "Last used: User " + (d.backend ? d.backend.demoUserIndex : "")
+                color: root.textSecond
+                font.family: "JetBrains Mono"; font.pixelSize: 11
+            }
+            ComboBox {
+                id: startupCombo
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
+                model: 10   // User 1..10 (delegate index 0..9)
+                currentIndex: (d.backend && d.backend.demoUserIndex > 0)
+                              ? d.backend.demoUserIndex - 1 : 0
+                displayText: "User " + (currentIndex + 1)
+                contentItem: Text {
+                    text: startupCombo.displayText
+                    color: root.textPrimary
+                    font.family: "JetBrains Mono"; font.pixelSize: 12
+                    verticalAlignment: Text.AlignVCenter; leftPadding: 8
+                }
+                background: Rectangle { color: root.bgSecondary; border.color: root.border; radius: 4 }
+                delegate: ItemDelegate {
+                    width: startupCombo.width; height: 28
+                    highlighted: startupCombo.highlightedIndex === index
+                    contentItem: Text {
+                        text: "User " + (index + 1)
+                        color: highlighted ? root.textPrimary : root.textSecond
+                        font.family: "JetBrains Mono"; font.pixelSize: 12
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    background: Rectangle { color: highlighted ? root.bubblePeer : root.bgPanel }
+                }
+                popup: Popup {
+                    y: startupCombo.height
+                    width: startupCombo.width
+                    implicitHeight: Math.min(contentItem.implicitHeight, 280)
+                    padding: 1
+                    contentItem: ListView {
+                        clip: true
+                        implicitHeight: contentHeight
+                        model: startupCombo.popup.visible ? startupCombo.delegateModel : null
+                        currentIndex: startupCombo.highlightedIndex
+                        ScrollIndicator.vertical: ScrollIndicator {}
+                    }
+                    background: Rectangle { color: root.bgPanel; border.color: root.border; radius: 4 }
+                }
+            }
+            Button {
+                text: "Start"
+                Layout.fillWidth: true
+                Layout.preferredHeight: 32
+                contentItem: Text {
+                    text: parent.text
+                    color: root.bgPrimary
+                    font.family: "JetBrains Mono"; font.pixelSize: 12; font.bold: true
+                    horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                }
+                background: Rectangle {
+                    color: parent.down ? root.accentPress
+                           : (parent.hovered ? root.accentHover : root.accent)
+                    radius: 4
+                }
+                onClicked: {
+                    if (d.backend) {
+                        d.backend.setDemoUser(startupCombo.currentIndex + 1)
+                        d.backend.initChat()
+                    }
+                    startupDialog.close()
+                }
+            }
+        }
+
+        Component.onCompleted: open()
     }
 }

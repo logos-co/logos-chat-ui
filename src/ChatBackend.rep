@@ -27,6 +27,10 @@ class ChatBackend
     PROP(int mixPoolSize READONLY)
     PROP(int minMixPoolSize READONLY)
 
+    // Demo-user (fleet credential) selection. demoUserIndex is the persisted index
+    // (1..N; 0 = none / random identity); applied on (re)start.
+    PROP(int demoUserIndex READONLY)
+
     // Chat lifecycle
     SLOT(void initChat())
     SLOT(void startChat())
@@ -34,6 +38,9 @@ class ChatBackend
 
     // Set the Required/None mix mode. Persisted; takes effect after a restart.
     SLOT(void setMixMode(bool required))
+
+    // Select demo-user N (fleet credential). Persisted; takes effect after a restart.
+    SLOT(void setDemoUser(int index))
 
     // Conversations
     SLOT(void createConversation(QString introBundle, QString initialMessage))

@@ -5,6 +5,8 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QRandomGenerator>
+#include <QFile>
+#include <QDir>
 #include <cstdlib>
 
 /**
@@ -53,6 +55,64 @@ inline int getEnvOrDefault(const char* envName, int defaultValue) {
         if (ok) return value;
     }
     return defaultValue;
+}
+
+/**
+ * Stage the selected demo-user's fleet credential so the mix-RLN plugin can load it.
+ *
+ * Reads CHAT_CREDS_DIR/users/userN/{nodekey.txt, rln_keystore_<peerId>.json} and the
+ * shared CHAT_CREDS_DIR/{rln_tree.db, fleet_bootstrap.txt}, copies the keystore + tree
+ * into the process cwd (where the plugin looks them up by peerId), and sets CHAT_NODEKEY
+ * (-> fixed peerId so the keystore resolves) + CHAT_KAD_BOOTSTRAP (fleet discovery).
+ * Returns false (no-op) if index <= 0 or CHAT_CREDS_DIR is unset/incomplete.
+ */
+inline bool stageDemoUserCreds(int index) {
+    if (index <= 0) return false;
+    const QString credsDir = getEnvOrDefault("CHAT_CREDS_DIR", QString());
+    if (credsDir.isEmpty()) {
+        qWarning("stageDemoUserCreds: CHAT_CREDS_DIR not set; cannot load demo user %d", index);
+        return false;
+    }
+    const QString userDir = credsDir + "/users/user" + QString::number(index);
+    const QString cwd = QDir::currentPath();
+
+    // fleet kad bootstrap multiaddrs (skip comments/blanks)
+    QStringList kad;
+    QFile bsFile(credsDir + "/fleet_bootstrap.txt");
+    if (bsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        const QStringList lines = QString::fromUtf8(bsFile.readAll()).split('\n');
+        for (const QString& raw : lines) {
+            const QString line = raw.trimmed();
+            if (!line.isEmpty() && !line.startsWith('#')) kad.append(line);
+        }
+        bsFile.close();
+    }
+
+    // The chosen membership keystore -> staged as a peerId-agnostic source file.
+    // logos-chat copies it to rln_keystore_<itsOwnRandomPeerId>.json before mountMix,
+    // so the libp2p identity stays UNIQUE while the RLN membership is the chosen one
+    // (multiple instances can share a membership without sharing a peerId).
+    QDir uDir(userDir);
+    const QStringList keystores = uDir.entryList(QStringList() << "rln_keystore_*.json", QDir::Files);
+    if (keystores.isEmpty()) {
+        qWarning("stageDemoUserCreds: no keystore in %s", qPrintable(userDir));
+        return false;
+    }
+    const QString src = cwd + "/rln_membership.json";
+    QFile::remove(src);
+    QFile::copy(userDir + "/" + keystores.first(), src);
+
+    // shared tree (loaded by mountMix from cwd)
+    QFile::remove(cwd + "/rln_tree.db");
+    QFile::copy(credsDir + "/rln_tree.db", cwd + "/rln_tree.db");
+
+    // Feed the credential source + kad bootstrap to buildConfigJson (read from env).
+    // CHAT_NODEKEY is deliberately NOT set -> the node gets a fresh RANDOM peerId.
+    qputenv("CHAT_RLN_KEYSTORE", src.toUtf8());
+    qputenv("CHAT_KAD_BOOTSTRAP", kad.join(',').toUtf8());
+    qInfo("stageDemoUserCreds: demo user %d -> membership staged (random peerId, %lld kad bootstraps)",
+          index, static_cast<long long>(kad.size()));
+    return true;
 }
 
 /**
@@ -147,6 +207,11 @@ inline QString buildConfigJson(
             if (!trimmed.isEmpty()) kadBootstrap.append(trimmed);
         }
         if (!kadBootstrap.isEmpty()) config["kadBootstrapNodes"] = kadBootstrap;
+
+        // Chosen RLN membership keystore (staged by stageDemoUserCreds). The node
+        // loads it under its own random peerId — identity decoupled from membership.
+        const QString rlnSrc = getEnvOrDefault("CHAT_RLN_KEYSTORE", QString());
+        if (!rlnSrc.isEmpty()) config["rlnKeystoreSource"] = rlnSrc;
     }
 
     return QJsonDocument(config).toJson(QJsonDocument::Compact);

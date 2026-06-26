@@ -46,21 +46,27 @@ ChatBackend::ChatBackend(LogosAPI* logosAPI, QObject* parent)
     setStatusMessage(QStringLiteral("Ready"));
     setCurrentConversationId(QString());
 
-    // Mix sender-anonymity state. mixRequired is the persisted Required/None
-    // setting (applied at the next initChat); the rest reflect the live session.
-    // CHAT_MIX_REQUIRED overrides the persisted setting (handy for scripted runs).
+    // Mix sender-anonymity is always ON (no UI toggle) — mixRequired stays true and is
+    // just surfaced in the status bar. CHAT_MIX_REQUIRED=0 can disable it for tests.
     QSettings settings(QStringLiteral("Logos"), QStringLiteral("ChatUI"));
-    bool mixReq = settings.value(QStringLiteral("mix/required"), false).toBool();
+    bool mixReq = true;
     if (qEnvironmentVariableIsSet("CHAT_MIX_REQUIRED")) {
         const QString v = qEnvironmentVariable("CHAT_MIX_REQUIRED");
-        mixReq = (v == QLatin1String("1")
-                  || v.compare(QLatin1String("true"), Qt::CaseInsensitive) == 0);
+        mixReq = !(v == QLatin1String("0")
+                   || v.compare(QLatin1String("false"), Qt::CaseInsensitive) == 0);
     }
     setMixRequired(mixReq);
     setMixActive(false);
     setMixReady(false);
     setMixPoolSize(0);
     setMinMixPoolSize(0);
+
+    // Demo-user (fleet credential) selection: persisted index, applied at initChat.
+    // CHAT_DEMO_USER overrides the persisted value (handy for scripted runs).
+    int demoUser = settings.value(QStringLiteral("demo/userIndex"), 0).toInt();
+    if (qEnvironmentVariableIsSet("CHAT_DEMO_USER"))
+        demoUser = qEnvironmentVariable("CHAT_DEMO_USER").toInt();
+    setDemoUserIndex(demoUser);
 
     // Poll the live mix status while running (see onChatStartResult).
     m_mixStatusTimer = new QTimer(this);
@@ -75,7 +81,8 @@ ChatBackend::ChatBackend(LogosAPI* logosAPI, QObject* parent)
     // (avoids a fixed wall-clock delay).
     QTimer::singleShot(0, this, [this]() {
         setupEventHandlers();
-        initChat();
+        // Init is gated on the startup user-selection popup — the QML calls
+        // initChat() once the user picks (or reuses) a demo identity.
     });
 }
 
@@ -110,6 +117,11 @@ void ChatBackend::initChat()
         setStatusMessage(QStringLiteral("Chat already initialized"));
         return;
     }
+
+    // If a demo user is selected, stage its keystore + shared tree into cwd and set
+    // CHAT_NODEKEY (-> fixed peerId) + CHAT_KAD_BOOTSTRAP (which buildConfigJson reads).
+    if (demoUserIndex() > 0)
+        ChatConfig::stageDemoUserCreds(demoUserIndex());
 
     QString configJson = ChatConfig::buildConfigJson(
         QString(), -1, -1, -1, QString(), /*mixEnabled=*/mixRequired());
@@ -269,6 +281,18 @@ void ChatBackend::setMixMode(bool required)
             ? QStringLiteral("Mix set to Required — restart to apply")
             : QStringLiteral("Mix set to None — restart to apply"));
     }
+}
+
+void ChatBackend::setDemoUser(int index)
+{
+    QSettings settings(QStringLiteral("Logos"), QStringLiteral("ChatUI"));
+    settings.setValue(QStringLiteral("demo/userIndex"), index);
+    setDemoUserIndex(index);
+
+    // The credential/identity is applied at init; changing it needs a restart.
+    setStatusMessage(index > 0
+        ? QStringLiteral("Demo user %1 selected — restart to apply").arg(index)
+        : QStringLiteral("Demo user cleared — restart to apply"));
 }
 
 // ── Event handlers ───────────────────────────────────────────────────────────
