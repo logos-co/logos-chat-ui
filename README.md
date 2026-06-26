@@ -40,7 +40,14 @@ nix run --override-input chat_module_mix path:../logos-chat-module \
 
 The standalone app starts Logos Core, loads `capability_module` and `chat_module_mix`, then launches the QML UI via an isolated `ui-host` process.
 
-> **Mix variant:** at startup, pick a demo user (1–10) in the popup (the bundled testnet creds are shared/disposable). To run **multiple instances**, give each its **own directory** (creds stage into the working dir) and a **different** user index.
+> **Mix variant:** at startup, pick a demo user (1–10) in the popup (the bundled testnet creds are shared/disposable).
+>
+> **To run a second instance** (e.g. to message between two on one machine), start it from a **different folder** — the app stages creds into the working dir, so a shared folder would clobber — with a different user index and port:
+>
+> ```bash
+> mkdir ~/chat2 && cd ~/chat2
+> CHAT_DEMO_USER=2 CHAT_PORT=62002 nix run ~/logos-chat-ui --accept-flake-config   # ~/logos-chat-ui = your clone
+> ```
 
 ### In Basecamp
 
