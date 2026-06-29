@@ -1,6 +1,7 @@
 {
   "name": "chat_ui_mix",
   "display_name": "Chat (Mix)",
+  "icon": "icon.png",
   "version": "1.0.0",
   "type": "ui_qml",
   "category": "chat",

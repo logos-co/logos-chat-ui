@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Master source for icon.png (rendered via rsvg-convert). Outlined chat
+       bubble + "mix" wordmark = the sender-anonymous mix chat variant. -->
+  <rect x="2" y="4" width="20" height="13" rx="3.6" fill="none" stroke="#FFFFFF" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M7 17 L5 20.6 L11 17" fill="none" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="12" y="13" font-family="Helvetica, Arial, sans-serif" font-size="8.8" font-weight="700" text-anchor="middle" fill="#FFFFFF">mix</text>
+</svg>
