@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QStringList>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -58,13 +59,30 @@ inline int getEnvOrDefault(const char* envName, int defaultValue) {
 }
 
 /**
- * Stage the selected demo-user's fleet credential so the mix-RLN plugin can load it.
+ * testnet-0.2 fleet entry points: the kad-DHT bootstrap seed and the default
+ * filter/receive peers. These are public node addresses, NOT credentials. Two
+ * healthy nodes are enough — the rest of the mix fleet is discovered over the DHT
+ * (a single bootstrap reaches the whole 5-node pool in ~6s). Override at runtime
+ * with CHAT_KAD_BOOTSTRAP / CHAT_STATIC_PEER.
+ */
+inline QStringList defaultFleetEntryNodes() {
+    return {
+        QStringLiteral("/dns4/node-01.ih-eu-mda1.misc.vaclab.status.im/tcp/30304/"
+                       "p2p/16Uiu2HAm8PDGahpTZ86SKxBqFodPVxpGonXLucUR9bscFWxqJuZr"),
+        QStringLiteral("/dns4/node-03.ih-eu-mda1.misc.vaclab.status.im/tcp/30304/"
+                       "p2p/16Uiu2HAmMgeAACqTTEKVuyBmbtyAqg6qznevmyF5k6qRcL6eXsqS"),
+    };
+}
+
+/**
+ * Stage the selected demo-user's RLN credential so the mix-RLN plugin can load it.
  *
- * Reads CHAT_CREDS_DIR/users/userN/{nodekey.txt, rln_keystore_<peerId>.json} and the
- * shared CHAT_CREDS_DIR/{rln_tree.db, fleet_bootstrap.txt}, copies the keystore + tree
- * into the process cwd (where the plugin looks them up by peerId), and sets CHAT_NODEKEY
- * (-> fixed peerId so the keystore resolves) + CHAT_KAD_BOOTSTRAP (fleet discovery).
- * Returns false (no-op) if index <= 0 or CHAT_CREDS_DIR is unset/incomplete.
+ * Reads the chosen membership keystore + the shared rln_tree.db from CHAT_CREDS_DIR
+ * (dev override) or the embedded :/fleet-creds resource, copies them into the process
+ * cwd (where the plugin looks them up), and points CHAT_RLN_KEYSTORE at the membership.
+ * A fresh RANDOM peerId is used (identity decoupled from membership). Network entry
+ * points (kad bootstrap + filter peers) are NOT creds and are handled by buildConfigJson.
+ * Returns false (no-op) if index <= 0 or no creds source is available.
  */
 inline bool stageDemoUserCreds(int index) {
     if (index <= 0) return false;
@@ -75,7 +93,7 @@ inline bool stageDemoUserCreds(int index) {
     // fall back to the creds embedded in the app (Qt resource ":/fleet-creds"), so the
     // app is self-contained with no manual setup. QFile reads ":/..." resources and
     // filesystem paths transparently.
-    QString credsRoot;     // dir holding rln_tree.db + fleet_bootstrap.txt
+    QString credsRoot;     // dir holding rln_tree.db + users/userN/keystore
     QString keystoreSrc;   // the chosen user's keystore file
     bool fromResource = false;
     if (!envDir.isEmpty()) {
@@ -105,18 +123,6 @@ inline bool stageDemoUserCreds(int index) {
         return false;
     }
 
-    // fleet kad bootstrap multiaddrs (skip comments/blanks)
-    QStringList kad;
-    QFile bsFile(credsRoot + "/fleet_bootstrap.txt");
-    if (bsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        const QStringList lines = QString::fromUtf8(bsFile.readAll()).split('\n');
-        for (const QString& raw : lines) {
-            const QString line = raw.trimmed();
-            if (!line.isEmpty() && !line.startsWith('#')) kad.append(line);
-        }
-        bsFile.close();
-    }
-
     // Stage the chosen membership keystore (peerId-agnostic source) + the shared tree
     // into cwd, where mountMix loads them. logos-chat copies the keystore to
     // rln_keystore_<itsOwnRandomPeerId>.json before mountMix, so the libp2p identity
@@ -135,19 +141,14 @@ inline bool stageDemoUserCreds(int index) {
         QFile::setPermissions(tree, QFileDevice::ReadOwner | QFileDevice::WriteOwner);
     }
 
-    // Feed the credential source + kad bootstrap to buildConfigJson (read from env).
-    // CHAT_NODEKEY is deliberately NOT set -> the node gets a fresh RANDOM peerId.
+    // Point the mix-RLN plugin at the chosen membership. CHAT_NODEKEY is deliberately
+    // NOT set -> the node gets a fresh RANDOM peerId (identity decoupled from membership).
+    // Network entry points (kad bootstrap + filter/receive peers) are NOT credentials;
+    // buildConfigJson supplies them from the fleet defaults (override via
+    // CHAT_KAD_BOOTSTRAP / CHAT_STATIC_PEER), so this routine only stages creds.
     qputenv("CHAT_RLN_KEYSTORE", memb.toUtf8());
-    qputenv("CHAT_KAD_BOOTSTRAP", kad.join(',').toUtf8());
-    // Receive path: the chat is a filter light-client, so it must filter-subscribe to
-    // fleet node(s) to RECEIVE (kad discovery only fills the mix pool for *sending*).
-    // Default CHAT_STATIC_PEER to 2 fleet nodes (from the bundle) when not already set,
-    // so the self-contained flow does 2-way out of the box — 2 gives redundancy against
-    // a flaky node without subscribing to the whole fleet.
-    if (!qEnvironmentVariableIsSet("CHAT_STATIC_PEER") && !kad.isEmpty())
-        qputenv("CHAT_STATIC_PEER", kad.mid(0, 2).join(',').toUtf8());
-    qInfo("stageDemoUserCreds: demo user %d -> membership staged (%s, random peerId, %lld kad bootstraps)",
-          index, fromResource ? "embedded" : "CHAT_CREDS_DIR", static_cast<long long>(kad.size()));
+    qInfo("stageDemoUserCreds: demo user %d -> membership staged (%s, random peerId)",
+          index, fromResource ? "embedded" : "CHAT_CREDS_DIR");
     return true;
 }
 
@@ -198,14 +199,21 @@ inline QString buildConfigJson(
         config["shardId"] = getEnvOrDefault("CHAT_SHARD_ID", DEFAULT_SHARD_ID);
     }
     
-    // Static peer(s) - use parameter, then env. CHAT_STATIC_PEER may be a single
-    // multiaddr or a comma-separated list; the self-contained flow sets all fleet
-    // nodes here so the filter-subscribe / receive path is robust to a flaky node.
-    const QString peerStr = staticPeer.isEmpty()
-        ? getEnvOrDefault("CHAT_STATIC_PEER", QString())
-        : staticPeer;
+    // Static peer(s) for the filter/receive path: the chat is a light-client and
+    // receives only by filter-subscribing to these (kad discovery fills the mix pool
+    // for *sending* only). Use the parameter, then CHAT_STATIC_PEER (single multiaddr
+    // or comma-separated list), then the fleet entry-point defaults — 2 nodes give
+    // redundancy against a flaky one without subscribing to the whole fleet.
+    QStringList peerList;
+    if (!staticPeer.isEmpty()) {
+        peerList = staticPeer.split(',', Qt::SkipEmptyParts);
+    } else {
+        const QString peerEnv = getEnvOrDefault("CHAT_STATIC_PEER", QString());
+        peerList = peerEnv.isEmpty() ? defaultFleetEntryNodes()
+                                     : peerEnv.split(',', Qt::SkipEmptyParts);
+    }
     QJsonArray staticPeers;
-    for (const QString& p : peerStr.split(',', Qt::SkipEmptyParts)) {
+    for (const QString& p : peerList) {
         const QString t = p.trimmed();
         if (!t.isEmpty()) staticPeers.append(t);
     }
@@ -237,13 +245,17 @@ inline QString buildConfigJson(
         config["mixNodes"] = mixNodes;
         config["minMixPoolSize"] = getEnvOrDefault("CHAT_MIN_MIX_POOL", 4);
 
-        // Fleet mode: discover mix nodes via kad service discovery instead of a
-        // static CHAT_MIX_NODES list with pubkeys. CHAT_KAD_BOOTSTRAP is the
-        // comma-separated fleet bootstrap multiaddrs; logos-chat discovers the mix
-        // nodes + their curve25519 pubkeys from them. Leave CHAT_MIX_NODES empty.
-        QJsonArray kadBootstrap;
+        // Fleet mode: discover mix nodes via kad service discovery instead of a static
+        // CHAT_MIX_NODES list with pubkeys. The DHT is seeded from a couple of fleet
+        // entry points (the fleet defaults, or CHAT_KAD_BOOTSTRAP to override);
+        // logos-chat then discovers every mix node + curve25519 pubkey over the DHT, so
+        // the rest of the fleet need not be listed. Leave CHAT_MIX_NODES empty.
         const QString kadNodes = getEnvOrDefault("CHAT_KAD_BOOTSTRAP", QString());
-        for (const QString& node : kadNodes.split(',', Qt::SkipEmptyParts)) {
+        const QStringList kadList = kadNodes.isEmpty()
+            ? defaultFleetEntryNodes()
+            : kadNodes.split(',', Qt::SkipEmptyParts);
+        QJsonArray kadBootstrap;
+        for (const QString& node : kadList) {
             const QString trimmed = node.trimmed();
             if (!trimmed.isEmpty()) kadBootstrap.append(trimmed);
         }
