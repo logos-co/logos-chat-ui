@@ -17,7 +17,7 @@
  *   - CHAT_NAME: Identity name (default: "LogosUser")
  *   - CHAT_PORT: Waku port, 0 for random (default: 0)
  *   - CHAT_CLUSTER_ID: Waku cluster ID (default: 2)
- *   - CHAT_SHARD_ID: Waku shard ID (default: 1)
+ *   - CHAT_SHARD_ID: Waku shard ID (default: 0 — the testnet-0.2 mix fleet runs on shard 0)
  *   - CHAT_STATIC_PEER: Static peer multiaddr (optional)
  * 
  * Configuration values from libchat.h:
@@ -33,7 +33,7 @@ namespace ChatConfig {
 // Default values - can be changed here for different deployments
 constexpr int DEFAULT_PORT = 0;           // 0 = random port
 constexpr int DEFAULT_CLUSTER_ID = 2;    // Waku cluster ID
-constexpr int DEFAULT_SHARD_ID = 1;       // Waku shard ID
+constexpr int DEFAULT_SHARD_ID = 0;       // Waku shard ID — must match the fleet (shard 0)
 
 inline QString defaultName() {
     // Generate a random suffix for the default name
