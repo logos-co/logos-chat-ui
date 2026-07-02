@@ -17,8 +17,11 @@
 #   APP_BIN      run-logos-standalone-ui path; if unset, built from FLAKE
 #   OUT_DIR      screenshot dir (default arg1, else docs/images/exchange)
 #   WORK_DIR     per-instance data/log dir; if unset, a fresh mktemp is used
-#   KEEP_WORK_DIR  if set, WORK_DIR is left in place on exit (e.g. to reuse
-#                  Alice's persisted history); processes are still torn down
+#   KEEP_WORK_DIR  if set, WORK_DIR is left in place on exit (e.g. to keep the
+#                  app logs); processes are still torn down
+#   KEEP_INSTANCES if set, a *successful* run leaves the two instances running
+#                  (and their WORK_DIR in place) — the caller owns their
+#                  teardown; a failed run still tears everything down
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -58,7 +61,11 @@ echo "app: $APP_BIN"
 # our run added (the set difference), which never touches pre-existing instances.
 LOGOS_PAT='logos_host_qt|logos-standalone-app|ui-host'
 PRE_PIDS="$(pgrep -f "$LOGOS_PAT" 2>/dev/null | sort -u || true)"
+exchange_done=""
 cleanup() {
+  if [ -n "${KEEP_INSTANCES:-}" ] && [ -n "$exchange_done" ]; then
+    return  # the caller owns the still-running instances and their WORK_DIR
+  fi
   local now ours
   now="$(pgrep -f "$LOGOS_PAT" 2>/dev/null | sort -u || true)"
   ours="$(comm -13 <(printf '%s\n' "$PRE_PIDS") <(printf '%s\n' "$now") || true)"
@@ -103,3 +110,4 @@ wait_for_port "$BOB_PORT"
 
 OUT_DIR="$OUT_DIR" ALICE_PORT="$ALICE_PORT" BOB_PORT="$BOB_PORT" \
   node "$here/run-exchange.mjs"
+exchange_done=1

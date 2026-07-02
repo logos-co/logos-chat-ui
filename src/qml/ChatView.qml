@@ -53,9 +53,9 @@ Item {
         target: d.backend
         ignoreUnknownSignals: true
 
-        function onBundleReady(bundle) {
-            bundleDialog.bundleText = bundle
-            bundleDialog.open()
+        function onAddressReady(address) {
+            addressDialog.addressText = address
+            addressDialog.open()
         }
 
         function onError(message) {
@@ -242,7 +242,7 @@ Item {
                         Button {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 50
-                            text: "Get Intro Bundle"
+                            text: "Show My Address"
                             enabled: d.isRunning()
                             font.family: "JetBrains Mono"
                             font.pixelSize: 12
@@ -260,7 +260,7 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                             }
                             onClicked: {
-                                if (d.backend) d.backend.requestMyBundle()
+                                if (d.backend) d.backend.requestMyAddress()
                             }
                         }
                     }
@@ -575,7 +575,7 @@ Item {
             spacing: 12
 
             Text {
-                text: "Paste the other user's intro bundle:"
+                text: "Paste the other user's address:"
                 color: root.textSecond
                 font.family: "JetBrains Mono"
                 font.pixelSize: 12
@@ -585,8 +585,8 @@ Item {
                 Layout.preferredHeight: 100
                 implicitHeight: 100
                 TextArea {
-                    id: bundleInput
-                    placeholderText: "logos_chatintro..."
+                    id: addressInput
+                    placeholderText: "peer address (hex)..."
                     font.family: "JetBrains Mono"
                     font.pixelSize: 12
                     color: root.textPrimary
@@ -598,58 +598,28 @@ Item {
                     }
                 }
             }
-
-            Text {
-                text: "Intro message:"
-                color: root.textSecond
-                font.family: "JetBrains Mono"
-                font.pixelSize: 12
-            }
-            ScrollView {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 80
-                implicitHeight: 80
-                TextArea {
-                    id: introMsgInput
-                    text: "Hello!"
-                    placeholderText: "Type your first message"
-                    placeholderTextColor: root.textTertiary
-                    font.family: "JetBrains Mono"
-                    font.pixelSize: 12
-                    color: root.textPrimary
-                    wrapMode: TextEdit.Wrap
-                    background: Rectangle {
-                        color: root.bgPrimary
-                        border.color: introMsgInput.activeFocus ? root.accent : root.border
-                        radius: 4
-                    }
-                }
-            }
         }
 
         onAccepted: {
-            var bundle = bundleInput.text.trim()
-            var msg = introMsgInput.text.trim()
-            if (bundle !== "" && msg !== "" && d.backend) {
-                d.backend.createConversation(bundle, msg)
+            var address = addressInput.text.trim()
+            if (address !== "" && d.backend) {
+                d.backend.createConversation(address)
             }
-            bundleInput.text = ""
-            introMsgInput.text = "Hello!"
+            addressInput.text = ""
         }
         onRejected: {
-            bundleInput.text = ""
-            introMsgInput.text = "Hello!"
+            addressInput.text = ""
         }
     }
 
-    // ── Bundle display dialog ────────────────────────────────────────────
+    // ── Address display dialog ───────────────────────────────────────────
     Dialog {
-        id: bundleDialog
+        id: addressDialog
         anchors.centerIn: parent
         width: 480
         modal: true
 
-        property string bundleText: ""
+        property string addressText: ""
 
         background: Rectangle {
             color: root.bgPanel
@@ -661,7 +631,7 @@ Item {
             height: 44
             Text {
                 anchors.centerIn: parent
-                text: "My Bundle"
+                text: "My Address"
                 color: root.textPrimary
                 font.family: "JetBrains Mono"
                 font.pixelSize: 14
@@ -683,9 +653,9 @@ Item {
                 palette.button: root.accent
                 palette.buttonText: "#000000"
                 onClicked: {
-                    bundleDisplay.selectAll()
-                    bundleDisplay.copy()
-                    bundleDisplay.deselect()
+                    addressDisplay.selectAll()
+                    addressDisplay.copy()
+                    addressDisplay.deselect()
                     copiedLabel.visible = true
                     copiedTimer.restart()
                 }
@@ -697,7 +667,7 @@ Item {
                 palette.button: root.bgPanel
                 palette.buttonText: root.textPrimary
             }
-            onRejected: bundleDialog.close()
+            onRejected: addressDialog.close()
         }
 
         ColumnLayout {
@@ -705,7 +675,7 @@ Item {
             spacing: 12
 
             Text {
-                text: "Share this bundle with others to start a conversation:"
+                text: "Share this address with others to start a conversation:"
                 color: root.textSecond
                 font.family: "JetBrains Mono"
                 font.pixelSize: 12
@@ -717,8 +687,8 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 120
                 TextArea {
-                    id: bundleDisplay
-                    text: bundleDialog.bundleText
+                    id: addressDisplay
+                    text: addressDialog.addressText
                     readOnly: true
                     font.family: "JetBrains Mono"
                     font.pixelSize: 11

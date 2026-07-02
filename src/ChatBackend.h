@@ -29,8 +29,8 @@ public:
     void onContextReady() override;
 
 public slots:
-    void createConversation(QString introBundle, QString initialMessage) override;
-    void requestMyBundle() override;
+    void createConversation(QString peerAddress) override;
+    void requestMyAddress() override;
     void sendMessage(QString conversationId, QString content) override;
     void selectConversation(QString conversationId) override;
 

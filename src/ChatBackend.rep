@@ -12,11 +12,11 @@ class ChatBackend
     PROP(QString statusMessage READONLY)
     PROP(QString currentConversationId)
 
-    SLOT(void createConversation(QString introBundle, QString initialMessage))
-    SLOT(void requestMyBundle())
+    SLOT(void createConversation(QString peerAddress))
+    SLOT(void requestMyAddress())
     SLOT(void sendMessage(QString conversationId, QString content))
     SLOT(void selectConversation(QString conversationId))
 
-    SIGNAL(bundleReady(QString bundle))
+    SIGNAL(addressReady(QString address))
     SIGNAL(error(QString message))
 }

@@ -3,7 +3,7 @@ name: Doc-Tests
 # Runs the executable doc-tests end-to-end via the shared doctest CLI, against
 # the commit of logos-chat-ui under test. Each spec builds this UI module and
 # drives it headless (offscreen Qt):
-#   - chat-ui           build + connect + intro-bundle GUI walkthrough (screenshots)
+#   - chat-ui           build + connect + share-address GUI walkthrough (screenshots)
 #   - chat-ui-exchange  runs the real two-party round-trip and captures the result
 #
 # The dedicated two-instance-exchange.yml job stays the robust gate for the
@@ -233,7 +233,7 @@ jobs:
               `${marker}\n` +
               `### 📊 Doc-test report\n\n` +
               `The chat UI built against this commit, driven headless to connect ` +
-              `and share an intro bundle, rendered alongside the commands ` +
+              `and share its address, rendered alongside the commands ` +
               `actually run and their output ` +
               `(updated each run, commit \`${context.sha.slice(0,7)}\`):\n\n` +
               `${links}\n\n` +
