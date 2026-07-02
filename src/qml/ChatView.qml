@@ -511,6 +511,10 @@ Item {
                         color: root.textTertiary
                         font.family: "JetBrains Mono"
                         font.pixelSize: 11
+                        // The installation name is a long hex string; unconstrained
+                        // it overflows the row and the status texts overlap.
+                        Layout.maximumWidth: 260
+                        elide: Text.ElideMiddle
                     }
                 }
             }
