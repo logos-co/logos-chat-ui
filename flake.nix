@@ -6,16 +6,15 @@
     # logos-protocol/logos-qt-sdk chain matches across both.
     logos-module-builder.url = "github:logos-co/logos-module-builder";
     nix-bundle-lgx.url = "github:logos-co/nix-bundle-lgx";
-    # Pinned to an explicit master rev (like logos-delivery-module below) instead
-    # of a moving branch ref, so the chat_module contract can't shift under a
-    # `nix flake update`. Re-pin to the new rev whenever chat_module advances;
-    # switch to a release tag once one is cut.
-    chat_module.url = "github:logos-co/logos-chat-module/a58b5ffe71e458be72aaf51a4775a2e9239255cf";
-    # Pinned to the commit (post-v0.1.2) carrying the zerokit/RLN nix build fix:
-    # delivery-module #49 bumps logos-delivery so zerokit's cargo vendor no longer
-    # hits crates.io's python-requests 403. Not yet tagged — re-pin to the release
-    # tag once one is cut.
-    logos-delivery-module.url = "github:logos-co/logos-delivery-module/2577383f6e0de24793b523d6ea4991aa6339afd8";
+    # Pinned to an explicit master rev instead of a moving branch ref, so the
+    # chat_module contract can't shift under a `nix flake update`. This rev is
+    # the v0.1.2 release candidate (delivery pinned to v0.1.3, chat-module #41);
+    # re-pin to the v0.1.2 tag once that release is published.
+    chat_module.url = "github:logos-co/logos-chat-module/4fe912ad5bacc286fb31f674bea6092730945a7c";
+    # Pinned to the v0.1.3 release tag, which includes the zerokit/RLN nix build
+    # fix (delivery-module #49: zerokit's cargo vendor no longer hits crates.io's
+    # python-requests 403). Kept in lockstep with chat_module's pin above.
+    logos-delivery-module.url = "github:logos-co/logos-delivery-module/v0.1.3";
   };
 
   outputs = inputs@{ logos-module-builder, logos-delivery-module, ... }:

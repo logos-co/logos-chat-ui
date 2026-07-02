@@ -6,17 +6,17 @@
         "logos-module-builder": "logos-module-builder_4"
       },
       "locked": {
-        "lastModified": 1782393691,
-        "narHash": "sha256-/4E0pwc2JlHPKBeQlKGiZPXdH0sN17V/NQiDl/gEXAs=",
+        "lastModified": 1782991566,
+        "narHash": "sha256-LTV0hUweHABY3TycE8kIYiS5rehJoih7r1S3ZuUZut4=",
         "owner": "logos-co",
         "repo": "logos-chat-module",
-        "rev": "a58b5ffe71e458be72aaf51a4775a2e9239255cf",
+        "rev": "4fe912ad5bacc286fb31f674bea6092730945a7c",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
         "repo": "logos-chat-module",
-        "rev": "a58b5ffe71e458be72aaf51a4775a2e9239255cf",
+        "rev": "4fe912ad5bacc286fb31f674bea6092730945a7c",
         "type": "github"
       }
     },
@@ -2180,17 +2180,17 @@
         "nix-bundle-lgx": "nix-bundle-lgx_10"
       },
       "locked": {
-        "lastModified": 1781019490,
-        "narHash": "sha256-TQXLZMbK4pW9vfaq6RNNUYzm0gX4DjxhtywavFyo5Wc=",
+        "lastModified": 1782251051,
+        "narHash": "sha256-ggpO1f8ANSE2swemWtmbQeSpj7Nuq2Y51+GnlhsR25s=",
         "owner": "logos-co",
         "repo": "logos-delivery-module",
-        "rev": "2577383f6e0de24793b523d6ea4991aa6339afd8",
+        "rev": "794c21cbe177bdea16d4907468eaf52d4282dda7",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
+        "ref": "v0.1.3",
         "repo": "logos-delivery-module",
-        "rev": "2577383f6e0de24793b523d6ea4991aa6339afd8",
         "type": "github"
       }
     },
@@ -2201,17 +2201,17 @@
         "nix-bundle-lgx": "nix-bundle-lgx_29"
       },
       "locked": {
-        "lastModified": 1781019490,
-        "narHash": "sha256-TQXLZMbK4pW9vfaq6RNNUYzm0gX4DjxhtywavFyo5Wc=",
+        "lastModified": 1782251051,
+        "narHash": "sha256-ggpO1f8ANSE2swemWtmbQeSpj7Nuq2Y51+GnlhsR25s=",
         "owner": "logos-co",
         "repo": "logos-delivery-module",
-        "rev": "2577383f6e0de24793b523d6ea4991aa6339afd8",
+        "rev": "794c21cbe177bdea16d4907468eaf52d4282dda7",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
+        "ref": "v0.1.3",
         "repo": "logos-delivery-module",
-        "rev": "2577383f6e0de24793b523d6ea4991aa6339afd8",
         "type": "github"
       }
     },
