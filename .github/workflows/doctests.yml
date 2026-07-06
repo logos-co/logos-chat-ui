@@ -100,13 +100,24 @@ jobs:
       # The workspace tests-and-doctests pipeline parses this block to discover
       # the spec list — keep every spec here.
       - name: Run doc-tests
+        shell: bash
         run: |
-          # --continue-on-fail so the run walks every step and the published
-          # report is complete. The job still fails (non-zero exit) if any step
-          # failed; this only changes whether we stop early.
+          # Spec list. The two-party exchange needs live P2P networking between two
+          # nodes that GitHub's macOS runners can't provide (it is gated on ubuntu
+          # by two-instance-exchange.yml), so it runs on ubuntu only; macOS keeps the
+          # single-instance chat-ui spec. Both paths stay listed for the workspace
+          # tests-and-doctests spec discovery.
+          specs=(
+            doctests/chat-ui.test.yaml
+            doctests/chat-ui-exchange.test.yaml
+          )
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            specs=(doctests/chat-ui.test.yaml)
+          fi
+          # --continue-on-fail so the run walks every step and the published report
+          # is complete. The job still fails (non-zero exit) if any step failed.
           nix run github:logos-co/logos-doctest -- run \
-            doctests/chat-ui.test.yaml \
-            doctests/chat-ui-exchange.test.yaml \
+            "${specs[@]}" \
             --verbose \
             --continue-on-fail \
             --release-for logos-chat-ui=${{ steps.commit.outputs.sha }} \

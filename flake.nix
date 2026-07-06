@@ -32,25 +32,27 @@
       # the full flow lives in docs/two-instance-exchange.md. APP_BIN is this
       # flake's standalone runner; the driver scripts are bundled from
       # ./doctests/exchange.
-      exchangeApp = system:
-        let
-          pkgs = import nixpkgs { inherit system; };
-          runner = pkgs.writeShellApplication {
-            name = "chat-ui-exchange";
-            runtimeInputs = with pkgs; [ nodejs coreutils util-linux procps bash ];
-            text = ''
-              export APP_BIN="${base.apps.${system}.default.program}"
-              exec bash ${./doctests/exchange}/run-exchange-show.sh "$@"
-            '';
-          };
-        in {
-          type = "app";
-          program = "${runner}/bin/chat-ui-exchange";
+      exchangeRunner = system:
+        let pkgs = import nixpkgs { inherit system; };
+        in pkgs.writeShellApplication {
+          name = "chat-ui-exchange";
+          runtimeInputs = with pkgs; [ nodejs coreutils util-linux procps bash ];
+          text = ''
+            export APP_BIN="${base.apps.${system}.default.program}"
+            exec bash ${./doctests/exchange}/run-exchange-show.sh "$@"
+          '';
         };
     in
       base // {
         apps = builtins.mapAttrs
-          (system: sysApps: sysApps // { exchange = exchangeApp system; })
+          (system: sysApps: sysApps // {
+            exchange = { type = "app"; program = "${exchangeRunner system}/bin/chat-ui-exchange"; };
+          })
           base.apps;
+        # Also a package so `nix build .#exchange` resolves: the doc-test runner
+        # pre-builds its launch target that way to warm the store before the run.
+        packages = builtins.mapAttrs
+          (system: sysPkgs: sysPkgs // { exchange = exchangeRunner system; })
+          base.packages;
       };
 }
