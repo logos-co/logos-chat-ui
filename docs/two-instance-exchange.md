@@ -1,11 +1,11 @@
 # Two-instance message exchange
 
 The [chat UI tutorial](../doctests/chat-ui.test.yaml) drives a single chat UI
-window: it connects to the network and shares an intro bundle. A message
+window: it connects to the network and shares its address. A message
 exchange, though, is inherently two-party, and the doc-test `ui_test` harness
 cannot express it on its own: it drives one app instance and can only *set
-literal values* on fields, so it can never read a freshly generated intro bundle
-out of one window and paste it into another. The
+literal values* on fields, so it can never read one window's address out and
+paste it into another. The
 [automated exchange tutorial](../doctests/chat-ui-exchange.test.yaml) runs that
 round-trip headless via the `exchange` app and captures the result in one
 screenshot.
@@ -14,7 +14,7 @@ This page covers the other half end-to-end: two real chat UI windows exchanging
 encrypted messages over the live network. It is driven by
 [`doctests/exchange/run-exchange.mjs`](../doctests/exchange/run-exchange.mjs),
 which speaks the [logos-qt-mcp](https://github.com/logos-co/logos-qt-mcp)
-inspector protocol to **both** instances at once, so it can read Alice's bundle
+inspector protocol to **both** instances at once, so it can read Alice's address
 out of her window and hand it to Bob, then capture each side of the
 conversation. The screenshots below are produced by that script.
 
@@ -25,8 +25,9 @@ node port (`CHAT_MODULE_DELIVERY_PORT`), and QML inspector port
 
 ## Run two instances interactively
 
-To exchange a message by hand, launch two standalone apps, each with its own
-data dir and delivery port so they don't collide:
+To exchange a message by hand, launch two standalone apps; the delivery ports
+must differ (each is bound by its node), and a distinct instance dir keeps the
+two module instances cleanly apart:
 
 ```bash
 # window A
@@ -35,10 +36,12 @@ CHAT_MODULE_INSTANCE_PATH=~/.local/share/chat_a CHAT_MODULE_DELIVERY_PORT=60000 
 CHAT_MODULE_INSTANCE_PATH=~/.local/share/chat_b CHAT_MODULE_DELIVERY_PORT=60001 nix run
 ```
 
-Both nodes join the `logos.test` Waku fleet, so this needs internet and ~5-20s to
-reach **Online**. Then, in window A tap **Get Intro Bundle** and copy it; in
-window B tap **+ new**, paste A's bundle plus a first message, and send. The
-conversation appears in A; reply from either side.
+Both nodes join the `logos.test` Waku fleet (and publish their key packages to
+the key-package registry during `init`), so this needs internet and ~5-20s to
+reach **Online**. Then, in window A tap **Show My Address** and copy it; in
+window B tap **+ new** and paste A's address — the conversation opens on B's
+side and the invite goes out. Once it appears in A's list (she has joined),
+send the first message from B; reply from either side.
 
 ## Regenerating the screenshots
 
@@ -53,34 +56,36 @@ end-to-end integration check.
 
 ## The exchange
 
-### 1. Alice shares her intro bundle
+### 1. Alice shares her address
 
-Alice waits for the network to come up (**Online**), then taps **Get Intro
-Bundle**. The backend calls `create_intro_bundle()`, the X3DH prekey bundle a
-peer needs to start a conversation with her, and shows it ready to share.
+Alice waits for the network to come up (**Online**), then taps **Show My
+Address**. The backend calls `get_address()` — her installation's address; her
+key package was published to the registry during `init`, so the address alone
+lets a peer open a conversation with her.
 
-![Alice's intro bundle dialog](images/exchange/01-alice-bundle.png)
+![Alice's address dialog](images/exchange/01-alice-address.png)
 
-### 2. Bob starts a conversation from it
+### 2. Bob opens a conversation and sends the first message
 
-Bob pastes Alice's bundle into **+ new** and sends a first message. The backend
-calls `create_conversation(bundle, message)`, which runs the X3DH initiator side
-and sends the first encrypted message to Alice's delivery address. Bob's window
-shows the message sent.
+Bob pastes Alice's address into **+ new**. The backend calls
+`create_conversation(address)`, which fetches her key package from the registry
+and sends her the cryptographic invite; the new thread opens empty. Once Alice
+has joined (the conversation shows up in her list), Bob sends the first
+message. Bob's window shows the message sent.
 
 ![Bob's first message](images/exchange/02-bob-sent.png)
 
 ### 3. Alice receives it
 
-Alice's inbound worker decrypts the envelope, the `message_received` event lands,
-and the conversation appears in her list with Bob's message in the thread.
+Bob's message lands, the `message_received` event fires, and the thread of the
+conversation she joined shows it.
 
 ![Alice receives Bob's message](images/exchange/03-alice-received.png)
 
 ### 4. Alice replies
 
-Alice replies with `send_message(convo_id, content)`; the reply travels back to
-Bob's delivery address.
+Alice replies with `send_message(convo_id, content)`; the reply travels back
+over the same conversation.
 
 ![Alice replies](images/exchange/04-alice-replied.png)
 

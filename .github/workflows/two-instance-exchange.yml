@@ -43,8 +43,9 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       # The exchange runs against the commit under test (FLAKE defaults to the
-      # checked-out tree) and needs a real network for the two delivery nodes to
-      # find each other on the logos.test fleet.
+      # checked-out tree) and needs a real network: the two delivery nodes find
+      # each other on the logos.test fleet, and init publishes each instance's
+      # key package to the key-package registry.
       - name: Run the exchange and regenerate screenshots
         run: |
           nix shell nixpkgs#nodejs --command \

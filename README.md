@@ -16,8 +16,8 @@ The application provides a two-panel chat interface with a dark, terminal-inspir
 Core functionality:
 
 - **Identity** — on startup, initializes a chat identity and displays the user's ID in the status bar
-- **Intro bundles** — generate your intro bundle (the **Get Intro Bundle** button) and share it with others to let them start a conversation with you
-- **New conversations** — paste another user's intro bundle and an initial message to open a private conversation
+- **Addresses** — show your address (the **Show My Address** button) and share it with others to let them start a conversation with you
+- **New conversations** — paste another user's address to open a private conversation
 - **Messaging** — send and receive messages in real-time over the Logos network
 - **Chat lifecycle** — auto-initializes and starts on launch; status shown in the bottom bar
 
@@ -74,8 +74,8 @@ nix develop          # enter development shell
   two instances locally.
 - Doc-test tutorials — executable walkthroughs that CI runs and publishes as an
   HTML report under `https://logos-co.github.io/logos-chat-ui/`:
-  [The Logos Chat UI](doctests/chat-ui.test.yaml) (connect + share an intro
-  bundle) and
+  [The Logos Chat UI](doctests/chat-ui.test.yaml) (connect + share your
+  address) and
   [Run the automated message-exchange test](doctests/chat-ui-exchange.test.yaml)
   (the real two-party round-trip, captured).
 

@@ -2,12 +2,10 @@
 // instance, over the logos-qt-mcp inspector protocol, then exit leaving it
 // shown.
 //
-// Used by run-exchange-show.sh: after the two-party exchange completes and Alice
-// is relaunched from her persisted data dir, her conversation list rehydrates
-// from history.json but nothing is selected (selection is UI state, not
-// persisted). This picks the conversation and opens its thread so the doctest's
-// capture step screenshots the round-trip without needing to know the
-// conversation id (which is generated at runtime).
+// Used by run-exchange-show.sh: after the two-party exchange completes, Alice's
+// live window is about to be exposed to the doc-test's capture step. This picks
+// the conversation and opens its thread so the screenshot shows the round-trip
+// without needing to know the conversation id (which is generated at runtime).
 //
 // Env:
 //   SHOW_PORT   inspector port to attach to (default 3768)
@@ -57,9 +55,8 @@ async function main() {
   const insp = new Inspector("127.0.0.1", parseInt(process.env.SHOW_PORT || "3768", 10));
   await insp.connect();
 
-  // The reloaded module surfaces its persisted conversations once init completes.
   await waitFor(insp, "convList.count", (c) => typeof c === "number" && c >= 1,
-    { timeout: 90000, what: "conversation list to rehydrate" });
+    { timeout: 90000, what: "conversation to be listed" });
 
   const convId = await evalq(insp, `d.convModel.data(d.convModel.index(0,0), ${CONV_ID_ROLE})`);
   await evalq(insp, `d.backend.selectConversation(${JSON.stringify(convId)})`);

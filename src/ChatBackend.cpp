@@ -65,10 +65,10 @@ MessageListModel* ChatBackend::messageModel() const
 
 // ── instance path ───────────────────────────────────────────────────────────
 
-// The chat_module's own persistence directory (identity.db + history.json),
-// passed to it via init(). The UI only chooses the location — it never reads
-// the contents. Override with CHAT_MODULE_INSTANCE_PATH to run side-by-side
-// instances; otherwise it defaults under the app's data location.
+// The chat_module's own instance directory, passed to it via init(). The UI
+// only chooses the location — the module owns the contents. Override with
+// CHAT_MODULE_INSTANCE_PATH to run side-by-side instances; otherwise it
+// defaults under the app's data location.
 QString ChatBackend::resolveInstancePath()
 {
     if (const char* env = std::getenv(kInstancePathEnvVar); env && *env) {
@@ -208,46 +208,44 @@ void ChatBackend::deferToEventLoop(std::function<void()> work)
 
 // ── .rep slot implementations ───────────────────────────────────────────────
 
-void ChatBackend::createConversation(QString introBundle, QString initialMessage)
+void ChatBackend::createConversation(QString peerAddress)
 {
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
         emit error(QStringLiteral("Chat not online"));
         return;
     }
-    if (introBundle.isEmpty() || initialMessage.isEmpty()) {
-        emit error(QStringLiteral("Bundle and message cannot be empty"));
+    if (peerAddress.isEmpty()) {
+        emit error(QStringLiteral("Address cannot be empty"));
         return;
     }
 
     setStatusMessage(QStringLiteral("Creating new conversation..."));
-    const LogosResult res = modules().chat_module.create_conversation(introBundle, initialMessage);
+    const LogosResult res = modules().chat_module.create_conversation(peerAddress);
     if (!res.success) {
         const QString reason = res.getError<QString>();
         setStatusMessage(QStringLiteral("Failed to create conversation: ") + reason);
         emit error(QStringLiteral("Failed to create conversation: ") + reason);
     }
-    // The conversation_created event (and the initial message recorded in
-    // module history) surface via the push subscription — the appliers handle
-    // the UI side from there.
+    // The conversation_created event surfaces via the push subscription — the
+    // appliers handle the UI side from there.
 }
 
-void ChatBackend::requestMyBundle()
+void ChatBackend::requestMyAddress()
 {
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
         emit error(QStringLiteral("Chat not online"));
         return;
     }
 
-    setStatusMessage(QStringLiteral("Requesting intro bundle..."));
-    const LogosResult res = modules().chat_module.create_intro_bundle();
-    if (!res.success) {
-        const QString reason = res.getError<QString>();
-        setStatusMessage(QStringLiteral("Failed to get bundle: ") + reason);
-        emit error(QStringLiteral("Failed to create intro bundle: ") + reason);
+    setStatusMessage(QStringLiteral("Requesting address..."));
+    const QString address = modules().chat_module.get_address();
+    if (address.isEmpty()) {
+        setStatusMessage(QStringLiteral("Failed to get address"));
+        emit error(QStringLiteral("Failed to get address"));
         return;
     }
-    setStatusMessage(QStringLiteral("Bundle ready"));
-    emit bundleReady(res.getValue<QString>());
+    setStatusMessage(QStringLiteral("Address ready"));
+    emit addressReady(address);
 }
 
 void ChatBackend::sendMessage(QString conversationId, QString content)

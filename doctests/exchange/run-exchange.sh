@@ -17,8 +17,11 @@
 #   APP_BIN      run-logos-standalone-ui path; if unset, built from FLAKE
 #   OUT_DIR      screenshot dir (default arg1, else docs/images/exchange)
 #   WORK_DIR     per-instance data/log dir; if unset, a fresh mktemp is used
-#   KEEP_WORK_DIR  if set, WORK_DIR is left in place on exit (e.g. to reuse
-#                  Alice's persisted history); processes are still torn down
+#   KEEP_WORK_DIR  if set, WORK_DIR is left in place on exit (e.g. to keep the
+#                  app logs); processes are still torn down
+#   KEEP_INSTANCES if set, a *successful* run leaves the two instances running
+#                  (and their WORK_DIR in place) — the caller owns their
+#                  teardown; a failed run still tears everything down
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -58,7 +61,24 @@ echo "app: $APP_BIN"
 # our run added (the set difference), which never touches pre-existing instances.
 LOGOS_PAT='logos_host_qt|logos-standalone-app|ui-host'
 PRE_PIDS="$(pgrep -f "$LOGOS_PAT" 2>/dev/null | sort -u || true)"
+exchange_done=""
+# Surface each instance's boot/runtime output. The apps run headless, so their
+# *.log files are the only window into why a run failed: inspector never bound,
+# delivery never reached Online, or the message never arrived.
+dump_app_logs() {
+  for f in "$WORK_DIR"/*.log; do
+    [ -f "$f" ] || continue
+    echo "::group::app log $(basename "$f")" >&2
+    cat "$f" >&2
+    echo "::endgroup::" >&2
+  done
+}
 cleanup() {
+  if [ -n "${KEEP_INSTANCES:-}" ] && [ -n "$exchange_done" ]; then
+    return  # the caller owns the still-running instances and their WORK_DIR
+  fi
+  # A run that never set exchange_done failed partway; surface the logs first.
+  [ -n "$exchange_done" ] || dump_app_logs
   local now ours
   now="$(pgrep -f "$LOGOS_PAT" 2>/dev/null | sort -u || true)"
   ours="$(comm -13 <(printf '%s\n' "$PRE_PIDS") <(printf '%s\n' "$now") || true)"
@@ -84,15 +104,8 @@ wait_for_port() {
     (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null && return 0
     sleep 1
   done
+  # The app logs are surfaced by cleanup on the way out (see dump_app_logs).
   echo "inspector on port $port never came up" >&2
-  # Surface the app boot output so a CI failure shows WHY the inspector never
-  # bound (the app launches headless, so this is the only window into its boot).
-  for f in "$WORK_DIR"/*.log; do
-    [ -f "$f" ] || continue
-    echo "::group::app log $(basename "$f")" >&2
-    cat "$f" >&2
-    echo "::endgroup::" >&2
-  done
   return 1
 }
 
@@ -103,3 +116,4 @@ wait_for_port "$BOB_PORT"
 
 OUT_DIR="$OUT_DIR" ALICE_PORT="$ALICE_PORT" BOB_PORT="$BOB_PORT" \
   node "$here/run-exchange.mjs"
+exchange_done=1

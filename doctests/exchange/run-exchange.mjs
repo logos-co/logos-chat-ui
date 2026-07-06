@@ -2,10 +2,10 @@
 // logos-chat-ui instances and capture screenshots for the docs.
 //
 // A message exchange is inherently two-party, and the doc-test ui_test harness
-// drives a single instance and cannot read a runtime value (a fresh intro
-// bundle) out of one window to paste into another. This driver speaks the
+// drives a single instance and cannot read a runtime value (an instance's
+// address) out of one window to paste into another. This driver speaks the
 // logos-qt-mcp inspector protocol directly to BOTH instances, so it can read
-// Alice's bundle out and hand it to Bob, then screenshot each side of the
+// Alice's address out and hand it to Bob, then screenshot each side of the
 // conversation. Launch + teardown of the two apps is handled by run-exchange.sh;
 // this script attaches to the two inspector ports it is given.
 //
@@ -42,7 +42,7 @@ class Inspector {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Evaluate a QML expression in ChatView's root scope (the document ids — d,
-// convList, msgList, bundleDialog — are all in scope there).
+// convList, msgList, addressDialog — are all in scope there).
 async function evalq(insp, expr) {
   const r = await insp.send("evaluate", { expression: expr });
   if (r.error) throw new Error(`eval(${expr}): ${r.error}`);
@@ -85,19 +85,19 @@ async function loadThread(insp, convId, minCount, { timeout = 90000 } = {}) {
   throw new Error(`conversation thread did not reach ${minCount} message(s)`);
 }
 
-// Ask for the intro bundle and wait for it to surface. requestMyBundle triggers
-// a synchronous create_intro_bundle RPC (20s IPC ceiling); the bundle arrives in
-// bundleDialog.bundleText via the bundleReady signal.
-async function getBundle(insp) {
-  await evalq(insp, `bundleDialog.bundleText = ""`);
-  await evalq(insp, "d.backend.requestMyBundle()");
+// Ask for the instance's address and wait for it to surface. requestMyAddress
+// triggers a synchronous get_address RPC (20s IPC ceiling); the address arrives
+// in addressDialog.addressText via the addressReady signal.
+async function getAddress(insp) {
+  await evalq(insp, `addressDialog.addressText = ""`);
+  await evalq(insp, "d.backend.requestMyAddress()");
   const start = Date.now();
   while (Date.now() - start < 25000) {
-    const t = await evalq(insp, "bundleDialog.bundleText");
+    const t = await evalq(insp, "addressDialog.addressText");
     if (typeof t === "string" && t.length > 0) return t;
     await sleep(1000);
   }
-  throw new Error("intro bundle was not produced");
+  throw new Error("address was not produced");
 }
 
 const CONV_ID_ROLE = 257; // ConversationListModel::ConversationIdRole (Qt::UserRole + 1)
@@ -118,23 +118,34 @@ async function main() {
   // module is still settling; let it quiesce before the first call.
   await sleep(3000);
 
-  console.log("alice: create her intro bundle...");
-  const bundle = await getBundle(alice);
-  console.log(`alice bundle: ${bundle.length} chars`);
-  await shoot(alice, outDir, "01-alice-bundle.png");
-  await evalq(alice, "bundleDialog.close()");
+  console.log("alice: read her address...");
+  const address = await getAddress(alice);
+  console.log(`alice address: ${address.length} chars`);
+  await shoot(alice, outDir, "01-alice-address.png");
+  await evalq(alice, "addressDialog.close()");
+
+  console.log("bob: open a conversation with alice's address...");
+  await evalq(bob, `d.backend.createConversation(${JSON.stringify(address)})`);
+  await waitFor(async () => (await evalq(bob, "d.backend.currentConversationId")) !== "", { timeout: 30000, what: "bob conversation created" });
+
+  // create_conversation sends only the cryptographic invite; wait until Alice
+  // has joined (her conversation list shows it) before Bob's first message, so
+  // the message reaches her subscribed thread rather than racing ahead of her
+  // join (same ordering as chat-module's own two-instance doc-test).
+  console.log("alice: wait for the incoming conversation...");
+  await waitFor(async () => (await evalq(alice, "convList.count")) >= 1, { timeout: 150000, what: "alice joins conversation" });
 
   const BOB_MSG = "Hi Alice, it's Bob \u{1F44B}";
-  console.log("bob: start a conversation from alice's bundle...");
-  await evalq(bob, `d.backend.createConversation(${JSON.stringify(bundle)}, ${JSON.stringify(BOB_MSG)})`);
-  await waitFor(async () => (await evalq(bob, "d.backend.currentConversationId")) !== "", { timeout: 30000, what: "bob conversation created" });
+  console.log("bob: send the first message...");
+  await evalq(bob, `d.backend.sendMessage(d.backend.currentConversationId, ${JSON.stringify(BOB_MSG)})`);
   await loadThread(bob, await evalq(bob, "d.backend.currentConversationId"), 1);
   console.log("bob: first message sent");
   await shoot(bob, outDir, "02-bob-sent.png");
 
-  console.log("alice: wait for the incoming conversation...");
-  await waitFor(async () => (await evalq(alice, "convList.count")) >= 1, { timeout: 150000, what: "alice receives conversation" });
-  await loadThread(alice, await evalq(alice, `d.convModel.data(d.convModel.index(0,0), ${CONV_ID_ROLE})`), 1);
+  // Bob's message still has to cross the network here (the join wait above
+  // only covered the invite), so budget the same 150s as the other
+  // propagation waits.
+  await loadThread(alice, await evalq(alice, `d.convModel.data(d.convModel.index(0,0), ${CONV_ID_ROLE})`), 1, { timeout: 150000 });
   console.log("alice: received Bob's message");
   await shoot(alice, outDir, "03-alice-received.png");
 
