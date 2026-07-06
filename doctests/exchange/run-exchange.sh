@@ -62,10 +62,23 @@ echo "app: $APP_BIN"
 LOGOS_PAT='logos_host_qt|logos-standalone-app|ui-host'
 PRE_PIDS="$(pgrep -f "$LOGOS_PAT" 2>/dev/null | sort -u || true)"
 exchange_done=""
+# Surface each instance's boot/runtime output. The apps run headless, so their
+# *.log files are the only window into why a run failed: inspector never bound,
+# delivery never reached Online, or the message never arrived.
+dump_app_logs() {
+  for f in "$WORK_DIR"/*.log; do
+    [ -f "$f" ] || continue
+    echo "::group::app log $(basename "$f")" >&2
+    cat "$f" >&2
+    echo "::endgroup::" >&2
+  done
+}
 cleanup() {
   if [ -n "${KEEP_INSTANCES:-}" ] && [ -n "$exchange_done" ]; then
     return  # the caller owns the still-running instances and their WORK_DIR
   fi
+  # A run that never set exchange_done failed partway; surface the logs first.
+  [ -n "$exchange_done" ] || dump_app_logs
   local now ours
   now="$(pgrep -f "$LOGOS_PAT" 2>/dev/null | sort -u || true)"
   ours="$(comm -13 <(printf '%s\n' "$PRE_PIDS") <(printf '%s\n' "$now") || true)"
@@ -91,15 +104,8 @@ wait_for_port() {
     (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null && return 0
     sleep 1
   done
+  # The app logs are surfaced by cleanup on the way out (see dump_app_logs).
   echo "inspector on port $port never came up" >&2
-  # Surface the app boot output so a CI failure shows WHY the inspector never
-  # bound (the app launches headless, so this is the only window into its boot).
-  for f in "$WORK_DIR"/*.log; do
-    [ -f "$f" ] || continue
-    echo "::group::app log $(basename "$f")" >&2
-    cat "$f" >&2
-    echo "::endgroup::" >&2
-  done
   return 1
 }
 
