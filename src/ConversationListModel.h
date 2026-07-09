@@ -11,6 +11,7 @@ struct ConversationItem {
     QString displayName;
     QDateTime lastActivity;
     int unreadCount = 0;
+    bool isGroup = false;
 };
 
 class ConversationListModel : public QAbstractListModel
@@ -22,7 +23,8 @@ public:
         ConversationIdRole = Qt::UserRole + 1,
         DisplayNameRole,
         LastActivityRole,
-        UnreadCountRole
+        UnreadCountRole,
+        IsGroupRole
     };
 
     explicit ConversationListModel(QObject* parent = nullptr);
@@ -32,7 +34,7 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     void addConversation(const QString& id, const QString& displayName,
-                         const QDateTime& lastActivity);
+                         const QDateTime& lastActivity, bool isGroup);
     void updateDisplayName(const QString& id, const QString& displayName);
     void updateLastActivity(const QString& id, const QDateTime& lastActivity);
     void incrementUnread(const QString& id);
@@ -45,6 +47,9 @@ public:
 
     // Display name for a conversation id, or empty if unknown.
     Q_INVOKABLE QString displayNameFor(const QString& id) const;
+
+    // Whether a conversation is a group; false for a direct or unknown id.
+    Q_INVOKABLE bool isGroupFor(const QString& id) const;
 
 private:
     QVector<ConversationItem> m_items;

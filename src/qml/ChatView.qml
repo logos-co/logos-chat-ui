@@ -31,6 +31,13 @@ Item {
                                          ? logos.model("chat_ui", "conversationModel") : null
         readonly property var msgModel:  typeof logos !== "undefined" && logos
                                          ? logos.model("chat_ui", "messageModel") : null
+        readonly property var memberModel: typeof logos !== "undefined" && logos
+                                          ? logos.model("chat_ui", "memberModel") : null
+
+        // Whether the open conversation is a group. Derived by the backend: the
+        // models reach QML as QtRO replicas that don't proxy the model's
+        // isGroupFor/displayNameFor lookups.
+        readonly property bool currentIsGroup: backend ? backend.currentIsGroup : false
 
         function statusText() {
             if (!backend) return "No backend"
@@ -118,6 +125,29 @@ Item {
                                 }
                                 Item { Layout.fillWidth: true }
                                 Button {
+                                    Layout.preferredWidth: 58
+                                    text: "+ group"
+                                    enabled: d.isRunning()
+                                    font.family: "JetBrains Mono"
+                                    font.pixelSize: 12
+
+                                    background: Rectangle {
+                                        radius: 4
+                                        color: parent.pressed ? "#333"
+                                               : parent.hovered ? "#2a2a2a" : root.bgPanel
+                                        border.color: parent.enabled ? root.accent : root.border
+                                    }
+                                    contentItem: Text {
+                                        text: parent.text
+                                        color: parent.enabled ? root.accent : root.textTertiary
+                                        font: parent.font
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+                                    // No dialog: the group starts solo and members
+                                    // are added from the right pane.
+                                    onClicked: { if (d.backend) d.backend.createGroupConversation() }
+                                }
+                                Button {
                                     Layout.preferredWidth: 50
                                     text: "+ new"
                                     enabled: d.isRunning()
@@ -183,7 +213,8 @@ Item {
                                         Layout.fillWidth: true
                                         spacing: 2
                                         Text {
-                                            text: model.displayName || ""
+                                            // `#` marks a group row, mirroring the group thread header.
+                                            text: (model.isGroup ? "# " : "") + (model.displayName || "")
                                             color: root.textPrimary
                                             font.family: "JetBrains Mono"
                                             font.pixelSize: 13
@@ -296,9 +327,7 @@ Item {
                                 anchors.rightMargin: 16
 
                                 Text {
-                                    text: (d.backend && d.convModel)
-                                          ? d.convModel.displayNameFor(d.backend.currentConversationId)
-                                          : ""
+                                    text: d.backend ? d.backend.currentDisplayName : ""
                                     color: root.textPrimary
                                     font.family: "JetBrains Mono"
                                     font.pixelSize: 13
@@ -335,11 +364,25 @@ Item {
 
                             delegate: Item {
                                 width: msgList.width
-                                height: bubble.height + 4
                                 readonly property bool alignRight: model.isMe === true
+                                // Show who sent it above incoming group bubbles;
+                                // 1:1 chats and own messages need no label.
+                                readonly property bool showSender: d.currentIsGroup && !alignRight
+                                height: (showSender ? senderLabel.height + 2 : 0) + bubble.height + 4
+
+                                Text {
+                                    id: senderLabel
+                                    visible: showSender
+                                    x: 16
+                                    text: model.sender || ""
+                                    color: root.textSecond
+                                    font.family: "JetBrains Mono"
+                                    font.pixelSize: 10
+                                }
 
                                 Rectangle {
                                     id: bubble
+                                    y: showSender ? senderLabel.height + 2 : 0
                                     x: alignRight ? parent.width - width - 16 : 16
                                     width: Math.min(msgContent.implicitWidth + 24,
                                                     msgList.width * 0.7)
@@ -472,6 +515,28 @@ Item {
                             }
                         }
                     }
+                }
+
+                // Vertical separator (members pane, groups only)
+                Rectangle {
+                    visible: d.currentIsGroup
+                    Layout.preferredWidth: 1
+                    Layout.fillHeight: true
+                    color: root.border
+                }
+
+                // ── Right panel: Members (groups only) ───────────────
+                MembersPane {
+                    visible: d.currentIsGroup
+                    Layout.preferredWidth: 220
+                    Layout.fillHeight: true
+                    memberModel: d.memberModel
+                    online: d.isRunning()
+                    onAddMemberRequested: function(address) {
+                        if (d.backend)
+                            d.backend.addGroupMember(d.backend.currentConversationId, address)
+                    }
+                    onRefreshRequested: { if (d.backend) d.backend.refreshMembers() }
                 }
             }
 

@@ -8,20 +8,32 @@ Built with [`logos-module-builder`](https://github.com/logos-co/logos-module-bui
 
 ## What It Does
 
-The application provides a two-panel chat interface with a dark, terminal-inspired theme:
+The application provides a terminal-inspired chat interface with a conversation
+list (left), a message thread (center), and a members panel (right) that appears
+only for group conversations:
 
-- **Conversation list** (left panel) — shows active conversations with timestamps and unread indicators
-- **Chat panel** (right panel) — displays messages and a text input for the selected conversation
+- **Conversation list** (left panel) — active conversations with timestamps and unread indicators; group rows are prefixed with `#`
+- **Message thread** (center panel) — messages and a text input for the selected conversation; group messages show a short sender label above incoming bubbles
+- **Members panel** (right panel, groups only) — the group's roster, with an add-member field
 
 Core functionality:
 
 - **Identity** — on startup, initializes a chat identity and displays the user's ID in the status bar
 - **Addresses** — show your address (the **Show My Address** button) and share it with others to let them start a conversation with you
-- **New conversations** — paste another user's address to open a private conversation
+- **New conversations** — paste another user's address to open a private (1:1) conversation
+- **Group conversations** — start a group with **+ group**, then invite peers by address from the members panel (see below)
 - **Messaging** — send and receive messages in real-time over the Logos network
 - **Chat lifecycle** — auto-initializes and starts on launch; status shown in the bottom bar
 
 Conversations are **ephemeral** — messages and identity exist only while the app is running.
+
+### Group conversations
+
+- **+ group** creates a group with you as its only member (no dialog; the group opens immediately).
+- Collect peers' addresses (each shares theirs via **Show My Address**), paste one into the members panel's add-member field, and press **+** to invite.
+- Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. The roster refreshes on selection, a message from a new member, the **↻** button, or your own add.
+- Any member can add another; the invite routes from whoever proposed it.
+- During the brief windows while the group is finalizing a membership change, de-mls rejects sends; these surface as an error toast, so retry after a moment.
 
 ## How to Run
 
