@@ -43,11 +43,33 @@
             exec bash ${./doctests/exchange}/run-exchange-show.sh "$@"
           '';
         };
+
+      # `nix run .#group`: form a real three-party group conversation and hold the
+      # newest member's window open showing the result. The doc-test launches this
+      # to capture one screenshot of the formed group (see
+      # doctests/chat-ui-group.test.yaml). APP_BIN is this flake's standalone
+      # runner; the driver scripts are bundled from ./doctests/group.
+      groupApp = system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          runner = pkgs.writeShellApplication {
+            name = "chat-ui-group";
+            runtimeInputs = with pkgs; [ nodejs coreutils util-linux procps bash ];
+            text = ''
+              export APP_BIN="${base.apps.${system}.default.program}"
+              exec bash ${./doctests/group}/run-group-show.sh "$@"
+            '';
+          };
+        in {
+          type = "app";
+          program = "${runner}/bin/chat-ui-group";
+        };
     in
       base // {
         apps = builtins.mapAttrs
           (system: sysApps: sysApps // {
             exchange = { type = "app"; program = "${exchangeRunner system}/bin/chat-ui-exchange"; };
+            group = groupApp system;
           })
           base.apps;
         # Also a package so `nix build .#exchange` resolves: the doc-test runner
