@@ -5,6 +5,7 @@ name: Doc-Tests
 # drives it headless (offscreen Qt):
 #   - chat-ui           build + connect + share-address GUI walkthrough (screenshots)
 #   - chat-ui-exchange  runs the real two-party round-trip and captures the result
+#   - chat-ui-group     forms a real three-party group and captures the result
 #
 # The dedicated two-instance-exchange.yml job stays the robust gate for the
 # round-trip and regenerates docs/two-instance-exchange.md's screenshots.
@@ -102,14 +103,15 @@ jobs:
       - name: Run doc-tests
         shell: bash
         run: |
-          # Spec list. The two-party exchange needs live P2P networking between two
-          # nodes that GitHub's macOS runners can't provide (it is gated on ubuntu
-          # by two-instance-exchange.yml), so it runs on ubuntu only; macOS keeps the
-          # single-instance chat-ui spec. Both paths stay listed for the workspace
-          # tests-and-doctests spec discovery.
+          # Spec list. The two-party exchange and three-party group specs need live
+          # P2P networking that GitHub's macOS runners can't provide (each has its
+          # own dedicated ubuntu gate: two-instance-exchange.yml and group-chat.yml),
+          # so they run on ubuntu only; macOS keeps the single-instance chat-ui spec.
+          # Every path stays listed for the workspace tests-and-doctests spec discovery.
           specs=(
             doctests/chat-ui.test.yaml
             doctests/chat-ui-exchange.test.yaml
+            doctests/chat-ui-group.test.yaml
           )
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             specs=(doctests/chat-ui.test.yaml)
@@ -145,7 +147,7 @@ jobs:
 
       - name: Verify markdown generation
         run: |
-          for spec in doctests/chat-ui.test.yaml doctests/chat-ui-exchange.test.yaml; do
+          for spec in doctests/chat-ui.test.yaml doctests/chat-ui-exchange.test.yaml doctests/chat-ui-group.test.yaml; do
             out="/tmp/$(basename "$spec" .test.yaml).md"
             nix run github:logos-co/logos-doctest -- generate \
               "$spec" \

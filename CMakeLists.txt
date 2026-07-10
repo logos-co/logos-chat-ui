@@ -17,6 +17,8 @@ logos_module(
         src/ConversationListModel.cpp
         src/MessageListModel.h
         src/MessageListModel.cpp
+        src/MemberListModel.h
+        src/MemberListModel.cpp
     INCLUDE_DIRS
         src
 )

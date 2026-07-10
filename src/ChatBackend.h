@@ -9,6 +9,7 @@
 #include "logos_ui_plugin_context.h"
 #include "ConversationListModel.h"
 #include "MessageListModel.h"
+#include "MemberListModel.h"
 
 class ChatBackend : public ChatBackendSimpleSource,
                     public LogosUiPluginContext
@@ -16,6 +17,7 @@ class ChatBackend : public ChatBackendSimpleSource,
     Q_OBJECT
     Q_PROPERTY(ConversationListModel* conversationModel READ conversationModel CONSTANT)
     Q_PROPERTY(MessageListModel* messageModel READ messageModel CONSTANT)
+    Q_PROPERTY(MemberListModel* memberModel READ memberModel CONSTANT)
 
 public:
     explicit ChatBackend(QObject* parent = nullptr);
@@ -23,6 +25,7 @@ public:
 
     ConversationListModel* conversationModel() const;
     MessageListModel* messageModel() const;
+    MemberListModel* memberModel() const;
 
     // Fires once the generated plugin glue has wired modules(); the typed
     // chat_module surface is live, so init + event subscriptions happen here.
@@ -30,9 +33,15 @@ public:
 
 public slots:
     void createConversation(QString peerAddress) override;
+    void createGroupConversation() override;
+    void addGroupMember(QString conversationId, QString peerAddress) override;
     void requestMyAddress() override;
     void sendMessage(QString conversationId, QString content) override;
     void selectConversation(QString conversationId) override;
+    // Reloads the current group's roster into memberModel; clears it for a
+    // direct conversation. A synchronous module read, so never call it from
+    // inside a module event callback without deferToEventLoop.
+    void refreshMembers() override;
 
 private:
     // Honours $CHAT_MODULE_INSTANCE_PATH, otherwise QStandardPaths::AppDataLocation.
@@ -46,6 +55,10 @@ private:
     void initialiseModule();
     void subscribeToEvents();
     void rehydrateConversations();
+    // Pushes the current conversation's group flag and display name as backend
+    // properties for the QML view to bind — see the .cpp for why the view can't
+    // read them off the model directly.
+    void syncCurrentConversationMeta();
     void showConversationMessages(const QString& convoId);
 
     // Runs `work` on the next event-loop turn. A module read (list_conversations/
@@ -64,12 +77,20 @@ private:
     void applyConversationUpdated(const QVariantList& args);
     void applyConversationDeleted(const QVariantList& args);
 
-    static QString fallbackDisplayName(const QString& convoId, const QString& peerLabel = QString());
+    static QString fallbackDisplayName(const QString& convoId, const QString& peerLabel = QString(),
+                                       bool isGroup = false);
+
+    // Short display form of a message sender; "Peer" when the sender is empty.
+    static QString shortSenderLabel(const QString& sender);
 
     ConversationListModel* m_conversationModel;
     MessageListModel* m_messageModel;
+    MemberListModel* m_memberModel;
 
     QString m_instancePath;
+    // This installation's own address, cached lazily on first roster refresh to
+    // mark the self entry.
+    QString m_myAddress;
     bool m_moduleInitialised = false;
     // Set once the initial snapshot has loaded; gates the reconnect resync in
     // applyDeliveryState so it doesn't fire during initial setup.

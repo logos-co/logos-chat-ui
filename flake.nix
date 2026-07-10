@@ -6,10 +6,11 @@
     # logos-protocol/logos-qt-sdk chain matches across both.
     logos-module-builder.url = "github:logos-co/logos-module-builder";
     nix-bundle-lgx.url = "github:logos-co/nix-bundle-lgx";
-    # Pinned to the master rev carrying the DirectV1 migration (chat-module #37),
-    # which isn't in a release tag yet; re-pin to the tag once one is cut. Delivery
-    # stays on the v0.1.3 tag below, matching chat_module's own delivery pin.
-    chat_module.url = "github:logos-co/logos-chat-module/5c79789041c75bd940bdbc5720a2c9274df09b35";
+    # Pinned to the merged GroupV2 commit on chat_module master (#43); re-pin
+    # whenever chat_module advances, and switch to a release tag once one is
+    # cut. Delivery stays on the v0.1.3 tag below, matching chat_module's own
+    # delivery pin.
+    chat_module.url = "github:logos-co/logos-chat-module/c9542d8fa719dbcb04a1b099986256500b20d56a";
     # Pinned to the v0.1.3 release tag, which includes the zerokit/RLN nix build
     # fix (delivery-module #49: zerokit's cargo vendor no longer hits crates.io's
     # python-requests 403). Kept in lockstep with chat_module's delivery pin.
@@ -42,11 +43,33 @@
             exec bash ${./doctests/exchange}/run-exchange-show.sh "$@"
           '';
         };
+
+      # `nix run .#group`: form a real three-party group conversation and hold the
+      # newest member's window open showing the result. The doc-test launches this
+      # to capture one screenshot of the formed group (see
+      # doctests/chat-ui-group.test.yaml). APP_BIN is this flake's standalone
+      # runner; the driver scripts are bundled from ./doctests/group.
+      groupApp = system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          runner = pkgs.writeShellApplication {
+            name = "chat-ui-group";
+            runtimeInputs = with pkgs; [ nodejs coreutils util-linux procps bash ];
+            text = ''
+              export APP_BIN="${base.apps.${system}.default.program}"
+              exec bash ${./doctests/group}/run-group-show.sh "$@"
+            '';
+          };
+        in {
+          type = "app";
+          program = "${runner}/bin/chat-ui-group";
+        };
     in
       base // {
         apps = builtins.mapAttrs
           (system: sysApps: sysApps // {
             exchange = { type = "app"; program = "${exchangeRunner system}/bin/chat-ui-exchange"; };
+            group = groupApp system;
           })
           base.apps;
         # Also a package so `nix build .#exchange` resolves: the doc-test runner

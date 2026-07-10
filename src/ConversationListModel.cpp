@@ -22,6 +22,7 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     case DisplayNameRole:    return item.displayName;
     case LastActivityRole:   return item.lastActivity;
     case UnreadCountRole:    return item.unreadCount;
+    case IsGroupRole:        return item.isGroup;
     default:                 return {};
     }
 }
@@ -32,17 +33,18 @@ QHash<int, QByteArray> ConversationListModel::roleNames() const
         { ConversationIdRole, "conversationId" },
         { DisplayNameRole,    "displayName" },
         { LastActivityRole,   "lastActivity" },
-        { UnreadCountRole,    "unreadCount" }
+        { UnreadCountRole,    "unreadCount" },
+        { IsGroupRole,        "isGroup" }
     };
 }
 
 void ConversationListModel::addConversation(const QString& id, const QString& displayName,
-                                            const QDateTime& lastActivity)
+                                            const QDateTime& lastActivity, bool isGroup)
 {
     if (contains(id)) return;
 
     beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
-    m_items.append({ id, displayName, lastActivity, 0 });
+    m_items.append({ id, displayName, lastActivity, 0, isGroup });
     endInsertRows();
 }
 
@@ -120,4 +122,10 @@ QString ConversationListModel::displayNameFor(const QString& id) const
 {
     const int idx = indexOf(id);
     return idx < 0 ? QString() : m_items.at(idx).displayName;
+}
+
+bool ConversationListModel::isGroupFor(const QString& id) const
+{
+    const int idx = indexOf(id);
+    return idx >= 0 && m_items.at(idx).isGroup;
 }

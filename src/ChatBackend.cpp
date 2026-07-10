@@ -1,6 +1,7 @@
 #include "ChatBackend.h"
 #include "ConversationListModel.h"
 #include "MessageListModel.h"
+#include "MemberListModel.h"
 
 // Generated umbrella: LogosModules (behind modules()) from
 // metadata.json#dependencies — the Qt-typed chat_module wrapper.
@@ -31,12 +32,14 @@ ChatBackend::ChatBackend(QObject* parent)
     : ChatBackendSimpleSource(parent)
     , m_conversationModel(new ConversationListModel(this))
     , m_messageModel(new MessageListModel(this))
+    , m_memberModel(new MemberListModel(this))
     , m_instancePath(resolveInstancePath())
 {
     setChatStatus(ChatBackendSimpleSource::Stopped);
     setMyIdentity(QString());
     setStatusMessage(QStringLiteral("Ready"));
     setCurrentConversationId(QString());
+    syncCurrentConversationMeta();
 }
 
 void ChatBackend::onContextReady()
@@ -61,6 +64,11 @@ ConversationListModel* ChatBackend::conversationModel() const
 MessageListModel* ChatBackend::messageModel() const
 {
     return m_messageModel;
+}
+
+MemberListModel* ChatBackend::memberModel() const
+{
+    return m_memberModel;
 }
 
 // ── instance path ───────────────────────────────────────────────────────────
@@ -175,11 +183,26 @@ void ChatBackend::rehydrateConversations()
         if (convoId.isEmpty()) continue;
         const QString nickname = obj.value(QStringLiteral("nickname")).toString();
         const qint64 lastActivity = obj.value(QStringLiteral("last_activity_ms")).toLongLong();
+        const bool isGroup = obj.value(QStringLiteral("kind")).toString() == QStringLiteral("group");
         m_conversationModel->addConversation(convoId,
-                                             nickname.isEmpty() ? fallbackDisplayName(convoId)
-                                                                : nickname,
-                                             msToDateTime(lastActivity));
+                                             nickname.isEmpty()
+                                                 ? fallbackDisplayName(convoId, QString(), isGroup)
+                                                 : nickname,
+                                             msToDateTime(lastActivity), isGroup);
     }
+    // The rebuilt list may now know the current conversation's kind/name.
+    syncCurrentConversationMeta();
+}
+
+// Push the current conversation's derived view state (group flag, display name)
+// as backend properties. The models reach QML as QtRO replicas that don't proxy
+// ConversationListModel's isGroupFor/displayNameFor Q_INVOKABLE lookups, so the
+// view binds these instead. Call whenever the selection or the list changes.
+void ChatBackend::syncCurrentConversationMeta()
+{
+    const QString id = currentConversationId();
+    setCurrentIsGroup(m_conversationModel->isGroupFor(id));
+    setCurrentDisplayName(m_conversationModel->displayNameFor(id));
 }
 
 void ChatBackend::showConversationMessages(const QString& convoId)
@@ -195,7 +218,8 @@ void ChatBackend::showConversationMessages(const QString& convoId)
         const bool fromSelf = obj.value(QStringLiteral("from_self")).toBool();
         const QString content = obj.value(QStringLiteral("content")).toString();
         const qint64 ts = obj.value(QStringLiteral("timestamp_ms")).toLongLong();
-        rows.append({ fromSelf ? QStringLiteral("Me") : QStringLiteral("Peer"),
+        const QString sender = obj.value(QStringLiteral("sender")).toString();
+        rows.append({ fromSelf ? QStringLiteral("Me") : shortSenderLabel(sender),
                       content, msToDateTime(ts), fromSelf });
     }
     m_messageModel->addMessages(std::move(rows));
@@ -228,6 +252,47 @@ void ChatBackend::createConversation(QString peerAddress)
     }
     // The conversation_created event surfaces via the push subscription — the
     // appliers handle the UI side from there.
+}
+
+void ChatBackend::createGroupConversation()
+{
+    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
+        emit error(QStringLiteral("Chat not online"));
+        return;
+    }
+
+    setStatusMessage(QStringLiteral("Creating group..."));
+    const LogosResult res = modules().chat_module.create_group_conversation();
+    if (!res.success) {
+        const QString reason = res.getError<QString>();
+        setStatusMessage(QStringLiteral("Failed to create group: ") + reason);
+        emit error(QStringLiteral("Failed to create group: ") + reason);
+    }
+    // The group starts with only this member; conversation_created selects it.
+    // Members are added afterwards from the members panel.
+}
+
+void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
+{
+    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
+        emit error(QStringLiteral("Chat not online"));
+        return;
+    }
+    if (conversationId.isEmpty() || peerAddress.isEmpty()) {
+        emit error(QStringLiteral("Address cannot be empty"));
+        return;
+    }
+
+    const LogosResult res = modules().chat_module.add_group_member(conversationId, peerAddress);
+    if (!res.success) {
+        const QString reason = res.getError<QString>();
+        setStatusMessage(QStringLiteral("Failed to add member: ") + reason);
+        emit error(QStringLiteral("Failed to add member: ") + reason);
+        return;
+    }
+    // The add is committed and the welcome delivered asynchronously, so be
+    // honest that the peer is not in the group yet.
+    setStatusMessage(QStringLiteral("Invite sent; peer joins when the group commits"));
 }
 
 void ChatBackend::requestMyAddress()
@@ -271,8 +336,47 @@ void ChatBackend::selectConversation(QString conversationId)
     if (conversationId == currentConversationId()) return;
 
     setCurrentConversationId(conversationId);
+    syncCurrentConversationMeta();
     m_conversationModel->clearUnread(conversationId);
     showConversationMessages(conversationId);
+    // Reset the roster on every switch: a group whose roster we can't fetch
+    // right now (offline) must show empty, not the previous conversation's
+    // members. refreshMembers then loads the new group's roster when it can, and
+    // keeps the last-known one across a transient offline of the same group.
+    // User-driven, so its synchronous read is safe here (not in an event callback).
+    m_memberModel->clear();
+    setMemberCount(0);
+    refreshMembers();
+}
+
+void ChatBackend::refreshMembers()
+{
+    const QString convoId = currentConversationId();
+    if (convoId.isEmpty() || !m_conversationModel->isGroupFor(convoId)) {
+        m_memberModel->clear();
+        setMemberCount(0);
+        return;
+    }
+    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady())
+        return; // a group, but we can't fetch now; keep the last-known roster
+
+    if (m_myAddress.isEmpty())
+        m_myAddress = modules().chat_module.get_address();
+
+    // list_group_members returns [GroupMember], so the typed wrapper is a
+    // QVariantList (each element a QVariantMap), like the other record lists.
+    const QVariantList members = modules().chat_module.list_group_members(convoId);
+    QVector<MemberItem> rows;
+    rows.reserve(members.size());
+    for (const QVariant& v : members) {
+        const QString address = v.toMap().value(QStringLiteral("address")).toString();
+        // An empty address is the roster's "no confirmed account" signal; keep
+        // it — the model renders it as "unknown_account". Only a real account
+        // address can be self.
+        rows.append({ address, !address.isEmpty() && address == m_myAddress });
+    }
+    m_memberModel->setMembers(rows);
+    setMemberCount(static_cast<int>(rows.size()));
 }
 
 // ── event handlers ────────────────────────────────────────────────────────────
@@ -322,16 +426,25 @@ void ChatBackend::applyMessageReceived(const QVariantList& args)
     if (convoId.isEmpty()) return;
     const QString content = args.value(1).toString();
     const qint64 ts = args.value(2).toLongLong();
+    const QString sender = args.value(3).toString();
     const QDateTime when = msToDateTime(ts);
 
     if (!m_conversationModel->contains(convoId)) {
-        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), when);
+        // Defensive: ConversationStarted normally lands first with the kind.
+        // Add it now and backfill the kind by re-reading the list (deferred:
+        // this runs inside a module event callback, see deferToEventLoop).
+        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), when, false);
+        deferToEventLoop([this] { rehydrateConversations(); });
     } else {
         m_conversationModel->updateLastActivity(convoId, when);
     }
 
     if (convoId == currentConversationId()) {
-        m_messageModel->addMessage(QStringLiteral("Peer"), content, when, false);
+        m_messageModel->addMessage(shortSenderLabel(sender), content, when, false);
+        // A message from someone not yet on the roster means the group grew;
+        // refetch (deferred: sync module read from inside an event callback).
+        if (!sender.isEmpty() && !m_memberModel->contains(sender))
+            deferToEventLoop([this] { refreshMembers(); });
     } else {
         m_conversationModel->incrementUnread(convoId);
     }
@@ -348,7 +461,7 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
     const QDateTime when = msToDateTime(ts);
 
     if (!m_conversationModel->contains(convoId)) {
-        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), when);
+        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), when, false);
     } else {
         m_conversationModel->updateLastActivity(convoId, when);
     }
@@ -365,29 +478,37 @@ void ChatBackend::applyConversationCreated(const QVariantList& args)
     if (convoId.isEmpty()) return;
     const bool isOutgoing = args.value(1).toBool();
     const QString peerLabel = args.value(2).toString();
-    const QString displayName = fallbackDisplayName(convoId, peerLabel);
+    const bool isGroup = args.value(3).toString() == QStringLiteral("group");
+    const QString displayName = fallbackDisplayName(convoId, peerLabel, isGroup);
     const QDateTime now = QDateTime::currentDateTime();
 
     if (!m_conversationModel->contains(convoId)) {
-        m_conversationModel->addConversation(convoId, displayName, now);
+        m_conversationModel->addConversation(convoId, displayName, now, isGroup);
     } else {
         m_conversationModel->updateDisplayName(convoId, displayName);
         m_conversationModel->updateLastActivity(convoId, now);
     }
 
-    if (isOutgoing && currentConversationId().isEmpty())
-        // Deferred: selectConversation makes a synchronous module read and this
-        // runs inside a module event callback (see deferToEventLoop).
+    // Open a conversation we just created, so creating a chat or group lands
+    // the user in it. Deferred: selectConversation makes a synchronous module
+    // read and this runs inside a module event callback (see deferToEventLoop).
+    if (isOutgoing)
         deferToEventLoop([this, convoId] { selectConversation(convoId); });
 }
 
 void ChatBackend::applyConversationUpdated(const QVariantList& args)
 {
-    Q_UNUSED(args);
+    const QString convoId = args.value(0).toString();
     // Cheapest correct option: refresh the whole list (the read is cheap and
     // conversation counts are small). Deferred — this runs inside a module event
     // callback (see deferToEventLoop).
-    deferToEventLoop([this] { rehydrateConversations(); });
+    deferToEventLoop([this, convoId] {
+        rehydrateConversations();
+        // A group update (e.g. a member added) may have grown the roster of the
+        // conversation on screen; refetch it.
+        if (convoId == currentConversationId() && m_conversationModel->isGroupFor(convoId))
+            refreshMembers();
+    });
 }
 
 void ChatBackend::applyConversationDeleted(const QVariantList& args)
@@ -398,13 +519,19 @@ void ChatBackend::applyConversationDeleted(const QVariantList& args)
     m_conversationModel->removeConversation(convoId);
     if (convoId == currentConversationId()) {
         setCurrentConversationId(QString());
+        syncCurrentConversationMeta();
         m_messageModel->clear();
     }
 }
 
-QString ChatBackend::fallbackDisplayName(const QString& convoId, const QString& peerLabel)
+QString ChatBackend::fallbackDisplayName(const QString& convoId, const QString& peerLabel,
+                                         bool isGroup)
 {
-    if (!peerLabel.isEmpty())
-        return QStringLiteral("Chat ") + peerLabel;
-    return QStringLiteral("Chat ") + convoId.left(8);
+    const QString label = peerLabel.isEmpty() ? convoId.left(8) : peerLabel;
+    return (isGroup ? QStringLiteral("Group ") : QStringLiteral("Chat ")) + label;
+}
+
+QString ChatBackend::shortSenderLabel(const QString& sender)
+{
+    return sender.isEmpty() ? QStringLiteral("Peer") : sender.left(8);
 }

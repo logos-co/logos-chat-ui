@@ -11,11 +11,23 @@ class ChatBackend
     PROP(QString myIdentity READONLY)
     PROP(QString statusMessage READONLY)
     PROP(QString currentConversationId)
+    // Derived from the current conversation, kept here (not read off the model)
+    // because the models reach QML as QtRO replicas that don't proxy the model's
+    // Q_INVOKABLE lookups (isGroupFor/displayNameFor).
+    PROP(bool currentIsGroup READONLY)
+    PROP(QString currentDisplayName READONLY)
+    // The current group's roster size. Exposed as a property (not read off
+    // memberModel) because the model reaches QML as a QtRO replica whose
+    // rowCount() a non-view caller can't rely on.
+    PROP(int memberCount READONLY)
 
     SLOT(void createConversation(QString peerAddress))
+    SLOT(void createGroupConversation())
+    SLOT(void addGroupMember(QString conversationId, QString peerAddress))
     SLOT(void requestMyAddress())
     SLOT(void sendMessage(QString conversationId, QString content))
     SLOT(void selectConversation(QString conversationId))
+    SLOT(void refreshMembers())
 
     SIGNAL(addressReady(QString address))
     SIGNAL(error(QString message))
