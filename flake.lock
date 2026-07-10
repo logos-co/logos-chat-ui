@@ -9,11 +9,11 @@
         "nix-bundle-lgx": "nix-bundle-lgx_10"
       },
       "locked": {
-        "lastModified": 1782747012,
-        "narHash": "sha256-vgTOwPTBvwtWlPiMM42guOzlcuNqYWXAVgyxMF0OifY=",
+        "lastModified": 1783659581,
+        "narHash": "sha256-OfFZmOKws76+YjR4XkZwj8CPi57G6mYkp8HbeR98trI=",
         "ref": "feat/logos-testnetv02-mix",
-        "rev": "b31880d57d98c81b242a9e7a1332f3c504cc42cf",
-        "revCount": 72,
+        "rev": "cc2c3ef6d119dd5067f582a7606205913dc8a51a",
+        "revCount": 73,
         "type": "git",
         "url": "https://github.com/logos-co/logos-chat-module"
       },
