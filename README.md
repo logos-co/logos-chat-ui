@@ -50,6 +50,38 @@ nix run --override-input chat_module path:../logos-chat-module \
 
 The standalone app starts Logos Core, loads `capability_module` and `chat_module`, then launches the QML UI via an isolated `ui-host` process.
 
+### Running multiple instances on one machine
+
+To try a real conversation or group locally, run two or more standalone apps
+side by side on the same host. Each instance needs its own module data directory
+and its own delivery-node port; the UI-to-backend QtRO socket name is randomized
+per instance, so nothing else has to be set:
+
+```bash
+# window A
+CHAT_MODULE_INSTANCE_PATH=~/.local/share/chat_a CHAT_MODULE_DELIVERY_PORT=60000 nix run
+# window B
+CHAT_MODULE_INSTANCE_PATH=~/.local/share/chat_b CHAT_MODULE_DELIVERY_PORT=60001 nix run
+```
+
+Add further windows the same way, giving each a fresh instance path and delivery
+port (`chat_c` / `60002`, and so on).
+
+| Variable | Purpose |
+|---|---|
+| `CHAT_MODULE_INSTANCE_PATH` | The `chat_module` instance's data directory. Two instances must not share one. Defaults to a directory under the app's data location. |
+| `CHAT_MODULE_DELIVERY_PORT` | The local delivery (Waku) node's port, bound by the node, so it must be distinct per instance. Defaults to a compiled-in port. |
+| `QML_INSPECTOR_PORT` | Only needed when attaching the [logos-qt-mcp](https://github.com/logos-co/logos-qt-mcp) inspector to drive an instance programmatically (default 3768); give each a distinct one then. Interactive use does not need it. |
+
+Each node joins the `logos.test` Waku fleet and publishes its key package during
+init, so this needs internet and ~5-20s per window to reach **Online**. Then
+share one window's address (**Show My Address**) and paste it into another
+(**+ new** for a 1:1, or **+ group** then the members panel for a group). For
+the full walkthrough with screenshots, and the scripted drivers that automate it
+(`doctests/exchange/run-exchange.sh` for a two-party exchange,
+`doctests/group/run-group.sh` for a three-party group), see
+[Two-instance message exchange](docs/two-instance-exchange.md).
+
 ### In Basecamp
 
 Build the `.lgx` package and install it:
