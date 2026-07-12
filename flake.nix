@@ -11,18 +11,23 @@
     # cut. Delivery stays on the v0.1.3 tag below, matching chat_module's own
     # delivery pin.
     chat_module.url = "github:logos-co/logos-chat-module/c9542d8fa719dbcb04a1b099986256500b20d56a";
-    # Pinned to the v0.1.3 release tag, which includes the zerokit/RLN nix build
-    # fix (delivery-module #49: zerokit's cargo vendor no longer hits crates.io's
-    # python-requests 403). Kept in lockstep with chat_module's delivery pin.
-    logos-delivery-module.url = "github:logos-co/logos-delivery-module/v0.1.3";
+    # The delivery module, pinned to the v0.1.3 release tag (includes the
+    # zerokit/RLN nix build fix, delivery-module #49). Named `delivery_module`
+    # (the builder's dependency key) so `nix run --override-input delivery_module
+    # <flake>` swaps the delivery plugin the app bundles — e.g.
+    # github:osmaczko/mailbox-relay for the HTTP mailbox dev transport. Kept in
+    # lockstep with chat_module's delivery pin.
+    delivery_module.url = "github:logos-co/logos-delivery-module/v0.1.3";
   };
 
-  outputs = inputs@{ logos-module-builder, logos-delivery-module, ... }:
+  outputs = inputs@{ logos-module-builder, delivery_module, ... }:
     let
       base = logos-module-builder.lib.mkLogosQmlModule {
         src = ./.;
         configFile = ./metadata.json;
-        flakeInputs = { delivery_module = logos-delivery-module; } // inputs;
+        # The input is now named `delivery_module`, so it resolves by key with no
+        # re-mapping; overriding that input swaps the bundled delivery plugin.
+        flakeInputs = inputs;
       };
 
       nixpkgs = logos-module-builder.inputs.nixpkgs;
