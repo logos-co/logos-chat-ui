@@ -59,11 +59,19 @@ Rectangle {
             address: "0xalice"
             label: "Alice"
             isSelf: true
+            pending: false
         }
         ListElement {
             address: "0xbob"
             label: "Bob"
             isSelf: false
+            pending: false
+        }
+        ListElement {
+            address: "0xcarol"
+            label: "Carol"
+            isSelf: false
+            pending: true
         }
     }
 

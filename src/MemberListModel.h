@@ -11,6 +11,8 @@ struct MemberItem {
     QString address;
     // True for this installation's own entry in the roster.
     bool isSelf = false;
+    // A member invited but not yet committed into the group.
+    bool pending = false;
 };
 
 // A group's roster, replaced wholesale on each refresh. `label` is the short
@@ -24,7 +26,8 @@ public:
     enum Roles {
         AddressRole = Qt::UserRole + 1,
         LabelRole,
-        IsSelfRole
+        IsSelfRole,
+        PendingRole
     };
 
     explicit MemberListModel(QObject* parent = nullptr);

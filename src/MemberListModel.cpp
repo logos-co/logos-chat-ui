@@ -25,6 +25,7 @@ QVariant MemberListModel::data(const QModelIndex& index, int role) const
                           ? QStringLiteral("unknown_account")
                           : item.address.left(8);
     case IsSelfRole:  return item.isSelf;
+    case PendingRole: return item.pending;
     default:          return {};
     }
 }
@@ -34,7 +35,8 @@ QHash<int, QByteArray> MemberListModel::roleNames() const
     return {
         { AddressRole, "address" },
         { LabelRole,   "label" },
-        { IsSelfRole,  "isSelf" }
+        { IsSelfRole,  "isSelf" },
+        { PendingRole, "pending" }
     };
 }
 

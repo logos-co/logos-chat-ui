@@ -7,12 +7,14 @@
 // metadata.json#dependencies — the Qt-typed chat_module wrapper.
 #include "logos_sdk.h"
 
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
 #include <QStandardPaths>
 #include <QVariantMap>
 #include <cstdlib>
+#include <utility>
 
 namespace {
 
@@ -27,6 +29,18 @@ QDateTime msToDateTime(qint64 ms)
 }
 
 } // namespace
+
+// QtCore Settings (QSettings) persists only when the application has an
+// identity, and the module host does not always set one. Provide a fallback so
+// UI preferences survive restarts, leaving a host-set identity untouched.
+static void ensureApplicationIdentity()
+{
+    if (QCoreApplication::organizationName().isEmpty())
+        QCoreApplication::setOrganizationName(QStringLiteral("Logos"));
+    if (QCoreApplication::applicationName().isEmpty())
+        QCoreApplication::setApplicationName(QStringLiteral("logos-chat-ui"));
+}
+Q_COREAPP_STARTUP_FUNCTION(ensureApplicationIdentity)
 
 ChatBackend::ChatBackend(QObject* parent)
     : ChatBackendSimpleSource(parent)
@@ -164,6 +178,8 @@ void ChatBackend::subscribeToEvents()
             [this](const QVariantList& a) { applyConversationCreated(a); });
     chat.on(QStringLiteral("conversation_updated"),
             [this](const QVariantList& a) { applyConversationUpdated(a); });
+    chat.on(QStringLiteral("members_changed"),
+            [this](const QVariantList& a) { applyMembersChanged(a); });
     chat.on(QStringLiteral("conversation_deleted"),
             [this](const QVariantList& a) { applyConversationDeleted(a); });
     chat.on(QStringLiteral("delivery_state_changed"), [this](const QVariantList& a) {
@@ -292,8 +308,12 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
         emit error(QStringLiteral("Failed to add member: ") + reason);
         return;
     }
-    // The add is committed and the welcome delivered asynchronously, so be
-    // honest that the peer is not in the group yet.
+    // The commit is async, so the peer isn't in the group yet. Show it as a
+    // pending busy row; the members_changed event reconciles it once committed.
+    if (conversationId == currentConversationId()) {
+        m_pendingMembers.insert(peerAddress);
+        refreshMembers();
+    }
     setStatusMessage(QStringLiteral("Invite sent; peer joins when the group commits"));
 }
 
@@ -346,6 +366,7 @@ void ChatBackend::selectConversation(QString conversationId)
     // members. refreshMembers then loads the new group's roster when it can, and
     // keeps the last-known one across a transient offline of the same group.
     // User-driven, so its synchronous read is safe here (not in an event callback).
+    m_pendingMembers.clear();
     m_memberModel->clear();
     setMemberCount(0);
     refreshMembers();
@@ -370,15 +391,24 @@ void ChatBackend::refreshMembers()
     const QVariantList members = modules().chat_module.list_group_members(convoId);
     QVector<MemberItem> rows;
     rows.reserve(members.size());
+    QSet<QString> committed;
     for (const QVariant& v : members) {
         const QString address = v.toMap().value(QStringLiteral("address")).toString();
         // An empty address is the roster's "no confirmed account" signal; keep
         // it — the model renders it as "unknown_account". Only a real account
         // address can be self.
-        rows.append({ address, !address.isEmpty() && address == m_myAddress });
+        rows.append({ address, !address.isEmpty() && address == m_myAddress, false });
+        if (!address.isEmpty())
+            committed.insert(address);
     }
+    // Drop invites that have since committed; show the rest as busy rows.
+    m_pendingMembers.subtract(committed);
+    for (const QString& address : std::as_const(m_pendingMembers))
+        rows.append({ address, false, true });
+
     m_memberModel->setMembers(rows);
-    setMemberCount(static_cast<int>(rows.size()));
+    // Committed roster size only; pending invites appear in the list but aren't counted.
+    setMemberCount(static_cast<int>(members.size()));
 }
 
 // ── event handlers ────────────────────────────────────────────────────────────
@@ -508,6 +538,16 @@ void ChatBackend::applyConversationUpdated(const QVariantList& args)
         rehydrateConversations();
         // A group update (e.g. a member added) may have grown the roster of the
         // conversation on screen; refetch it.
+        if (convoId == currentConversationId() && m_conversationModel->isGroupFor(convoId))
+            refreshMembers();
+    });
+}
+
+void ChatBackend::applyMembersChanged(const QVariantList& args)
+{
+    const QString convoId = args.value(0).toString();
+    // A commit changed this group's roster; refetch it if it is on screen.
+    deferToEventLoop([this, convoId] {
         if (convoId == currentConversationId() && m_conversationModel->isGroupFor(convoId))
             refreshMembers();
     });
