@@ -1,0 +1,105 @@
+name: QML Checks
+
+# Static and unit checks for the plugin's QML, complementing the end-to-end
+# doc-tests. Runs qmllint over the view and Qt Quick Test over the ChatUi
+# components (headless, offscreen). Both need the Logos design system on the QML
+# import path, so this first builds this flake's standalone app (which bundles
+# lib/Logos) and points the tools at it. The Qt Quick tooling itself comes from
+# nixpkgs' qt6.qtdeclarative.
+#
+# A qmlformat --check gate is intentionally omitted: qmlformat's output varies
+# between Qt versions, so a gate run against the CI's Qt would flag files a
+# developer formatted with a different Qt. The tree is qmlformat-normalized (see
+# the qmlformat baseline commit); enforce it in CI once the Qt version is pinned
+# across environments.
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+concurrency:
+  group: qml-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qml-checks:
+    name: qmllint + Qt Quick Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: logos-co
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      # Build the standalone app to obtain the design system the plugin QML
+      # imports. The app exposes no buildable package attr, so recover its
+      # derivation from the program string's context, exactly as the doc-test
+      # workflow does, and build it. The design system is bundled as
+      # <pkg>/lib/Logos by the standalone app, which the runner references at
+      # runtime, so it lives in the runner's closure rather than in the runner
+      # output itself; scan the closure for it.
+      - name: Locate the Logos design system
+        id: ds
+        shell: bash
+        run: |
+          set -euo pipefail
+          sys="$(nix eval --impure --raw --expr builtins.currentSystem)"
+          drv="$(nix eval --impure --raw --expr \
+            "builtins.head (builtins.attrNames (builtins.getContext (builtins.getFlake (toString ./.)).apps.\"$sys\".default.program))")"
+          nix build --no-link "$drv^*" -L
+          runner="$(nix build --no-link --print-out-paths "$drv^*" | head -n1)"
+          importpath=""
+          for d in $(nix-store --query --requisites "$runner"); do
+            if [ -d "$d/lib/Logos/Theme" ]; then importpath="$d/lib"; break; fi
+          done
+          if [ -z "$importpath" ]; then
+            echo "Could not find lib/Logos/Theme in the app closure of $runner" >&2
+            for d in $(nix-store --query --requisites "$runner"); do
+              find "$d" -maxdepth 3 -type d -name Logos 2>/dev/null || true
+            done >&2
+            exit 1
+          fi
+          echo "importpath=$importpath" >> "$GITHUB_OUTPUT"
+          echo "Design system import path: $importpath"
+
+      - name: qmllint
+        shell: bash
+        run: |
+          set -euo pipefail
+          nix shell nixpkgs#qt6.qtdeclarative --command bash -c '
+            qmllint --version
+            qmllint \
+              -I src/qml \
+              -I "${{ steps.ds.outputs.importpath }}" \
+              $(find src/qml -name "*.qml" | sort)
+          '
+
+      - name: Qt Quick Test (offscreen)
+        shell: bash
+        run: |
+          set -euo pipefail
+          nix shell nixpkgs#qt6.qtdeclarative --command bash -c '
+            set -euo pipefail
+            # qmltestrunner here is unwrapped, so QtQuick.Controls and QtQuick.Layouts
+            # are not on its default import path (qmllint resolves them itself;
+            # qmltestrunner does not). Point it at the qtdeclarative QML module dir,
+            # which sits next to the binary.
+            qmlpath="$(dirname "$(dirname "$(readlink -f "$(command -v qmltestrunner)")")")/lib/qt-6/qml"
+            [ -d "$qmlpath/QtQuick/Controls" ] || { echo "QtQuick.Controls not under $qmlpath" >&2; exit 1; }
+            QT_QPA_PLATFORM=offscreen qmltestrunner \
+              -input tests/qml \
+              -import src/qml \
+              -import "${{ steps.ds.outputs.importpath }}" \
+              -import "$qmlpath"
+          '

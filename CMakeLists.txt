@@ -22,3 +22,42 @@ logos_module(
     INCLUDE_DIRS
         src
 )
+
+# Dev-only QML tooling. Registers the pure-QML ChatUi module as a proper Qt QML
+# module so the generated all_qmllint target and .qmltypes can check it
+# (NO_PLUGIN + linter-only: nothing here is shipped). OFF by default, so the
+# build the bundle uses (Qt Core + RemoteObjects, driven by logos_module above)
+# never enters this branch and the packaged .lgx is byte-identical. Enable in a
+# Qt6 Qml/Quick environment with -DCHAT_UI_QML_DEVTOOLS=ON, and point qmllint at
+# the design system via QML_IMPORT_PATH=<app>/lib so `import Logos.Theme`
+# resolves. The runtime module identity is the hand-written src/qml/ChatUi/qmldir,
+# not the qmldir this target generates.
+option(CHAT_UI_QML_DEVTOOLS "Register chat-ui QML for qmllint/qmltypes (dev only, not shipped)" OFF)
+if(CHAT_UI_QML_DEVTOOLS)
+    find_package(Qt6 REQUIRED COMPONENTS Qml Quick)
+    qt_standard_project_setup(REQUIRES 6.5)
+    set_source_files_properties(src/qml/ChatUi/ChatTheme.qml
+        PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+    qt_add_qml_module(chat_ui_qml_devtools
+        URI ChatUi
+        VERSION 1.0
+        NO_PLUGIN
+        QML_FILES
+            src/qml/ChatUi/ChatTheme.qml
+            src/qml/ChatUi/ChatStore.qml
+            src/qml/ChatUi/PaneHeader.qml
+            src/qml/ChatUi/EmptyState.qml
+            src/qml/ChatUi/ClipboardProxy.qml
+            src/qml/ChatUi/StatusBar.qml
+            src/qml/ChatUi/SubmitRow.qml
+            src/qml/ChatUi/Toast.qml
+            src/qml/ChatUi/MessageBubble.qml
+            src/qml/ChatUi/ConversationDelegate.qml
+            src/qml/ChatUi/MemberDelegate.qml
+            src/qml/ChatUi/ConversationsPane.qml
+            src/qml/ChatUi/MessageThreadPane.qml
+            src/qml/ChatUi/MembersPane.qml
+            src/qml/ChatUi/NewConversationDialog.qml
+            src/qml/ChatUi/AddressDialog.qml
+    )
+endif()
