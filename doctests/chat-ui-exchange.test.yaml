@@ -5,7 +5,7 @@ release: ""
 
 intro: |
   A conversation takes two people: one shares their address, the other pastes
-  it into **+ new**, sends a first message, and the reply flows back. That
+  it into **New**, sends a first message, and the reply flows back. That
   round-trip spans **two** app instances, so the single-window walkthrough in
   *The Logos Chat UI* tutorial can't express it — and neither can the doc-test
   `ui_test` driver on its own, which works against one instance and can only set

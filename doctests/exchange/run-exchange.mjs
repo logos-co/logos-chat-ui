@@ -41,8 +41,8 @@ class Inspector {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Evaluate a QML expression in ChatView's root scope (the document ids — d,
-// convList, msgList, addressDialog — are all in scope there).
+// Evaluate a QML expression in ChatView's root scope (the ids store,
+// conversationsPane, threadPane, addressDialog are all in scope there).
 async function evalq(insp, expr) {
   const r = await insp.send("evaluate", { expression: expr });
   if (r.error) throw new Error(`eval(${expr}): ${r.error}`);
@@ -72,12 +72,12 @@ async function shoot(insp, outDir, name) {
 async function loadThread(insp, convId, minCount, { timeout = 90000 } = {}) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    await evalq(insp, `d.backend.selectConversation("")`);
+    await evalq(insp, `store.backend.selectConversation("")`);
     await sleep(400);
-    await evalq(insp, `d.backend.selectConversation(${JSON.stringify(convId)})`);
+    await evalq(insp, `store.backend.selectConversation(${JSON.stringify(convId)})`);
     const innerStart = Date.now();
     while (Date.now() - innerStart < 8000) {
-      const c = await evalq(insp, "msgList.count");
+      const c = await evalq(insp, "threadPane.messageCount");
       if (typeof c === "number" && c >= minCount) return c;
       await sleep(1000);
     }
@@ -90,7 +90,7 @@ async function loadThread(insp, convId, minCount, { timeout = 90000 } = {}) {
 // in addressDialog.addressText via the addressReady signal.
 async function getAddress(insp) {
   await evalq(insp, `addressDialog.addressText = ""`);
-  await evalq(insp, "d.backend.requestMyAddress()");
+  await evalq(insp, "store.backend.requestMyAddress()");
   const start = Date.now();
   while (Date.now() - start < 25000) {
     const t = await evalq(insp, "addressDialog.addressText");
@@ -111,8 +111,8 @@ async function main() {
   console.log("connected to both inspectors");
 
   console.log("waiting for both instances to reach Online...");
-  await waitFor(async () => (await evalq(alice, "d.statusText()")) === "Online", { what: "alice Online" });
-  await waitFor(async () => (await evalq(bob, "d.statusText()")) === "Online", { what: "bob Online" });
+  await waitFor(async () => (await evalq(alice, "store.online")) === true, { what: "alice Online" });
+  await waitFor(async () => (await evalq(bob, "store.online")) === true, { what: "bob Online" });
   console.log("both Online");
   // A chat_module RPC issued the instant after Online can time out while the
   // module is still settling; let it quiesce before the first call.
@@ -125,38 +125,38 @@ async function main() {
   await evalq(alice, "addressDialog.close()");
 
   console.log("bob: open a conversation with alice's address...");
-  await evalq(bob, `d.backend.createConversation(${JSON.stringify(address)})`);
-  await waitFor(async () => (await evalq(bob, "d.backend.currentConversationId")) !== "", { timeout: 30000, what: "bob conversation created" });
+  await evalq(bob, `store.backend.createConversation(${JSON.stringify(address)})`);
+  await waitFor(async () => (await evalq(bob, "store.backend.currentConversationId")) !== "", { timeout: 30000, what: "bob conversation created" });
 
   // create_conversation sends only the cryptographic invite; wait until Alice
   // has joined (her conversation list shows it) before Bob's first message, so
   // the message reaches her subscribed thread rather than racing ahead of her
   // join (same ordering as chat-module's own two-instance doc-test).
   console.log("alice: wait for the incoming conversation...");
-  await waitFor(async () => (await evalq(alice, "convList.count")) >= 1, { timeout: 150000, what: "alice joins conversation" });
+  await waitFor(async () => (await evalq(alice, "conversationsPane.count")) >= 1, { timeout: 150000, what: "alice joins conversation" });
 
   const BOB_MSG = "Hi Alice, it's Bob \u{1F44B}";
   console.log("bob: send the first message...");
-  await evalq(bob, `d.backend.sendMessage(d.backend.currentConversationId, ${JSON.stringify(BOB_MSG)})`);
-  await loadThread(bob, await evalq(bob, "d.backend.currentConversationId"), 1);
+  await evalq(bob, `store.backend.sendMessage(store.backend.currentConversationId, ${JSON.stringify(BOB_MSG)})`);
+  await loadThread(bob, await evalq(bob, "store.backend.currentConversationId"), 1);
   console.log("bob: first message sent");
   await shoot(bob, outDir, "02-bob-sent.png");
 
   // Bob's message still has to cross the network here (the join wait above
   // only covered the invite), so budget the same 150s as the other
   // propagation waits.
-  await loadThread(alice, await evalq(alice, `d.convModel.data(d.convModel.index(0,0), ${CONV_ID_ROLE})`), 1, { timeout: 150000 });
+  await loadThread(alice, await evalq(alice, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`), 1, { timeout: 150000 });
   console.log("alice: received Bob's message");
   await shoot(alice, outDir, "03-alice-received.png");
 
   const ALICE_REPLY = "Hi Bob, got it";
   console.log("alice: reply...");
-  await evalq(alice, `d.backend.sendMessage(d.backend.currentConversationId, ${JSON.stringify(ALICE_REPLY)})`);
-  await waitFor(async () => (await evalq(alice, "msgList.count")) >= 2, { timeout: 30000, what: "alice's reply in thread" });
+  await evalq(alice, `store.backend.sendMessage(store.backend.currentConversationId, ${JSON.stringify(ALICE_REPLY)})`);
+  await waitFor(async () => (await evalq(alice, "threadPane.messageCount")) >= 2, { timeout: 30000, what: "alice's reply in thread" });
   await shoot(alice, outDir, "04-alice-replied.png");
 
   console.log("bob: wait for the reply...");
-  await waitFor(async () => (await evalq(bob, "msgList.count")) >= 2, { timeout: 150000, what: "bob receives reply" });
+  await waitFor(async () => (await evalq(bob, "threadPane.messageCount")) >= 2, { timeout: 150000, what: "bob receives reply" });
   console.log("bob: received the reply");
   await shoot(bob, outDir, "05-bob-roundtrip.png");
 

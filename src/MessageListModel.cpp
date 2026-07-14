@@ -1,5 +1,8 @@
 #include "MessageListModel.h"
 
+#include <algorithm>
+#include <utility>
+
 MessageListModel::MessageListModel(QObject* parent)
     : QAbstractListModel(parent)
 {
@@ -39,19 +42,19 @@ QHash<int, QByteArray> MessageListModel::roleNames() const
 void MessageListModel::addMessage(const QString& sender, const QString& content,
                                   const QDateTime& timestamp, bool isMe)
 {
-    // Drop an exact duplicate of the current tail. A reconnect resync reloads
+    // Drop an exact duplicate of the newest message. A reconnect resync reloads
     // the active thread via get_messages while live events still push, so a
     // message persisted just before the reload and delivered just after would
-    // otherwise append twice; distinct messages never share content + timestamp
-    // + sender.
+    // otherwise appear twice; distinct messages never share content + timestamp
+    // + sender. The model is newest-first, so the newest row is the front.
     if (!m_items.isEmpty()) {
-        const MessageItem& last = m_items.last();
-        if (last.isMe == isMe && last.timestamp == timestamp && last.content == content)
+        const MessageItem& newest = m_items.first();
+        if (newest.isMe == isMe && newest.timestamp == timestamp && newest.content == content)
             return;
     }
 
-    beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
-    m_items.append({ sender, content, timestamp, isMe });
+    beginInsertRows(QModelIndex(), 0, 0);
+    m_items.prepend({ sender, content, timestamp, isMe });
     endInsertRows();
 }
 
@@ -60,10 +63,27 @@ void MessageListModel::addMessages(QVector<MessageItem> items)
     const int n = items.size();
     if (n == 0) return;
 
+    // get_messages returns the thread oldest-first; the model is newest-first
+    // (row 0 is the newest message, which the BottomToTop list pins to the
+    // visual bottom), so reverse the batch before appending it as older history.
+    std::reverse(items.begin(), items.end());
     const int firstRow = m_items.size();
     beginInsertRows(QModelIndex(), firstRow, firstRow + n - 1);
     m_items += std::move(items);
     endInsertRows();
+}
+
+void MessageListModel::setMessages(QVector<MessageItem> items)
+{
+    // Replace the whole thread in a single reset. get_messages returns the
+    // thread oldest-first and the model is newest-first, so reverse as
+    // addMessages does. Doing this as one reset (rather than clear() then
+    // addMessages()) means the list never passes through an empty state, so
+    // switching conversations does not flash the view empty.
+    std::reverse(items.begin(), items.end());
+    beginResetModel();
+    m_items = std::move(items);
+    endResetModel();
 }
 
 void MessageListModel::clear()

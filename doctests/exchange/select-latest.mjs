@@ -33,7 +33,7 @@ class Inspector {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Evaluate a QML expression in ChatView's root scope (ids d, convList, msgList).
+// Evaluate a QML expression in ChatView's root scope (ids store, conversationsPane, threadPane).
 async function evalq(insp, expr) {
   const r = await insp.send("evaluate", { expression: expr });
   if (r.error) throw new Error(`eval(${expr}): ${r.error}`);
@@ -55,14 +55,14 @@ async function main() {
   const insp = new Inspector("127.0.0.1", parseInt(process.env.SHOW_PORT || "3768", 10));
   await insp.connect();
 
-  await waitFor(insp, "convList.count", (c) => typeof c === "number" && c >= 1,
+  await waitFor(insp, "conversationsPane.count", (c) => typeof c === "number" && c >= 1,
     { timeout: 90000, what: "conversation to be listed" });
 
-  const convId = await evalq(insp, `d.convModel.data(d.convModel.index(0,0), ${CONV_ID_ROLE})`);
-  await evalq(insp, `d.backend.selectConversation(${JSON.stringify(convId)})`);
+  const convId = await evalq(insp, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
+  await evalq(insp, `store.backend.selectConversation(${JSON.stringify(convId)})`);
 
   // Wait for the thread to populate so the held window shows the round-trip.
-  await waitFor(insp, "msgList.count", (c) => typeof c === "number" && c >= 1,
+  await waitFor(insp, "threadPane.messageCount", (c) => typeof c === "number" && c >= 1,
     { timeout: 60000, what: "conversation thread to load" });
 
   console.log(`selected conversation ${convId}; thread shown`);

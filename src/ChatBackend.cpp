@@ -207,8 +207,10 @@ void ChatBackend::syncCurrentConversationMeta()
 
 void ChatBackend::showConversationMessages(const QString& convoId)
 {
-    m_messageModel->clear();
-    if (!m_moduleInitialised || convoId.isEmpty()) return;
+    if (!m_moduleInitialised || convoId.isEmpty()) {
+        m_messageModel->clear();
+        return;
+    }
 
     const QVariantList msgs = modules().chat_module.get_messages(convoId);
     QVector<MessageItem> rows;
@@ -222,7 +224,7 @@ void ChatBackend::showConversationMessages(const QString& convoId)
         rows.append({ fromSelf ? QStringLiteral("Me") : shortSenderLabel(sender),
                       content, msToDateTime(ts), fromSelf });
     }
-    m_messageModel->addMessages(std::move(rows));
+    m_messageModel->setMessages(std::move(rows));
 }
 
 void ChatBackend::deferToEventLoop(std::function<void()> work)

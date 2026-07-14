@@ -1,0 +1,17 @@
+module ChatUi
+singleton ChatTheme 1.0 ChatTheme.qml
+ChatStore 1.0 ChatStore.qml
+PaneHeader 1.0 PaneHeader.qml
+EmptyState 1.0 EmptyState.qml
+ClipboardProxy 1.0 ClipboardProxy.qml
+StatusBar 1.0 StatusBar.qml
+SubmitRow 1.0 SubmitRow.qml
+Toast 1.0 Toast.qml
+MessageBubble 1.0 MessageBubble.qml
+ConversationDelegate 1.0 ConversationDelegate.qml
+MemberDelegate 1.0 MemberDelegate.qml
+ConversationsPane 1.0 ConversationsPane.qml
+MessageThreadPane 1.0 MessageThreadPane.qml
+MembersPane 1.0 MembersPane.qml
+NewConversationDialog 1.0 NewConversationDialog.qml
+AddressDialog 1.0 AddressDialog.qml
