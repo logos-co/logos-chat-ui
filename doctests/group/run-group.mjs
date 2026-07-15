@@ -43,8 +43,9 @@ class Inspector {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Evaluate a QML expression in ChatView's root scope (the ids d, convList,
-// msgList, addressDialog are all in scope there; d.memberModel is the roster).
+// Evaluate a QML expression in ChatView's root scope (the ids store,
+// conversationsPane, threadPane, addressDialog are all in scope there;
+// store.memberModel is the roster).
 async function evalq(insp, expr) {
   const r = await insp.send("evaluate", { expression: expr });
   if (r.error) throw new Error(`eval(${expr}): ${r.error}`);
@@ -74,12 +75,12 @@ async function shoot(insp, outDir, name) {
 async function loadThread(insp, convId, minCount, { timeout = 120000 } = {}) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    await evalq(insp, `d.backend.selectConversation("")`);
+    await evalq(insp, `store.backend.selectConversation("")`);
     await sleep(400);
-    await evalq(insp, `d.backend.selectConversation(${JSON.stringify(convId)})`);
+    await evalq(insp, `store.backend.selectConversation(${JSON.stringify(convId)})`);
     const innerStart = Date.now();
     while (Date.now() - innerStart < 8000) {
-      const c = await evalq(insp, "msgList.count");
+      const c = await evalq(insp, "threadPane.messageCount");
       if (typeof c === "number" && c >= minCount) return c;
       await sleep(1000);
     }
@@ -99,8 +100,8 @@ async function waitForRoster(insp, minCount, { timeout = 150000, what = "roster"
       // memberCount is a backend property (reliably remoted), unlike the member
       // model's rowCount() over its QtRO replica; refreshMembers re-reads the
       // roster and updates it.
-      await evalq(insp, "d.backend.refreshMembers()");
-      last = await evalq(insp, "d.backend.memberCount");
+      await evalq(insp, "store.backend.refreshMembers()");
+      last = await evalq(insp, "store.backend.memberCount");
       if (typeof last === "number" && last >= minCount) return last;
     } catch {}
     await sleep(2000);
@@ -114,7 +115,7 @@ async function waitForRoster(insp, minCount, { timeout = 150000, what = "roster"
 // addressReady signal.
 async function getAddress(insp) {
   await evalq(insp, `addressDialog.addressText = ""`);
-  await evalq(insp, "d.backend.requestMyAddress()");
+  await evalq(insp, "store.backend.requestMyAddress()");
   const start = Date.now(); let addr = "";
   while (Date.now() - start < 25000) {
     const t = await evalq(insp, "addressDialog.addressText");
@@ -143,9 +144,9 @@ async function main() {
   // Three full UI stacks (each with its own waku node) boot and peer on one host,
   // so allow more time to reach Online than the two-party exchange needs.
   console.log("waiting for all instances to reach Online...");
-  await waitFor(async () => (await evalq(alice, "d.statusText()")) === "Online", { timeout: 300000, what: "alice Online" });
-  await waitFor(async () => (await evalq(bob,   "d.statusText()")) === "Online", { timeout: 300000, what: "bob Online" });
-  await waitFor(async () => (await evalq(carol, "d.statusText()")) === "Online", { timeout: 300000, what: "carol Online" });
+  await waitFor(async () => (await evalq(alice, "store.online")) === true, { timeout: 300000, what: "alice Online" });
+  await waitFor(async () => (await evalq(bob,   "store.online")) === true, { timeout: 300000, what: "bob Online" });
+  await waitFor(async () => (await evalq(carol, "store.online")) === true, { timeout: 300000, what: "carol Online" });
   console.log("all Online");
   // A chat_module RPC issued the instant after Online can time out while the
   // module is still settling; let it quiesce before the first call.
@@ -157,22 +158,22 @@ async function main() {
   console.log(`bob address: ${bobAddr.length} chars, carol address: ${carolAddr.length} chars`);
 
   console.log("alice: create the group...");
-  await evalq(alice, "d.backend.createGroupConversation()");
-  await waitFor(async () => (await evalq(alice, "d.backend.currentConversationId")) !== "", { timeout: 30000, what: "group created" });
-  const groupId = await evalq(alice, "d.backend.currentConversationId");
+  await evalq(alice, "store.backend.createGroupConversation()");
+  await waitFor(async () => (await evalq(alice, "store.backend.currentConversationId")) !== "", { timeout: 30000, what: "group created" });
+  const groupId = await evalq(alice, "store.backend.currentConversationId");
   console.log(`group id: ${groupId}`);
 
   // Membership grows one commit at a time; wait for each invitee to actually
   // join (their conversation list shows the group) before the next invite, so
   // the second add starts from a settled group rather than racing the first.
   console.log("alice: invite bob...");
-  await evalq(alice, `d.backend.addGroupMember(${JSON.stringify(groupId)}, ${JSON.stringify(bobAddr)})`);
-  await waitFor(async () => (await evalq(bob, "convList.count")) >= 1, { timeout: 300000, what: "bob joins the group" });
+  await evalq(alice, `store.backend.addGroupMember(${JSON.stringify(groupId)}, ${JSON.stringify(bobAddr)})`);
+  await waitFor(async () => (await evalq(bob, "conversationsPane.count")) >= 1, { timeout: 300000, what: "bob joins the group" });
   console.log("bob joined");
 
   console.log("alice: invite carol...");
-  await evalq(alice, `d.backend.addGroupMember(${JSON.stringify(groupId)}, ${JSON.stringify(carolAddr)})`);
-  await waitFor(async () => (await evalq(carol, "convList.count")) >= 1, { timeout: 300000, what: "carol joins the group" });
+  await evalq(alice, `store.backend.addGroupMember(${JSON.stringify(groupId)}, ${JSON.stringify(carolAddr)})`);
+  await waitFor(async () => (await evalq(carol, "conversationsPane.count")) >= 1, { timeout: 300000, what: "carol joins the group" });
   console.log("carol joined");
 
   console.log("alice: wait for the roster to converge to three...");
@@ -180,7 +181,7 @@ async function main() {
   await shoot(alice, outDir, "01-alice-group.png");
 
   console.log("alice: send the group message...");
-  await evalq(alice, `d.backend.sendMessage(${JSON.stringify(groupId)}, ${JSON.stringify(GROUP_MSG)})`);
+  await evalq(alice, `store.backend.sendMessage(${JSON.stringify(groupId)}, ${JSON.stringify(GROUP_MSG)})`);
   await loadThread(alice, groupId, 1);
   console.log("alice: message sent");
   await shoot(alice, outDir, "02-alice-sent.png");
@@ -190,14 +191,14 @@ async function main() {
   // roster. Load her thread first (leaves the group selected), then converge
   // her roster.
   console.log("carol: open the group and wait for alice's message...");
-  const carolGroup = await evalq(carol, `d.convModel.data(d.convModel.index(0,0), ${CONV_ID_ROLE})`);
+  const carolGroup = await evalq(carol, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
   await loadThread(carol, carolGroup, 1, { timeout: 300000 });
   await waitForRoster(carol, 3, { what: "carol's roster" });
   console.log("carol: received the group message");
   await shoot(carol, outDir, "03-carol-received.png");
 
   console.log("bob: confirm the message fanned out to him too...");
-  const bobGroup = await evalq(bob, `d.convModel.data(d.convModel.index(0,0), ${CONV_ID_ROLE})`);
+  const bobGroup = await evalq(bob, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
   await loadThread(bob, bobGroup, 1, { timeout: 300000 });
   await shoot(bob, outDir, "04-bob-received.png");
 

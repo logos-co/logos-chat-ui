@@ -34,6 +34,7 @@ public:
     void addMessage(const QString& sender, const QString& content,
                     const QDateTime& timestamp, bool isMe);
     void addMessages(QVector<MessageItem> items);
+    void setMessages(QVector<MessageItem> items);
     void clear();
 
 private:

@@ -69,9 +69,9 @@ sections:
               action: wait_for
               # Exact strings — the inspector's findByProperty matches the whole
               # `text` property, not a substring (verified against logos-qt-mcp).
-              # "Hello team 👋" mirrors run-group.mjs's GROUP_MSG; "members" is
+              # "Hello team 👋" mirrors run-group.mjs's GROUP_MSG; "Members" is
               # the members-pane header, present only for a group conversation.
-              texts: ["Hello team 👋", "members"]
+              texts: ["Hello team 👋", "Members"]
               timeout: 90000
               text: |
                 Carol's window after the group formed: Alice's message, received
