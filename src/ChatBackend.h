@@ -34,7 +34,7 @@ public:
 
 public slots:
     void createConversation(QString peerAddress) override;
-    void createGroupConversation() override;
+    void createGroupConversation(QString name, QString description) override;
     void addGroupMember(QString conversationId, QString peerAddress) override;
     void requestMyAddress() override;
     void sendMessage(QString conversationId, QString content) override;
@@ -56,9 +56,9 @@ private:
     void initialiseModule();
     void subscribeToEvents();
     void rehydrateConversations();
-    // Pushes the current conversation's group flag and display name as backend
-    // properties for the QML view to bind — see the .cpp for why the view can't
-    // read them off the model directly.
+    // Pushes the current conversation's group flag, display name, and description
+    // as backend properties for the QML view to bind — see the .cpp for why the
+    // view can't read them off the model directly.
     void syncCurrentConversationMeta();
     void showConversationMessages(const QString& convoId);
 

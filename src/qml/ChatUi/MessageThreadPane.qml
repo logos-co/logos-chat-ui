@@ -16,6 +16,9 @@ Rectangle {
     required property var messageModel
     required property bool currentIsGroup
     required property string title
+    // Group description shown under the title; empty for direct conversations
+    // and unnamed groups.
+    property string description: ""
     required property string conversationId
     required property bool hasConversation
     required property bool online
@@ -41,6 +44,7 @@ Rectangle {
             Layout.fillWidth: true
             visible: root.hasConversation
             title: root.title
+            subtitle: root.description
         }
 
         ListView {
