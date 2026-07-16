@@ -1,5 +1,8 @@
 #include "ConversationListModel.h"
 
+#include <QDate>
+#include <QLocale>
+
 ConversationListModel::ConversationListModel(QObject* parent)
     : QAbstractListModel(parent)
 {
@@ -18,23 +21,25 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
 
     const auto& item = m_items.at(index.row());
     switch (role) {
-    case ConversationIdRole: return item.conversationId;
-    case DisplayNameRole:    return item.displayName;
-    case LastActivityRole:   return item.lastActivity;
-    case UnreadCountRole:    return item.unreadCount;
-    case IsGroupRole:        return item.isGroup;
-    default:                 return {};
+    case ConversationIdRole:      return item.conversationId;
+    case DisplayNameRole:         return item.displayName;
+    case LastActivityRole:        return item.lastActivity;
+    case LastActivityDisplayRole: return formatLastActivity(item.lastActivity);
+    case UnreadCountRole:         return item.unreadCount;
+    case IsGroupRole:             return item.isGroup;
+    default:                      return {};
     }
 }
 
 QHash<int, QByteArray> ConversationListModel::roleNames() const
 {
     return {
-        { ConversationIdRole, "conversationId" },
-        { DisplayNameRole,    "displayName" },
-        { LastActivityRole,   "lastActivity" },
-        { UnreadCountRole,    "unreadCount" },
-        { IsGroupRole,        "isGroup" }
+        { ConversationIdRole,      "conversationId" },
+        { DisplayNameRole,         "displayName" },
+        { LastActivityRole,        "lastActivity" },
+        { LastActivityDisplayRole, "lastActivityDisplay" },
+        { UnreadCountRole,         "unreadCount" },
+        { IsGroupRole,             "isGroup" }
     };
 }
 
@@ -72,7 +77,7 @@ void ConversationListModel::updateLastActivity(const QString& id, const QDateTim
     if (idx < 0) return;
 
     m_items[idx].lastActivity = lastActivity;
-    emit dataChanged(index(idx), index(idx), { LastActivityRole });
+    emit dataChanged(index(idx), index(idx), { LastActivityRole, LastActivityDisplayRole });
 }
 
 void ConversationListModel::incrementUnread(const QString& id)
@@ -142,4 +147,19 @@ bool ConversationListModel::isGroupFor(const QString& id) const
 {
     const int idx = indexOf(id);
     return idx >= 0 && m_items.at(idx).isGroup;
+}
+
+QString ConversationListModel::formatLastActivity(const QDateTime& lastActivity) const
+{
+    if (!lastActivity.isValid())
+        return {};
+
+    const QLocale locale = QLocale::system();
+    const QDate today = QDate::currentDate();
+    const QDate date = lastActivity.date();
+    if (date == today)
+        return locale.toString(lastActivity.time(), QLocale::ShortFormat);
+    if (date == today.addDays(-1))
+        return tr("Yesterday");
+    return locale.toString(date, QLocale::ShortFormat);
 }

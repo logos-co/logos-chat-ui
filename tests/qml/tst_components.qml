@@ -24,14 +24,14 @@ Item {
             displayName: "Alice"
             isGroup: false
             unreadCount: 0
-            lastActivity: 0
+            lastActivityDisplay: "12:34"
         }
         ListElement {
             conversationId: "c2"
             displayName: "Team"
             isGroup: true
             unreadCount: 42
-            lastActivity: 0
+            lastActivityDisplay: "12:34"
         }
     }
     ListModel {
@@ -147,7 +147,7 @@ Item {
             displayName: "Alice"
             isGroup: true
             unreadCount: 3
-            lastActivity: 0
+            lastActivityDisplay: "12:34"
             currentConversationId: "c1"
         }
     }

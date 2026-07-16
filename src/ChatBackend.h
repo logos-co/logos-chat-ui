@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QSet>
+#include <QSortFilterProxyModel>
 #include <QString>
 #include <QVariantList>
 #include <functional>
@@ -16,7 +17,9 @@ class ChatBackend : public ChatBackendSimpleSource,
                     public LogosUiPluginContext
 {
     Q_OBJECT
-    Q_PROPERTY(ConversationListModel* conversationModel READ conversationModel CONSTANT)
+    // The conversation model reaches QML through a recency proxy, so the list is
+    // sorted newest-first; the base type is what the host remotes to the replica.
+    Q_PROPERTY(QAbstractItemModel* conversationModel READ conversationModel CONSTANT)
     Q_PROPERTY(MessageListModel* messageModel READ messageModel CONSTANT)
     Q_PROPERTY(MemberListModel* memberModel READ memberModel CONSTANT)
 
@@ -24,7 +27,7 @@ public:
     explicit ChatBackend(QObject* parent = nullptr);
     ~ChatBackend() override;
 
-    ConversationListModel* conversationModel() const;
+    QAbstractItemModel* conversationModel() const;
     MessageListModel* messageModel() const;
     MemberListModel* memberModel() const;
 
@@ -86,6 +89,9 @@ private:
     static QString shortSenderLabel(const QString& sender);
 
     ConversationListModel* m_conversationModel;
+    // Sorts m_conversationModel newest-first for the view; the source keeps
+    // insertion order and every internal edit stays on the source.
+    QSortFilterProxyModel* m_conversationProxy;
     MessageListModel* m_messageModel;
     MemberListModel* m_memberModel;
 

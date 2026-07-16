@@ -21,21 +21,21 @@ Rectangle {
             displayName: "Alice"
             isGroup: false
             unreadCount: 0
-            lastActivity: 0
+            lastActivityDisplay: "12:34"
         }
         ListElement {
             conversationId: "c2"
             displayName: "Design Team"
             isGroup: true
             unreadCount: 128
-            lastActivity: 0
+            lastActivityDisplay: "Yesterday"
         }
         ListElement {
             conversationId: "c3"
             displayName: "Bob"
             isGroup: false
             unreadCount: 3
-            lastActivity: 0
+            lastActivityDisplay: "Mon"
         }
     }
     ListModel {

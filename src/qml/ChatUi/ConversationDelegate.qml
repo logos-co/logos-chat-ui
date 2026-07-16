@@ -4,9 +4,9 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// A conversation row: name (with a group marker), last-activity time and an
-// unread-count badge. Delegate roles bind by name; set currentConversationId and
-// connect activated(). Focus ring when keyboard-focused, highlight when current.
+// A conversation row: name (with a group marker), a relative last-activity label
+// and an unread-count badge. Delegate roles bind by name; set currentConversationId
+// and connect activated(). Focus ring when keyboard-focused, highlight when current.
 LogosItemDelegate {
     id: root
 
@@ -14,7 +14,8 @@ LogosItemDelegate {
     required property string displayName
     required property bool isGroup
     required property int unreadCount
-    required property var lastActivity
+    // Relative last-activity label, formatted by the model.
+    required property string lastActivityDisplay
     // The open conversation, so this row highlights when it is the current one.
     property string currentConversationId: ""
 
@@ -54,7 +55,7 @@ LogosItemDelegate {
             }
 
             LogosText {
-                text: root.lastActivity ? Qt.formatTime(root.lastActivity, Locale.ShortFormat) : ""
+                text: root.lastActivityDisplay
                 color: Theme.palette.textTertiary
                 font.pixelSize: Theme.typography.badgeText
             }

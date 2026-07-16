@@ -25,7 +25,12 @@ public:
         DisplayNameRole,
         LastActivityRole,
         UnreadCountRole,
-        IsGroupRole
+        IsGroupRole,
+        // Relative last-activity label ("14:03" today, "Yesterday", else a short
+        // date). Computed when the activity changes, so an app left idle keeps
+        // yesterday's label until the next activity or a rehydrate; there is no
+        // day-tick timer.
+        LastActivityDisplayRole
     };
 
     explicit ConversationListModel(QObject* parent = nullptr);
@@ -57,6 +62,9 @@ public:
     Q_INVOKABLE bool isGroupFor(const QString& id) const;
 
 private:
+    // Relative label for the last-activity timestamp (see LastActivityDisplayRole).
+    QString formatLastActivity(const QDateTime& lastActivity) const;
+
     QVector<ConversationItem> m_items;
 };
 

@@ -45,10 +45,18 @@ Q_COREAPP_STARTUP_FUNCTION(ensureApplicationIdentity)
 ChatBackend::ChatBackend(QObject* parent)
     : ChatBackendSimpleSource(parent)
     , m_conversationModel(new ConversationListModel(this))
+    , m_conversationProxy(new QSortFilterProxyModel(this))
     , m_messageModel(new MessageListModel(this))
     , m_memberModel(new MemberListModel(this))
     , m_instancePath(resolveInstancePath())
 {
+    // Present conversations newest-first without disturbing the source's
+    // insertion order; the proxy re-sorts live as last_activity changes.
+    m_conversationProxy->setSourceModel(m_conversationModel);
+    m_conversationProxy->setSortRole(ConversationListModel::LastActivityRole);
+    m_conversationProxy->setDynamicSortFilter(true);
+    m_conversationProxy->sort(0, Qt::DescendingOrder);
+
     setChatStatus(ChatBackendSimpleSource::Stopped);
     setMyIdentity(QString());
     setStatusMessage(QStringLiteral("Ready"));
@@ -70,9 +78,9 @@ ChatBackend::~ChatBackend()
         modules().chat_module.shutdown();
 }
 
-ConversationListModel* ChatBackend::conversationModel() const
+QAbstractItemModel* ChatBackend::conversationModel() const
 {
-    return m_conversationModel;
+    return m_conversationProxy;
 }
 
 MessageListModel* ChatBackend::messageModel() const
