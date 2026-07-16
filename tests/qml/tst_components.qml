@@ -121,6 +121,14 @@ Item {
         }
     }
     Component {
+        id: messageComposerC
+        MessageComposer {
+            placeholder: "Type a message..."
+            buttonText: "Send"
+            submitEnabled: true
+        }
+    }
+    Component {
         id: toastC
         Toast {}
     }
@@ -348,6 +356,30 @@ Item {
             compare(submitSpy.count, 1, "a non-blank entry must submit once");
             compare(submitSpy.signalArguments[0][0], "hello", "the submitted text must be trimmed");
             compare(row.text, "", "the field must clear after submit");
+        }
+
+        // The composer trims, emits, and clears; a blank entry and a gated-off
+        // composer are both no-ops. The Enter/Shift+Enter handling is declarative
+        // in the field's key handlers and not key-simulated here.
+        function test_messageComposerSubmits() {
+            const composer = instantiate(messageComposerC);
+            submitSpy.target = composer;
+            submitSpy.clear();
+
+            composer.text = "   ";
+            composer._submit();
+            compare(submitSpy.count, 0, "a blank message must not submit");
+
+            composer.text = "  hello  ";
+            composer._submit();
+            compare(submitSpy.count, 1, "a non-blank message submits once");
+            compare(submitSpy.signalArguments[0][0], "hello", "the submitted text is trimmed");
+            compare(composer.text, "", "the field clears after submit");
+
+            composer.submitEnabled = false;
+            composer.text = "blocked";
+            composer._submit();
+            compare(submitSpy.count, 1, "a gated-off composer does not submit");
         }
 
         // The dialog only enables Create once there is non-blank input, and emits

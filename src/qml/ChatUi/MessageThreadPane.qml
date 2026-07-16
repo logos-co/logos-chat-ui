@@ -95,7 +95,7 @@ Rectangle {
             }
         }
 
-        SubmitRow {
+        MessageComposer {
             id: composer
             Layout.fillWidth: true
             placeholder: qsTr("Type a message...")
