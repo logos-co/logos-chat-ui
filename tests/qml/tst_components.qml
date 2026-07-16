@@ -96,6 +96,13 @@ Item {
         }
     }
     Component {
+        id: paneHeaderSubtitleC
+        PaneHeader {
+            title: "Header"
+            subtitle: "A subtitle line"
+        }
+    }
+    Component {
         id: emptyStateC
         EmptyState {
             text: "Nothing here"
@@ -120,6 +127,10 @@ Item {
     Component {
         id: newConvDialogC
         NewConversationDialog {}
+    }
+    Component {
+        id: newGroupDialogC
+        NewGroupDialog {}
     }
     Component {
         id: addressDialogC
@@ -172,6 +183,10 @@ Item {
         id: confirmedSpy
         signalName: "confirmed"
     }
+    SignalSpy {
+        id: groupDetailsSpy
+        signalName: "groupDetailsEntered"
+    }
 
     TestCase {
         name: "ChatUiComponents"
@@ -207,8 +222,19 @@ Item {
 
         function test_dialogsInstantiate() {
             instantiate(newConvDialogC);
+            instantiate(newGroupDialogC);
             instantiate(addressDialogC);
             instantiate(memberAddInfoDialogC);
+        }
+
+        // A title-only header keeps its 48px height, so panes that set no
+        // subtitle are unchanged; a subtitled header instantiates and is no
+        // shorter.
+        function test_paneHeaderSubtitle() {
+            const plain = instantiate(paneHeaderC);
+            compare(plain.implicitHeight, 48, "a title-only header stays 48px");
+            const withSubtitle = instantiate(paneHeaderSubtitleC);
+            verify(withSubtitle.implicitHeight >= 48, "a subtitled header is at least as tall");
         }
 
         function test_delegatesInstantiate() {
@@ -254,6 +280,35 @@ Item {
             dlg._accept();
             compare(addressSpy.count, 0, "an empty address must not be accepted");
             dlg.close();
+        }
+
+        // The group dialog gates on a non-blank name: an empty name is a no-op,
+        // a filled name emits once with the trimmed name, and an unentered
+        // description comes through empty.
+        function test_newGroupDialogValidation() {
+            const dlg = createTemporaryObject(newGroupDialogC, this);
+            verify(dlg);
+            groupDetailsSpy.target = dlg;
+            groupDetailsSpy.clear();
+            dlg.open();
+
+            dlg._accept();
+            compare(groupDetailsSpy.count, 0, "an empty name must not be accepted");
+
+            let nameField = null;
+            const kids = dlg.contentItem.children;
+            for (let i = 0; i < kids.length; ++i) {
+                if (kids[i].objectName === "groupNameField") {
+                    nameField = kids[i];
+                    break;
+                }
+            }
+            verify(nameField, "the group name field must be reachable");
+            nameField.text = "  Book Club  ";
+            dlg._accept();
+            compare(groupDetailsSpy.count, 1, "a non-blank name must be accepted once");
+            compare(groupDetailsSpy.signalArguments[0][0], "Book Club", "the name must be trimmed");
+            compare(groupDetailsSpy.signalArguments[0][1], "", "an unentered description is empty");
         }
 
         // Confirming the explainer emits confirmed() so the caller can proceed

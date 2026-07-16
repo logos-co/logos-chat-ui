@@ -128,6 +128,11 @@ async function getAddress(insp) {
 }
 
 const CONV_ID_ROLE = 257; // ConversationListModel::ConversationIdRole (Qt::UserRole + 1)
+const DISPLAY_NAME_ROLE = 258; // ConversationListModel::DisplayNameRole
+// The group's shared name and description, set by the creator and carried to
+// every joiner. The joiners' display name resolves to GROUP_NAME (nickname unset).
+const GROUP_NAME = "Book Club";
+const GROUP_DESC = "Weekly sci-fi picks";
 // Must match doctests/chat-ui-group.test.yaml's wait_for text exactly:
 // findByProperty matches the whole `text` property, not a substring.
 const GROUP_MSG = "Hello team \u{1F44B}";
@@ -158,7 +163,7 @@ async function main() {
   console.log(`bob address: ${bobAddr.length} chars, carol address: ${carolAddr.length} chars`);
 
   console.log("alice: create the group...");
-  await evalq(alice, "store.backend.createGroupConversation()");
+  await evalq(alice, `store.backend.createGroupConversation(${JSON.stringify(GROUP_NAME)}, ${JSON.stringify(GROUP_DESC)})`);
   await waitFor(async () => (await evalq(alice, "store.backend.currentConversationId")) !== "", { timeout: 30000, what: "group created" });
   const groupId = await evalq(alice, "store.backend.currentConversationId");
   console.log(`group id: ${groupId}`);
@@ -192,6 +197,11 @@ async function main() {
   // her roster.
   console.log("carol: open the group and wait for alice's message...");
   const carolGroup = await evalq(carol, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
+  // The shared name reached the joiner end to end: carol set no local nickname,
+  // so her display name resolves to the group name Alice created it with.
+  const carolName = await evalq(carol, `store.conversationModel.data(store.conversationModel.index(0,0), ${DISPLAY_NAME_ROLE})`);
+  if (carolName !== GROUP_NAME) throw new Error(`carol should see the shared group name ${JSON.stringify(GROUP_NAME)}, got ${JSON.stringify(carolName)}`);
+  console.log(`carol sees the group name: ${JSON.stringify(carolName)}`);
   await loadThread(carol, carolGroup, 1, { timeout: 300000 });
   await waitForRoster(carol, 3, { what: "carol's roster" });
   console.log("carol: received the group message");

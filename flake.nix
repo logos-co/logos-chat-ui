@@ -6,11 +6,12 @@
     # logos-protocol/logos-qt-sdk chain matches across both.
     logos-module-builder.url = "github:logos-co/logos-module-builder";
     nix-bundle-lgx.url = "github:logos-co/nix-bundle-lgx";
-    # Pinned to the chat_module master commit that surfaces the members_changed
-    # event; re-pin whenever chat_module advances, and switch to a release tag
-    # once one is cut. Delivery stays on the v0.1.3 tag below, matching
-    # chat_module's own delivery pin.
-    chat_module.url = "github:logos-co/logos-chat-module/2354fecb26183714ecd0aa174cf57ee1d544125f";
+    # Pinned to the chat_module commit that adds a group name and description to
+    # create_group_conversation and surfaces them on the Conversation record and
+    # conversation_created event; re-pin whenever chat_module advances, and switch
+    # to a release tag once one is cut. Delivery stays on the v0.1.3 tag below,
+    # matching chat_module's own delivery pin.
+    chat_module.url = "github:logos-co/logos-chat-module/4b5b5d955971ba1c9c49495f2be11ed1f29d136a";
     # Pinned to the v0.1.3 release tag, which includes the zerokit/RLN nix build
     # fix (delivery-module #49: zerokit's cargo vendor no longer hits crates.io's
     # python-requests 403). Kept in lockstep with chat_module's delivery pin.

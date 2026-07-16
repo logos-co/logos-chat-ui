@@ -49,7 +49,7 @@ Item {
                     store.selectConversation(conversationId);
                 }
                 onNewConversationRequested: newConvDialog.open()
-                onNewGroupRequested: store.createGroup()
+                onNewGroupRequested: newGroupDialog.open()
                 onShowAddressRequested: store.requestMyAddress()
             }
 
@@ -60,6 +60,7 @@ Item {
                 messageModel: store.messageModel
                 currentIsGroup: store.currentIsGroup
                 title: store.currentDisplayName
+                description: store.currentDescription
                 conversationId: store.currentConversationId
                 hasConversation: store.hasCurrentConversation
                 online: store.online
@@ -100,6 +101,13 @@ Item {
         id: newConvDialog
         onAddressEntered: function (address) {
             store.createConversation(address);
+        }
+    }
+
+    NewGroupDialog {
+        id: newGroupDialog
+        onGroupDetailsEntered: function (name, description) {
+            store.createGroup(name, description);
         }
     }
 

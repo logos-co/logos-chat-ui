@@ -198,12 +198,15 @@ void ChatBackend::rehydrateConversations()
         const QString convoId = obj.value(QStringLiteral("convo_id")).toString();
         if (convoId.isEmpty()) continue;
         const QString nickname = obj.value(QStringLiteral("nickname")).toString();
+        const QString name = obj.value(QStringLiteral("name")).toString();
+        const QString description = obj.value(QStringLiteral("description")).toString();
         const qint64 lastActivity = obj.value(QStringLiteral("last_activity_ms")).toLongLong();
         const bool isGroup = obj.value(QStringLiteral("kind")).toString() == QStringLiteral("group");
-        m_conversationModel->addConversation(convoId,
-                                             nickname.isEmpty()
-                                                 ? fallbackDisplayName(convoId, QString(), isGroup)
-                                                 : nickname,
+        // Local nickname wins, then the group's shared name, else a generated label.
+        const QString displayName = !nickname.isEmpty() ? nickname
+            : !name.isEmpty()                           ? name
+                                                        : fallbackDisplayName(convoId, QString(), isGroup);
+        m_conversationModel->addConversation(convoId, displayName, description,
                                              msToDateTime(lastActivity), isGroup);
     }
     // The rebuilt list may now know the current conversation's kind/name.
@@ -219,6 +222,7 @@ void ChatBackend::syncCurrentConversationMeta()
     const QString id = currentConversationId();
     setCurrentIsGroup(m_conversationModel->isGroupFor(id));
     setCurrentDisplayName(m_conversationModel->displayNameFor(id));
+    setCurrentDescription(m_conversationModel->descriptionFor(id));
 }
 
 void ChatBackend::showConversationMessages(const QString& convoId)
@@ -272,7 +276,7 @@ void ChatBackend::createConversation(QString peerAddress)
     // appliers handle the UI side from there.
 }
 
-void ChatBackend::createGroupConversation()
+void ChatBackend::createGroupConversation(QString name, QString description)
 {
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
         emit error(QStringLiteral("Chat not online"));
@@ -280,7 +284,7 @@ void ChatBackend::createGroupConversation()
     }
 
     setStatusMessage(QStringLiteral("Creating group..."));
-    const LogosResult res = modules().chat_module.create_group_conversation();
+    const LogosResult res = modules().chat_module.create_group_conversation(name, description);
     if (!res.success) {
         const QString reason = res.getError<QString>();
         setStatusMessage(QStringLiteral("Failed to create group: ") + reason);
@@ -465,7 +469,7 @@ void ChatBackend::applyMessageReceived(const QVariantList& args)
         // Defensive: ConversationStarted normally lands first with the kind.
         // Add it now and backfill the kind by re-reading the list (deferred:
         // this runs inside a module event callback, see deferToEventLoop).
-        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), when, false);
+        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), QString(), when, false);
         deferToEventLoop([this] { rehydrateConversations(); });
     } else {
         m_conversationModel->updateLastActivity(convoId, when);
@@ -493,7 +497,7 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
     const QDateTime when = msToDateTime(ts);
 
     if (!m_conversationModel->contains(convoId)) {
-        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), when, false);
+        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), QString(), when, false);
     } else {
         m_conversationModel->updateLastActivity(convoId, when);
     }
@@ -511,13 +515,17 @@ void ChatBackend::applyConversationCreated(const QVariantList& args)
     const bool isOutgoing = args.value(1).toBool();
     const QString peerLabel = args.value(2).toString();
     const bool isGroup = args.value(3).toString() == QStringLiteral("group");
-    const QString displayName = fallbackDisplayName(convoId, peerLabel, isGroup);
+    const QString name = args.value(4).toString();
+    const QString description = args.value(5).toString();
+    const QString displayName =
+        name.isEmpty() ? fallbackDisplayName(convoId, peerLabel, isGroup) : name;
     const QDateTime now = QDateTime::currentDateTime();
 
     if (!m_conversationModel->contains(convoId)) {
-        m_conversationModel->addConversation(convoId, displayName, now, isGroup);
+        m_conversationModel->addConversation(convoId, displayName, description, now, isGroup);
     } else {
         m_conversationModel->updateDisplayName(convoId, displayName);
+        m_conversationModel->updateDescription(convoId, description);
         m_conversationModel->updateLastActivity(convoId, now);
     }
 

@@ -39,12 +39,13 @@ QHash<int, QByteArray> ConversationListModel::roleNames() const
 }
 
 void ConversationListModel::addConversation(const QString& id, const QString& displayName,
-                                            const QDateTime& lastActivity, bool isGroup)
+                                            const QString& description, const QDateTime& lastActivity,
+                                            bool isGroup)
 {
     if (contains(id)) return;
 
     beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
-    m_items.append({ id, displayName, lastActivity, 0, isGroup });
+    m_items.append({ id, displayName, description, lastActivity, 0, isGroup });
     endInsertRows();
 }
 
@@ -56,6 +57,13 @@ void ConversationListModel::updateDisplayName(const QString& id, const QString& 
     if (m_items[idx].displayName == displayName) return;
     m_items[idx].displayName = displayName;
     emit dataChanged(index(idx), index(idx), { DisplayNameRole });
+}
+
+void ConversationListModel::updateDescription(const QString& id, const QString& description)
+{
+    int idx = indexOf(id);
+    if (idx < 0) return;
+    m_items[idx].description = description;
 }
 
 void ConversationListModel::updateLastActivity(const QString& id, const QDateTime& lastActivity)
@@ -122,6 +130,12 @@ QString ConversationListModel::displayNameFor(const QString& id) const
 {
     const int idx = indexOf(id);
     return idx < 0 ? QString() : m_items.at(idx).displayName;
+}
+
+QString ConversationListModel::descriptionFor(const QString& id) const
+{
+    const int idx = indexOf(id);
+    return idx < 0 ? QString() : m_items.at(idx).description;
 }
 
 bool ConversationListModel::isGroupFor(const QString& id) const

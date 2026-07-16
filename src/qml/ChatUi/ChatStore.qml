@@ -22,6 +22,7 @@ QtObject {
     readonly property bool hasCurrentConversation: currentConversationId !== ""
     readonly property bool currentIsGroup: backend ? backend.currentIsGroup : false
     readonly property string currentDisplayName: backend ? backend.currentDisplayName : ""
+    readonly property string currentDescription: backend ? backend.currentDescription : ""
     readonly property string statusMessage: backend ? backend.statusMessage : qsTr("No backend")
     readonly property string myIdentity: backend ? backend.myIdentity : ""
 
@@ -61,9 +62,9 @@ QtObject {
         if (backend)
             backend.createConversation(address);
     }
-    function createGroup() {
+    function createGroup(name, description) {
         if (backend)
-            backend.createGroupConversation();
+            backend.createGroupConversation(name, description);
     }
     function requestMyAddress() {
         if (backend)

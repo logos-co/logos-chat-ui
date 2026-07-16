@@ -9,6 +9,7 @@
 struct ConversationItem {
     QString conversationId;
     QString displayName;
+    QString description;
     QDateTime lastActivity;
     int unreadCount = 0;
     bool isGroup = false;
@@ -34,8 +35,9 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     void addConversation(const QString& id, const QString& displayName,
-                         const QDateTime& lastActivity, bool isGroup);
+                         const QString& description, const QDateTime& lastActivity, bool isGroup);
     void updateDisplayName(const QString& id, const QString& displayName);
+    void updateDescription(const QString& id, const QString& description);
     void updateLastActivity(const QString& id, const QDateTime& lastActivity);
     void incrementUnread(const QString& id);
     void clearUnread(const QString& id);
@@ -47,6 +49,9 @@ public:
 
     // Display name for a conversation id, or empty if unknown.
     Q_INVOKABLE QString displayNameFor(const QString& id) const;
+
+    // Group description for a conversation id, or empty if unknown or unset.
+    Q_INVOKABLE QString descriptionFor(const QString& id) const;
 
     // Whether a conversation is a group; false for a direct or unknown id.
     Q_INVOKABLE bool isGroupFor(const QString& id) const;
