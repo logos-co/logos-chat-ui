@@ -16,6 +16,8 @@ LogosItemDelegate {
     required property int unreadCount
     // Relative last-activity label, formatted by the model.
     required property string lastActivityDisplay
+    // Truncated last-message content shown under the name.
+    required property string preview
     // The open conversation, so this row highlights when it is the current one.
     property string currentConversationId: ""
 
@@ -54,10 +56,25 @@ LogosItemDelegate {
                 Layout.fillWidth: true
             }
 
-            LogosText {
-                text: root.lastActivityDisplay
-                color: Theme.palette.textTertiary
-                font.pixelSize: Theme.typography.badgeText
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spacing.small
+
+                LogosText {
+                    text: root.preview
+                    textFormat: Text.PlainText
+                    color: Theme.palette.textTertiary
+                    font.pixelSize: Theme.typography.secondaryText
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+
+                LogosText {
+                    text: root.lastActivityDisplay
+                    color: Theme.palette.textTertiary
+                    font.pixelSize: Theme.typography.badgeText
+                    Layout.alignment: Qt.AlignVCenter
+                }
             }
         }
 

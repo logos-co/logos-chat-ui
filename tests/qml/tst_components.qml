@@ -26,6 +26,7 @@ Item {
             isGroup: false
             unreadCount: 0
             lastActivityDisplay: "12:34"
+            preview: "See you tomorrow"
         }
         ListElement {
             conversationId: "c2"
@@ -33,6 +34,7 @@ Item {
             isGroup: true
             unreadCount: 42
             lastActivityDisplay: "12:34"
+            preview: "Alice: shipping the new theme"
         }
     }
     ListModel {
@@ -164,6 +166,7 @@ Item {
             isGroup: true
             unreadCount: 3
             lastActivityDisplay: "12:34"
+            preview: "See you tomorrow"
             currentConversationId: "c1"
         }
     }

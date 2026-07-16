@@ -6,17 +6,17 @@
         "logos-module-builder": "logos-module-builder_4"
       },
       "locked": {
-        "lastModified": 1784235127,
-        "narHash": "sha256-thnxGQRA37NfZJBEuWsuoyzX482YTpgtwJXQM7+aZZE=",
+        "lastModified": 1784270527,
+        "narHash": "sha256-E4H2HUNLTSl9r0LGfBB6FpSzrDGuiTf80wYn03O+87E=",
         "owner": "logos-co",
         "repo": "logos-chat-module",
-        "rev": "4b5b5d955971ba1c9c49495f2be11ed1f29d136a",
+        "rev": "afb965589afb193a8559faf911233221a681af80",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
         "repo": "logos-chat-module",
-        "rev": "4b5b5d955971ba1c9c49495f2be11ed1f29d136a",
+        "rev": "afb965589afb193a8559faf911233221a681af80",
         "type": "github"
       }
     },

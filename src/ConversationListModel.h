@@ -13,6 +13,8 @@ struct ConversationItem {
     QDateTime lastActivity;
     int unreadCount = 0;
     bool isGroup = false;
+    // Truncated last-message content shown as a list preview.
+    QString preview;
 };
 
 class ConversationListModel : public QAbstractListModel
@@ -30,7 +32,9 @@ public:
         // date). Computed when the activity changes, so an app left idle keeps
         // yesterday's label until the next activity or a rehydrate; there is no
         // day-tick timer.
-        LastActivityDisplayRole
+        LastActivityDisplayRole,
+        // Truncated last-message content for the list preview.
+        PreviewRole
     };
 
     explicit ConversationListModel(QObject* parent = nullptr);
@@ -40,9 +44,11 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     void addConversation(const QString& id, const QString& displayName,
-                         const QString& description, const QDateTime& lastActivity, bool isGroup);
+                         const QString& description, const QDateTime& lastActivity, bool isGroup,
+                         const QString& preview);
     void updateDisplayName(const QString& id, const QString& displayName);
     void updateDescription(const QString& id, const QString& description);
+    void updatePreview(const QString& id, const QString& preview);
     void updateLastActivity(const QString& id, const QDateTime& lastActivity);
     void incrementUnread(const QString& id);
     void clearUnread(const QString& id);

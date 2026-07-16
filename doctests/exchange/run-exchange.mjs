@@ -101,6 +101,7 @@ async function getAddress(insp) {
 }
 
 const CONV_ID_ROLE = 257; // ConversationListModel::ConversationIdRole (Qt::UserRole + 1)
+const PREVIEW_ROLE = 263; // ConversationListModel::PreviewRole
 
 async function main() {
   const outDir = process.env.OUT_DIR || "./images";
@@ -140,6 +141,12 @@ async function main() {
   await evalq(bob, `store.backend.sendMessage(store.backend.currentConversationId, ${JSON.stringify(BOB_MSG)})`);
   await loadThread(bob, await evalq(bob, "store.backend.currentConversationId"), 1);
   console.log("bob: first message sent");
+  // The sidebar preview reflects the latest message. Bob has one conversation,
+  // so it is row 0; wait for the model replica to catch up to the sent content.
+  await waitFor(
+    async () => (await evalq(bob, `store.conversationModel.data(store.conversationModel.index(0,0), ${PREVIEW_ROLE})`)) === BOB_MSG,
+    { timeout: 15000, what: "bob's sidebar preview to match the sent message" });
+  console.log("bob: sidebar preview matches the sent message");
   await shoot(bob, outDir, "02-bob-sent.png");
 
   // Bob's message still has to cross the network here (the join wait above

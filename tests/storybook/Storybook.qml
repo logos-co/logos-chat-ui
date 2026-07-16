@@ -22,6 +22,7 @@ Rectangle {
             isGroup: false
             unreadCount: 0
             lastActivityDisplay: "12:34"
+            preview: "Sounds good, talk soon"
         }
         ListElement {
             conversationId: "c2"
@@ -29,6 +30,7 @@ Rectangle {
             isGroup: true
             unreadCount: 128
             lastActivityDisplay: "Yesterday"
+            preview: "Bob: pushed the fix, please review"
         }
         ListElement {
             conversationId: "c3"
@@ -36,6 +38,7 @@ Rectangle {
             isGroup: false
             unreadCount: 3
             lastActivityDisplay: "Mon"
+            preview: "Did you get a chance to look?"
         }
     }
     ListModel {

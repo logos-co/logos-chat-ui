@@ -27,6 +27,7 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     case LastActivityDisplayRole: return formatLastActivity(item.lastActivity);
     case UnreadCountRole:         return item.unreadCount;
     case IsGroupRole:             return item.isGroup;
+    case PreviewRole:             return item.preview;
     default:                      return {};
     }
 }
@@ -39,18 +40,19 @@ QHash<int, QByteArray> ConversationListModel::roleNames() const
         { LastActivityRole,        "lastActivity" },
         { LastActivityDisplayRole, "lastActivityDisplay" },
         { UnreadCountRole,         "unreadCount" },
-        { IsGroupRole,             "isGroup" }
+        { IsGroupRole,             "isGroup" },
+        { PreviewRole,             "preview" }
     };
 }
 
 void ConversationListModel::addConversation(const QString& id, const QString& displayName,
                                             const QString& description, const QDateTime& lastActivity,
-                                            bool isGroup)
+                                            bool isGroup, const QString& preview)
 {
     if (contains(id)) return;
 
     beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
-    m_items.append({ id, displayName, description, lastActivity, 0, isGroup });
+    m_items.append({ id, displayName, description, lastActivity, 0, isGroup, preview });
     endInsertRows();
 }
 
@@ -69,6 +71,16 @@ void ConversationListModel::updateDescription(const QString& id, const QString& 
     int idx = indexOf(id);
     if (idx < 0) return;
     m_items[idx].description = description;
+}
+
+void ConversationListModel::updatePreview(const QString& id, const QString& preview)
+{
+    int idx = indexOf(id);
+    if (idx < 0) return;
+
+    if (m_items[idx].preview == preview) return;
+    m_items[idx].preview = preview;
+    emit dataChanged(index(idx), index(idx), { PreviewRole });
 }
 
 void ConversationListModel::updateLastActivity(const QString& id, const QDateTime& lastActivity)
