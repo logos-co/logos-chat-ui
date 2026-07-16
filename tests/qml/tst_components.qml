@@ -42,6 +42,9 @@ Item {
             content: "Hi there"
             timestamp: 0
             isMe: false
+            sameSenderAsPrevious: false
+            showDaySeparator: true
+            dayLabel: "Today"
         }
     }
     ListModel {
@@ -168,6 +171,9 @@ Item {
             timestamp: 0
             sender: "Alice"
             groupContext: true
+            sameSenderAsPrevious: false
+            showDaySeparator: true
+            dayLabel: "Today"
         }
     }
     Component {
@@ -304,6 +310,18 @@ Item {
             instantiate(conversationDelegateC);
             instantiate(messageBubbleC);
             instantiate(memberDelegateC);
+        }
+
+        // The sender label shows on the first message of a run in a group, is
+        // suppressed on continuations, and never shows on own messages.
+        function test_messageBubbleGrouping() {
+            const bubble = instantiate(messageBubbleC);
+            verify(bubble.showSender, "first message of a run in a group shows the sender");
+            bubble.sameSenderAsPrevious = true;
+            verify(!bubble.showSender, "a continuation hides the sender label");
+            bubble.sameSenderAsPrevious = false;
+            bubble.isMe = true;
+            verify(!bubble.showSender, "own messages never show a sender label");
         }
 
         // The current conversation highlights; a different one does not.

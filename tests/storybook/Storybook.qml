@@ -45,12 +45,18 @@ Rectangle {
             content: "Hey, did you see the new theme?"
             timestamp: 0
             isMe: false
+            sameSenderAsPrevious: false
+            showDaySeparator: true
+            dayLabel: "Today"
         }
         ListElement {
             sender: "Me"
             content: "Yes, it looks great"
             timestamp: 0
             isMe: true
+            sameSenderAsPrevious: false
+            showDaySeparator: false
+            dayLabel: "Today"
         }
     }
     ListModel {
