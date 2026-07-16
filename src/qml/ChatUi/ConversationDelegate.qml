@@ -29,7 +29,10 @@ LogosItemDelegate {
     highlighted: conversationId === currentConversationId
 
     Accessible.role: Accessible.ListItem
-    Accessible.name: isGroup ? qsTr("Group %1").arg(displayName) : displayName
+    Accessible.name: {
+        const base = isGroup ? qsTr("Group %1").arg(displayName) : displayName;
+        return unreadCount > 0 ? qsTr("%1, %2 unread").arg(base).arg(unreadCount) : base;
+    }
     Accessible.selected: highlighted
 
     onClicked: root.activated(root.conversationId)
@@ -63,14 +66,16 @@ LogosItemDelegate {
             implicitWidth: Math.max(20, badgeText.implicitWidth + 12)
             implicitHeight: 20
             radius: height / 2
-            color: Theme.palette.error
+            color: Theme.palette.primary
             Layout.alignment: Qt.AlignVCenter
 
             LogosText {
                 id: badgeText
                 anchors.centerIn: parent
                 text: root.unreadCount
-                color: Theme.palette.text
+                // Dark ink for legible contrast on the light primary fill; the
+                // white text token drops below the readable ratio there.
+                color: Theme.palette.background
                 font.pixelSize: Theme.typography.badgeText
                 font.weight: Theme.typography.weightBold
             }

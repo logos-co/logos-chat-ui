@@ -21,6 +21,9 @@ Rectangle {
     property string description: ""
     required property string conversationId
     required property bool hasConversation
+    // Whether any conversation exists at all. Optional so the pane stands alone;
+    // drives the empty-thread guidance when nothing is selected.
+    property bool hasConversations: true
     required property bool online
 
     signal messageSubmitted(string text)
@@ -75,7 +78,7 @@ Rectangle {
                 anchors.centerIn: parent
                 width: parent.width - 2 * Theme.spacing.large
                 visible: threadList.count === 0
-                text: root.hasConversation ? qsTr("No messages yet") : qsTr("Select a conversation to start chatting")
+                text: root.hasConversation ? qsTr("No messages yet") : root.hasConversations ? qsTr("Select a conversation to start chatting") : qsTr("No conversations yet. Start one with New chat or New group in the sidebar.")
             }
         }
 

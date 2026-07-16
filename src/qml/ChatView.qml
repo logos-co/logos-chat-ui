@@ -63,6 +63,7 @@ Item {
                 description: store.currentDescription
                 conversationId: store.currentConversationId
                 hasConversation: store.hasCurrentConversation
+                hasConversations: conversationsPane.count > 0
                 online: store.online
                 onMessageSubmitted: function (text) {
                     store.sendMessage(text);

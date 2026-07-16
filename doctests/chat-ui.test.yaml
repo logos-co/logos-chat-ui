@@ -64,7 +64,7 @@ sections:
       The window is a two-pane messenger:
 
       - **Left:** your conversations, a `Chat` header with a connection dot,
-        a **New** button (start a conversation from someone's address), and a
+        a **New chat** button (start a conversation from someone's address), and a
         **Show My Address** button (share your own).
       - **Right:** the message thread for the selected conversation and a
         composer (the **Send** button).
@@ -105,7 +105,7 @@ sections:
               text: |
                 `init` returned right away and the delivery node bootstrapped in
                 the background. When it connects, the `delivery_state_changed`
-                event lands and the status flips to **Online** — the **New**
+                event lands and the status flips to **Online** — the **New chat**
                 and **Show My Address** buttons enable.
               screenshot: "connected.png"
             - name: "Open your address"
