@@ -73,10 +73,6 @@ QtObject {
         if (backend && currentConversationId !== "")
             backend.addGroupMember(currentConversationId, address);
     }
-    function refreshMembers() {
-        if (backend)
-            backend.refreshMembers();
-    }
 
     property Connections _backendSignals: Connections {
         target: root.backend

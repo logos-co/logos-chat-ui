@@ -6,7 +6,6 @@ import QtQuick.Layouts
 
 import Logos.Theme
 import Logos.Controls
-import Logos.Icons
 
 // Group-roster panel: give it a member model and an online flag, and connect its
 // signals. A row shows the member label and a self marker, reveals the full
@@ -21,8 +20,6 @@ Rectangle {
 
     // Emitted when the user asks to invite `address` into the group.
     signal addMemberRequested(string address)
-    // Emitted when the user asks to reload the roster.
-    signal refreshRequested
 
     implicitWidth: 220
     color: Theme.palette.backgroundInset
@@ -38,22 +35,6 @@ Rectangle {
         PaneHeader {
             Layout.fillWidth: true
             title: qsTr("Members")
-
-            LogosIconButton {
-                id: refreshButton
-                size: 30
-                iconSize: 16
-                iconSource: LogosIcons.refresh
-                enabled: root.online
-                onClicked: root.refreshRequested()
-                Layout.alignment: Qt.AlignVCenter
-
-                LogosToolTip {
-                    text: qsTr("Reload roster")
-                    placement: LogosToolTip.Bottom
-                    visible: refreshButton.hovered
-                }
-            }
         }
 
         ListView {

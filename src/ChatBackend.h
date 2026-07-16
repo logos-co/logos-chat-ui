@@ -2,6 +2,7 @@
 #define CHAT_BACKEND_H
 
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <QVariantList>
 #include <functional>
@@ -75,6 +76,7 @@ private:
     void applyMessageSent(const QVariantList& args);
     void applyConversationCreated(const QVariantList& args);
     void applyConversationUpdated(const QVariantList& args);
+    void applyMembersChanged(const QVariantList& args);
     void applyConversationDeleted(const QVariantList& args);
 
     static QString fallbackDisplayName(const QString& convoId, const QString& peerLabel = QString(),
@@ -91,6 +93,8 @@ private:
     // This installation's own address, cached lazily on first roster refresh to
     // mark the self entry.
     QString m_myAddress;
+    // Addresses invited into the current group but not yet committed to its roster.
+    QSet<QString> m_pendingMembers;
     bool m_moduleInitialised = false;
     // Set once the initial snapshot has loaded; gates the reconnect resync in
     // applyDeliveryState so it doesn't fire during initial setup.

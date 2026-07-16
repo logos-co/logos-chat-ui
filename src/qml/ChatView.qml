@@ -1,4 +1,5 @@
 import QtQuick
+import QtCore
 import QtQuick.Layouts
 
 import ChatUi
@@ -74,9 +75,14 @@ Item {
                 memberModel: store.memberModel
                 online: store.online
                 onAddMemberRequested: function (address) {
-                    store.addMember(address);
+                    // First member add: explain the async commit delay first, then invite.
+                    if (chatPrefs.memberAddExplained) {
+                        store.addMember(address);
+                    } else {
+                        memberAddInfoDialog.pendingAddress = address;
+                        memberAddInfoDialog.open();
+                    }
                 }
-                onRefreshRequested: store.refreshMembers()
             }
         }
 
@@ -101,7 +107,27 @@ Item {
         id: addressDialog
     }
 
+    MemberAddInfoDialog {
+        id: memberAddInfoDialog
+        // The address whose add opened the explainer, applied once confirmed.
+        property string pendingAddress: ""
+        onConfirmed: function (dontShowAgain) {
+            if (dontShowAgain)
+                chatPrefs.memberAddExplained = true;
+            if (pendingAddress !== "")
+                store.addMember(pendingAddress);
+            pendingAddress = "";
+        }
+    }
+
     Toast {
         id: toast
+    }
+
+    // Persisted UI preferences.
+    Settings {
+        id: chatPrefs
+        category: "chat_ui"
+        property bool memberAddExplained: false
     }
 }

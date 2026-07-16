@@ -49,6 +49,7 @@ Item {
             address: "0xabc"
             label: "Alice"
             isSelf: false
+            pending: false
         }
     }
 
@@ -125,6 +126,10 @@ Item {
         AddressDialog {}
     }
     Component {
+        id: memberAddInfoDialogC
+        MemberAddInfoDialog {}
+    }
+    Component {
         id: conversationDelegateC
         ConversationDelegate {
             conversationId: "c1"
@@ -145,6 +150,15 @@ Item {
             groupContext: true
         }
     }
+    Component {
+        id: memberDelegateC
+        MemberDelegate {
+            label: "Carol"
+            address: "0xcarol"
+            isSelf: false
+            pending: true
+        }
+    }
 
     SignalSpy {
         id: submitSpy
@@ -153,6 +167,10 @@ Item {
     SignalSpy {
         id: addressSpy
         signalName: "addressEntered"
+    }
+    SignalSpy {
+        id: confirmedSpy
+        signalName: "confirmed"
     }
 
     TestCase {
@@ -190,11 +208,13 @@ Item {
         function test_dialogsInstantiate() {
             instantiate(newConvDialogC);
             instantiate(addressDialogC);
+            instantiate(memberAddInfoDialogC);
         }
 
         function test_delegatesInstantiate() {
             instantiate(conversationDelegateC);
             instantiate(messageBubbleC);
+            instantiate(memberDelegateC);
         }
 
         // The current conversation highlights; a different one does not.
@@ -234,6 +254,17 @@ Item {
             dlg._accept();
             compare(addressSpy.count, 0, "an empty address must not be accepted");
             dlg.close();
+        }
+
+        // Confirming the explainer emits confirmed() so the caller can proceed
+        // with the invite and persist the "don't show again" choice.
+        function test_memberAddInfoDialogConfirms() {
+            const dlg = instantiate(memberAddInfoDialogC);
+            confirmedSpy.target = dlg;
+            confirmedSpy.clear();
+            dlg.open();
+            dlg.rightActions[0].clicked();
+            compare(confirmedSpy.count, 1, "confirming must emit confirmed() once");
         }
     }
 }

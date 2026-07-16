@@ -15,3 +15,4 @@ MessageThreadPane 1.0 MessageThreadPane.qml
 MembersPane 1.0 MembersPane.qml
 NewConversationDialog 1.0 NewConversationDialog.qml
 AddressDialog 1.0 AddressDialog.qml
+MemberAddInfoDialog 1.0 MemberAddInfoDialog.qml
