@@ -198,6 +198,26 @@ Item {
             return obj;
         }
 
+        // Find a named field anywhere under a dialog's content, descending both
+        // the visual children and a Control/ScrollView contentItem, so a field
+        // nested inside a LogosScrollView is still reachable.
+        function findField(obj, objectName) {
+            if (!obj)
+                return null;
+            if (obj.objectName === objectName)
+                return obj;
+            const pools = [obj.children, obj.contentItem ? [obj.contentItem] : []];
+            for (let p = 0; p < pools.length; ++p) {
+                const pool = pools[p];
+                for (let i = 0; pool && i < pool.length; ++i) {
+                    const found = findField(pool[i], objectName);
+                    if (found)
+                        return found;
+                }
+            }
+            return null;
+        }
+
         function test_panesInstantiate() {
             instantiate(conversationsPaneC);
             instantiate(messageThreadPaneC);
@@ -309,6 +329,65 @@ Item {
             compare(groupDetailsSpy.count, 1, "a non-blank name must be accepted once");
             compare(groupDetailsSpy.signalArguments[0][0], "Book Club", "the name must be trimmed");
             compare(groupDetailsSpy.signalArguments[0][1], "", "an unentered description is empty");
+        }
+
+        // A dismissed group dialog keeps its draft; only a successful accept
+        // clears it. Create is gated on both length limits, and Enter cannot
+        // bypass them.
+        function test_newGroupDialogDraftAndLimits() {
+            const dlg = createTemporaryObject(newGroupDialogC, this);
+            verify(dlg);
+            groupDetailsSpy.target = dlg;
+            groupDetailsSpy.clear();
+
+            const nameField = findField(dlg.contentItem, "groupNameField");
+            const descField = findField(dlg.contentItem, "groupDescriptionField");
+            verify(nameField && descField, "both fields must be reachable");
+            const create = dlg.rightActions[0];
+
+            dlg.open();
+            nameField.text = "Draft name";
+            descField.text = "Draft description";
+            dlg.close();
+            compare(nameField.text, "Draft name", "closing keeps the name draft");
+            compare(descField.text, "Draft description", "closing keeps the description draft");
+
+            dlg.open();
+            nameField.text = "x".repeat(dlg.nameLimit + 1);
+            verify(!create.enabled, "Create is disabled over the name limit");
+            dlg._accept();
+            compare(groupDetailsSpy.count, 0, "Enter must not accept over the name limit");
+
+            nameField.text = "Valid";
+            descField.text = "y".repeat(dlg.descriptionLimit + 1);
+            verify(!create.enabled, "Create is disabled over the description limit");
+
+            descField.text = "ok";
+            dlg._accept();
+            compare(groupDetailsSpy.count, 1, "valid input accepts once");
+            compare(nameField.text, "", "accept clears the name");
+            compare(descField.text, "", "accept clears the description");
+        }
+
+        // A dismissed conversation dialog keeps its draft; a successful accept
+        // clears it.
+        function test_newConversationDialogDraft() {
+            const dlg = createTemporaryObject(newConvDialogC, this);
+            verify(dlg);
+            addressSpy.target = dlg;
+            addressSpy.clear();
+            const field = findField(dlg.contentItem, "convAddressField");
+            verify(field, "the address field must be reachable");
+
+            dlg.open();
+            field.text = "0xdraft";
+            dlg.close();
+            compare(field.text, "0xdraft", "closing keeps the address draft");
+
+            dlg.open();
+            dlg._accept();
+            compare(addressSpy.count, 1, "a non-blank draft accepts");
+            compare(field.text, "", "accept clears the address");
         }
 
         // Confirming the explainer emits confirmed() so the caller can proceed

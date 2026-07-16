@@ -6,8 +6,10 @@ import Logos.Theme
 import Logos.Controls
 
 // Modal dialog that collects a peer address for a new 1:1 conversation and emits
-// it. Open it and connect addressEntered(); it clears its input whenever it
-// closes. Standalone: instantiate with no context, open(), and read the signal.
+// it. Open it and connect addressEntered(); its input persists across a close so
+// a dismissed dialog reopens with the same draft, and clears only once a
+// conversation is created. Standalone: instantiate with no context, open(), and
+// read the signal.
 LogosDialog {
     id: root
 
@@ -41,7 +43,6 @@ LogosDialog {
     ]
 
     onOpened: addressField.forceActiveFocus()
-    onClosed: addressField.clear()
 
     contentItem: ColumnLayout {
         spacing: Theme.spacing.medium
@@ -60,6 +61,7 @@ LogosDialog {
 
             LogosTextArea {
                 id: addressField
+                objectName: "convAddressField"
                 placeholderText: qsTr("peer address (hex)...")
                 font.family: ChatTheme.monoFont
                 // Return submits rather than inserting a newline: the address is
@@ -76,13 +78,14 @@ LogosDialog {
         }
     }
 
-    // Emit the trimmed address and close. No-op on empty input, so neither Return
-    // nor Create can submit a blank address.
+    // Emit the trimmed address, clear the field, and close. No-op on empty input,
+    // so neither Return nor Create can submit a blank address.
     function _accept() {
         const address = addressField.text.trim();
         if (address === "")
             return;
         root.addressEntered(address);
+        addressField.clear();
         root.close();
     }
 }
