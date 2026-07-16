@@ -13,6 +13,7 @@ import ChatUi
 // that is the house-rule-2 proof; a broken import or a misused Logos API surfaces
 // here as a null object.
 Item {
+    id: testRoot
     width: 400
     height: 400
 
@@ -141,6 +142,14 @@ Item {
         MemberAddInfoDialog {}
     }
     Component {
+        id: groupInfoDialogC
+        GroupInfoDialog {
+            groupName: "Book Club"
+            memberCount: 3
+            conversationId: "0xconversationid"
+        }
+    }
+    Component {
         id: conversationDelegateC
         ConversationDelegate {
             conversationId: "c1"
@@ -186,6 +195,10 @@ Item {
     SignalSpy {
         id: groupDetailsSpy
         signalName: "groupDetailsEntered"
+    }
+    SignalSpy {
+        id: groupInfoSpy
+        signalName: "groupInfoRequested"
     }
 
     TestCase {
@@ -245,6 +258,37 @@ Item {
             instantiate(newGroupDialogC);
             instantiate(addressDialogC);
             instantiate(memberAddInfoDialogC);
+        }
+
+        // The group info dialog renders with both an empty description (the "No
+        // description" fallback) and a long one.
+        function test_groupInfoDialog() {
+            const dlg = instantiate(groupInfoDialogC);
+            compare(dlg.description, "", "starts with no description");
+            dlg.open();
+            dlg.description = "A fairly long group description ".repeat(10);
+            dlg.close();
+        }
+
+        // The Details button shows only for a group and requests the info dialog.
+        // Parented into the shown root and sized so effective visibility tracks
+        // the currentIsGroup binding.
+        function test_threadPaneDetailsButton() {
+            const pane = createTemporaryObject(messageThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const details = findField(pane, "detailsButton");
+            verify(details, "the details button must be reachable");
+            verify(!details.visible, "Details is hidden for a direct conversation");
+
+            pane.currentIsGroup = true;
+            verify(details.visible, "Details shows for a group");
+
+            groupInfoSpy.target = pane;
+            groupInfoSpy.clear();
+            details.clicked();
+            compare(groupInfoSpy.count, 1, "clicking Details requests the group info");
         }
 
         // Every pane header is a fixed 48px, subtitle or not, so panes stay

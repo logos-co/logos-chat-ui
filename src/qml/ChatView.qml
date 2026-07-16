@@ -68,6 +68,7 @@ Item {
                 onMessageSubmitted: function (text) {
                     store.sendMessage(text);
                 }
+                onGroupInfoRequested: groupInfoDialog.open()
             }
 
             MembersPane {
@@ -114,6 +115,14 @@ Item {
 
     AddressDialog {
         id: addressDialog
+    }
+
+    GroupInfoDialog {
+        id: groupInfoDialog
+        groupName: store.currentDisplayName
+        description: store.currentDescription
+        memberCount: store.memberCount
+        conversationId: store.currentConversationId
     }
 
     MemberAddInfoDialog {

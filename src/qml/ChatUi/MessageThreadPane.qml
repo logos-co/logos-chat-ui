@@ -27,6 +27,8 @@ Rectangle {
     required property bool online
 
     signal messageSubmitted(string text)
+    // Requests the group-details dialog; emitted from the header's Details button.
+    signal groupInfoRequested
 
     // Per-conversation composer drafts, restored on switch so an unsent message
     // is never carried into (or sent to) a different conversation.
@@ -48,6 +50,17 @@ Rectangle {
             visible: root.hasConversation
             title: root.title
             subtitle: root.description
+
+            LogosButton {
+                objectName: "detailsButton"
+                implicitWidth: 84
+                implicitHeight: 30
+                //: Button that opens the group's details dialog
+                text: qsTr("Details")
+                visible: root.currentIsGroup
+                onClicked: root.groupInfoRequested()
+                Layout.alignment: Qt.AlignVCenter
+            }
         }
 
         ListView {
