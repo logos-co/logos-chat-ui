@@ -19,6 +19,9 @@ LogosItemDelegate {
 
     signal copyRequested(string address)
 
+    // True briefly after a copy, so the tooltip can confirm it.
+    readonly property bool copiedFlashing: copiedTimer.running
+
     width: 200
     implicitHeight: 40
     radius: 0
@@ -26,7 +29,20 @@ LogosItemDelegate {
     Accessible.role: Accessible.ListItem
     Accessible.name: label
 
-    onClicked: root.copyRequested(root.address)
+    onClicked: {
+        root.copyRequested(root.address);
+        root.flashCopied();
+    }
+
+    // Flash a brief "Copied" confirmation in the tooltip.
+    function flashCopied() {
+        copiedTimer.restart();
+    }
+
+    Timer {
+        id: copiedTimer
+        interval: 1500
+    }
 
     contentItem: RowLayout {
         spacing: Theme.spacing.small
@@ -63,8 +79,8 @@ LogosItemDelegate {
 
     LogosToolTip {
         //: Tooltip on a member still being committed into the group
-        text: root.pending ? qsTr("waiting for commit") : root.address
+        text: root.pending ? qsTr("waiting for commit") : (root.copiedFlashing ? qsTr("Copied") : root.address)
         placement: LogosToolTip.Left
-        visible: root.hovered && (root.pending || root.address !== "")
+        visible: (root.hovered || root.copiedFlashing) && (root.pending || root.address !== "")
     }
 }

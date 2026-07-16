@@ -77,15 +77,7 @@ Item {
                 Layout.fillHeight: true
                 memberModel: store.memberModel
                 online: store.online
-                onAddMemberRequested: function (address) {
-                    // First member add: explain the async commit delay first, then invite.
-                    if (chatPrefs.memberAddExplained) {
-                        store.addMember(address);
-                    } else {
-                        memberAddInfoDialog.pendingAddress = address;
-                        memberAddInfoDialog.open();
-                    }
-                }
+                onAddMemberRequested: addMemberDialog.open()
             }
         }
 
@@ -123,6 +115,19 @@ Item {
         description: store.currentDescription
         memberCount: store.memberCount
         conversationId: store.currentConversationId
+    }
+
+    AddMemberDialog {
+        id: addMemberDialog
+        onAddressEntered: function (address) {
+            // First member add: explain the async commit delay first, then invite.
+            if (chatPrefs.memberAddExplained) {
+                store.addMember(address);
+            } else {
+                memberAddInfoDialog.pendingAddress = address;
+                memberAddInfoDialog.open();
+            }
+        }
     }
 
     MemberAddInfoDialog {

@@ -5,7 +5,6 @@ PaneHeader 1.0 PaneHeader.qml
 EmptyState 1.0 EmptyState.qml
 ClipboardProxy 1.0 ClipboardProxy.qml
 StatusBar 1.0 StatusBar.qml
-SubmitRow 1.0 SubmitRow.qml
 MessageComposer 1.0 MessageComposer.qml
 Toast 1.0 Toast.qml
 MessageBubble 1.0 MessageBubble.qml
@@ -19,3 +18,4 @@ NewGroupDialog 1.0 NewGroupDialog.qml
 AddressDialog 1.0 AddressDialog.qml
 MemberAddInfoDialog 1.0 MemberAddInfoDialog.qml
 GroupInfoDialog 1.0 GroupInfoDialog.qml
+AddMemberDialog 1.0 AddMemberDialog.qml

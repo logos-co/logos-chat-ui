@@ -113,14 +113,6 @@ Item {
         }
     }
     Component {
-        id: submitRowC
-        SubmitRow {
-            placeholder: "type..."
-            buttonText: "Send"
-            submitEnabled: true
-        }
-    }
-    Component {
         id: messageComposerC
         MessageComposer {
             placeholder: "Type a message..."
@@ -159,6 +151,10 @@ Item {
             memberCount: 3
             conversationId: "0xconversationid"
         }
+    }
+    Component {
+        id: addMemberDialogC
+        AddMemberDialog {}
     }
     Component {
         id: conversationDelegateC
@@ -214,6 +210,10 @@ Item {
         id: groupInfoSpy
         signalName: "groupInfoRequested"
     }
+    SignalSpy {
+        id: addMemberReqSpy
+        signalName: "addMemberRequested"
+    }
 
     TestCase {
         name: "ChatUiComponents"
@@ -255,7 +255,6 @@ Item {
         function test_leafComponentsInstantiate() {
             instantiate(paneHeaderC);
             instantiate(emptyStateC);
-            instantiate(submitRowC);
             instantiate(toastC);
             instantiate(clipboardProxyC);
         }
@@ -338,24 +337,6 @@ Item {
             verify(del.highlighted, "the current conversation should be highlighted");
             del.currentConversationId = "other";
             verify(!del.highlighted, "a non-current conversation should not be highlighted");
-        }
-
-        // SubmitRow trims, emits, and clears; a blank entry is a no-op. This is
-        // the shared composer/member-add behaviour.
-        function test_submitRowTrimsEmitsClears() {
-            const row = instantiate(submitRowC);
-            submitSpy.target = row;
-            submitSpy.clear();
-
-            row.text = "   ";
-            row._submit();
-            compare(submitSpy.count, 0, "a blank entry must not submit");
-
-            row.text = "  hello  ";
-            row._submit();
-            compare(submitSpy.count, 1, "a non-blank entry must submit once");
-            compare(submitSpy.signalArguments[0][0], "hello", "the submitted text must be trimmed");
-            compare(row.text, "", "the field must clear after submit");
         }
 
         // The composer trims, emits, and clears; a blank entry and a gated-off
@@ -481,6 +462,57 @@ Item {
             dlg._accept();
             compare(addressSpy.count, 1, "a non-blank draft accepts");
             compare(field.text, "", "accept clears the address");
+        }
+
+        // The add-member dialog gates Add on non-blank input, keeps its draft
+        // across a close, and clears on accept.
+        function test_addMemberDialog() {
+            const dlg = createTemporaryObject(addMemberDialogC, this);
+            verify(dlg);
+            addressSpy.target = dlg;
+            addressSpy.clear();
+            const field = findField(dlg.contentItem, "addMemberField");
+            verify(field, "the address field must be reachable");
+
+            dlg.open();
+            dlg._accept();
+            compare(addressSpy.count, 0, "an empty address must not be accepted");
+
+            field.text = "0xpeer";
+            dlg.close();
+            compare(field.text, "0xpeer", "closing keeps the address draft");
+
+            dlg.open();
+            dlg._accept();
+            compare(addressSpy.count, 1, "a non-blank draft accepts");
+            compare(addressSpy.signalArguments[0][0], "0xpeer", "the address is emitted");
+            compare(field.text, "", "accept clears the address");
+        }
+
+        // The Add member button reflects connectivity and requests a member add.
+        function test_membersPaneAddButton() {
+            const pane = instantiate(membersPaneC);
+            const btn = findField(pane, "addMemberButton");
+            verify(btn, "the add-member button must be reachable");
+            verify(btn.enabled, "enabled when online");
+            pane.online = false;
+            verify(!btn.enabled, "disabled when offline");
+            pane.online = true;
+
+            addMemberReqSpy.target = pane;
+            addMemberReqSpy.clear();
+            btn.clicked();
+            compare(addMemberReqSpy.count, 1, "clicking requests adding a member");
+        }
+
+        // A copy flashes a brief confirmation on the row that then clears.
+        function test_memberDelegateCopiedFlash() {
+            const del = instantiate(memberDelegateC);
+            del.pending = false;
+            verify(!del.copiedFlashing, "not flashing at rest");
+            del.flashCopied();
+            verify(del.copiedFlashing, "flashing right after a copy");
+            tryCompare(del, "copiedFlashing", false, 3000, "the flash clears");
         }
 
         // Confirming the explainer emits confirmed() so the caller can proceed

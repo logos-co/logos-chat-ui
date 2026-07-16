@@ -49,7 +49,7 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/EmptyState.qml
             src/qml/ChatUi/ClipboardProxy.qml
             src/qml/ChatUi/StatusBar.qml
-            src/qml/ChatUi/SubmitRow.qml
+            src/qml/ChatUi/MessageComposer.qml
             src/qml/ChatUi/Toast.qml
             src/qml/ChatUi/MessageBubble.qml
             src/qml/ChatUi/ConversationDelegate.qml
