@@ -247,14 +247,13 @@ Item {
             instantiate(memberAddInfoDialogC);
         }
 
-        // A title-only header keeps its 48px height, so panes that set no
-        // subtitle are unchanged; a subtitled header instantiates and is no
-        // shorter.
+        // Every pane header is a fixed 48px, subtitle or not, so panes stay
+        // aligned across the window.
         function test_paneHeaderSubtitle() {
             const plain = instantiate(paneHeaderC);
-            compare(plain.implicitHeight, 48, "a title-only header stays 48px");
+            compare(plain.implicitHeight, 48, "a title-only header is 48px");
             const withSubtitle = instantiate(paneHeaderSubtitleC);
-            verify(withSubtitle.implicitHeight >= 48, "a subtitled header is at least as tall");
+            compare(withSubtitle.implicitHeight, 48, "a subtitled header is 48px too");
         }
 
         function test_delegatesInstantiate() {
