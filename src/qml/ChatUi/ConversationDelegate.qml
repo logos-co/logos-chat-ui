@@ -4,9 +4,9 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// A conversation row: name (with a group marker), last-activity time and an
-// unread-count badge. Delegate roles bind by name; set currentConversationId and
-// connect activated(). Focus ring when keyboard-focused, highlight when current.
+// A conversation row: name (with a group marker), a relative last-activity label
+// and an unread-count badge. Delegate roles bind by name; set currentConversationId
+// and connect activated(). Focus ring when keyboard-focused, highlight when current.
 LogosItemDelegate {
     id: root
 
@@ -14,7 +14,10 @@ LogosItemDelegate {
     required property string displayName
     required property bool isGroup
     required property int unreadCount
-    required property var lastActivity
+    // Relative last-activity label, formatted by the model.
+    required property string lastActivityDisplay
+    // Truncated last-message content shown under the name.
+    required property string preview
     // The open conversation, so this row highlights when it is the current one.
     property string currentConversationId: ""
 
@@ -29,7 +32,10 @@ LogosItemDelegate {
     highlighted: conversationId === currentConversationId
 
     Accessible.role: Accessible.ListItem
-    Accessible.name: isGroup ? qsTr("Group %1").arg(displayName) : displayName
+    Accessible.name: {
+        const base = isGroup ? qsTr("Group %1").arg(displayName) : displayName;
+        return unreadCount > 0 ? qsTr("%1, %2 unread").arg(base).arg(unreadCount) : base;
+    }
     Accessible.selected: highlighted
 
     onClicked: root.activated(root.conversationId)
@@ -50,10 +56,25 @@ LogosItemDelegate {
                 Layout.fillWidth: true
             }
 
-            LogosText {
-                text: root.lastActivity ? Qt.formatTime(root.lastActivity, Locale.ShortFormat) : ""
-                color: Theme.palette.textTertiary
-                font.pixelSize: Theme.typography.badgeText
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spacing.small
+
+                LogosText {
+                    text: root.preview
+                    textFormat: Text.PlainText
+                    color: Theme.palette.textTertiary
+                    font.pixelSize: Theme.typography.secondaryText
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+
+                LogosText {
+                    text: root.lastActivityDisplay
+                    color: Theme.palette.textTertiary
+                    font.pixelSize: Theme.typography.badgeText
+                    Layout.alignment: Qt.AlignVCenter
+                }
             }
         }
 
@@ -63,14 +84,16 @@ LogosItemDelegate {
             implicitWidth: Math.max(20, badgeText.implicitWidth + 12)
             implicitHeight: 20
             radius: height / 2
-            color: Theme.palette.error
+            color: Theme.palette.primary
             Layout.alignment: Qt.AlignVCenter
 
             LogosText {
                 id: badgeText
                 anchors.centerIn: parent
                 text: root.unreadCount
-                color: Theme.palette.text
+                // Dark ink for legible contrast on the light primary fill; the
+                // white text token drops below the readable ratio there.
+                color: Theme.palette.background
                 font.pixelSize: Theme.typography.badgeText
                 font.weight: Theme.typography.weightBold
             }

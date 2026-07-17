@@ -39,7 +39,7 @@ CHAT_MODULE_INSTANCE_PATH=~/.local/share/chat_b CHAT_MODULE_DELIVERY_PORT=60001 
 Both nodes join the `logos.test` Waku fleet (and publish their key packages to
 the key-package registry during `init`), so this needs internet and ~5-20s to
 reach **Online**. Then, in window A tap **Show My Address** and copy it; in
-window B tap **New** and paste A's address — the conversation opens on B's
+window B tap **New chat** and paste A's address — the conversation opens on B's
 side and the invite goes out. Once it appears in A's list (she has joined),
 send the first message from B; reply from either side.
 
@@ -67,7 +67,7 @@ lets a peer open a conversation with her.
 
 ### 2. Bob opens a conversation and sends the first message
 
-Bob pastes Alice's address into **New**. The backend calls
+Bob pastes Alice's address into **New chat**. The backend calls
 `create_conversation(address)`, which fetches her key package from the registry
 and sends her the cryptographic invite; the new thread opens empty. Once Alice
 has joined (the conversation shows up in her list), Bob sends the first

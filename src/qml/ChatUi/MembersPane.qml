@@ -18,11 +18,21 @@ Rectangle {
     // Whether the backend is online; gates the add-member controls.
     required property bool online
 
-    // Emitted when the user asks to invite `address` into the group.
-    signal addMemberRequested(string address)
+    // Emitted when the user asks to add a member; the caller collects the address.
+    signal addMemberRequested
 
     implicitWidth: 220
     color: Theme.palette.backgroundInset
+
+    // Copy the focused member's address and flash the confirmation on its row, so
+    // a keyboard copy gets the same feedback as a click.
+    function _copyCurrent() {
+        const member = memberList.currentItem as MemberDelegate;
+        if (!member)
+            return;
+        clipboard.copy(member.address);
+        member.flashCopied();
+    }
 
     ClipboardProxy {
         id: clipboard
@@ -46,10 +56,8 @@ Rectangle {
             reuseItems: true
             model: root.memberModel
 
-            Keys.onReturnPressed: if (currentItem)
-                clipboard.copy((currentItem as MemberDelegate).address)
-            Keys.onEnterPressed: if (currentItem)
-                clipboard.copy((currentItem as MemberDelegate).address)
+            Keys.onReturnPressed: root._copyCurrent()
+            Keys.onEnterPressed: root._copyCurrent()
 
             ScrollBar.vertical: LogosScrollBar {}
 
@@ -68,16 +76,15 @@ Rectangle {
             }
         }
 
-        SubmitRow {
+        LogosButton {
+            objectName: "addMemberButton"
             Layout.fillWidth: true
-            placeholder: qsTr("peer address...")
-            disabledPlaceholder: qsTr("offline")
-            //: Button that invites the entered address into the group
-            buttonText: qsTr("Add")
-            submitEnabled: root.online
-            onSubmitted: function (address) {
-                root.addMemberRequested(address);
-            }
+            Layout.margins: Theme.spacing.small
+            implicitHeight: 40
+            //: Button that opens the dialog to invite a new group member
+            text: qsTr("Add member")
+            enabled: root.online
+            onClicked: root.addMemberRequested()
         }
     }
 }

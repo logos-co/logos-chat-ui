@@ -11,14 +11,14 @@ Rectangle {
     id: root
 
     property string title
-    // Optional secondary line under the title; empty hides it and the header
-    // keeps its title-only height.
+    // Optional secondary line under the title; empty hides it. The header is a
+    // fixed height either way, so a subtitle never changes a pane's header size.
     property string subtitle
     // Trailing items (buttons, status dot) laid out right-aligned.
     default property alias trailing: trailingRow.data
 
     implicitWidth: 200
-    implicitHeight: Math.max(48, titleColumn.implicitHeight + 2 * Theme.spacing.small)
+    implicitHeight: 48
     color: Theme.palette.backgroundTertiary
 
     RowLayout {
@@ -44,6 +44,7 @@ Rectangle {
             }
 
             LogosText {
+                id: subtitleText
                 text: root.subtitle
                 visible: root.subtitle !== ""
                 textFormat: Text.PlainText
@@ -51,6 +52,17 @@ Rectangle {
                 font.pixelSize: Theme.typography.secondaryText
                 elide: Text.ElideRight
                 Layout.fillWidth: true
+
+                HoverHandler {
+                    id: subtitleHover
+                }
+                // Reveal the full subtitle on hover only when it is actually
+                // elided, so a short one grows no redundant tooltip.
+                LogosToolTip {
+                    text: root.subtitle
+                    placement: LogosToolTip.Bottom
+                    visible: subtitleHover.hovered && subtitleText.truncated
+                }
             }
         }
 

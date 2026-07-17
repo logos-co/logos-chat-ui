@@ -19,6 +19,9 @@
 namespace {
 
 constexpr int kDefaultDeliveryPort = 60000;
+// Preview cap; mirrors chat_module's own 160-char truncation so a live preview
+// matches the one a rehydrate reads back from the module.
+constexpr int kPreviewMaxChars = 160;
 constexpr const char* kDefaultDeliveryPreset = "logos.test";
 constexpr const char* kInstancePathEnvVar = "CHAT_MODULE_INSTANCE_PATH";
 constexpr const char* kDeliveryPortEnvVar = "CHAT_MODULE_DELIVERY_PORT";
@@ -45,10 +48,18 @@ Q_COREAPP_STARTUP_FUNCTION(ensureApplicationIdentity)
 ChatBackend::ChatBackend(QObject* parent)
     : ChatBackendSimpleSource(parent)
     , m_conversationModel(new ConversationListModel(this))
+    , m_conversationProxy(new QSortFilterProxyModel(this))
     , m_messageModel(new MessageListModel(this))
     , m_memberModel(new MemberListModel(this))
     , m_instancePath(resolveInstancePath())
 {
+    // Present conversations newest-first without disturbing the source's
+    // insertion order; the proxy re-sorts live as last_activity changes.
+    m_conversationProxy->setSourceModel(m_conversationModel);
+    m_conversationProxy->setSortRole(ConversationListModel::LastActivityRole);
+    m_conversationProxy->setDynamicSortFilter(true);
+    m_conversationProxy->sort(0, Qt::DescendingOrder);
+
     setChatStatus(ChatBackendSimpleSource::Stopped);
     setMyIdentity(QString());
     setStatusMessage(QStringLiteral("Ready"));
@@ -70,9 +81,9 @@ ChatBackend::~ChatBackend()
         modules().chat_module.shutdown();
 }
 
-ConversationListModel* ChatBackend::conversationModel() const
+QAbstractItemModel* ChatBackend::conversationModel() const
 {
-    return m_conversationModel;
+    return m_conversationProxy;
 }
 
 MessageListModel* ChatBackend::messageModel() const
@@ -200,6 +211,7 @@ void ChatBackend::rehydrateConversations()
         const QString nickname = obj.value(QStringLiteral("nickname")).toString();
         const QString name = obj.value(QStringLiteral("name")).toString();
         const QString description = obj.value(QStringLiteral("description")).toString();
+        const QString preview = obj.value(QStringLiteral("preview")).toString();
         const qint64 lastActivity = obj.value(QStringLiteral("last_activity_ms")).toLongLong();
         const bool isGroup = obj.value(QStringLiteral("kind")).toString() == QStringLiteral("group");
         // Local nickname wins, then the group's shared name, else a generated label.
@@ -207,7 +219,7 @@ void ChatBackend::rehydrateConversations()
             : !name.isEmpty()                           ? name
                                                         : fallbackDisplayName(convoId, QString(), isGroup);
         m_conversationModel->addConversation(convoId, displayName, description,
-                                             msToDateTime(lastActivity), isGroup);
+                                             msToDateTime(lastActivity), isGroup, preview);
     }
     // The rebuilt list may now know the current conversation's kind/name.
     syncCurrentConversationMeta();
@@ -464,16 +476,18 @@ void ChatBackend::applyMessageReceived(const QVariantList& args)
     const qint64 ts = args.value(2).toLongLong();
     const QString sender = args.value(3).toString();
     const QDateTime when = msToDateTime(ts);
+    const QString preview = content.left(kPreviewMaxChars);
 
     if (!m_conversationModel->contains(convoId)) {
         // Defensive: ConversationStarted normally lands first with the kind.
         // Add it now and backfill the kind by re-reading the list (deferred:
         // this runs inside a module event callback, see deferToEventLoop).
-        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), QString(), when, false);
+        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), QString(), when, false, preview);
         deferToEventLoop([this] { rehydrateConversations(); });
     } else {
         m_conversationModel->updateLastActivity(convoId, when);
     }
+    m_conversationModel->updatePreview(convoId, preview);
 
     if (convoId == currentConversationId()) {
         m_messageModel->addMessage(shortSenderLabel(sender), content, when, false);
@@ -495,12 +509,14 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
     const QString content = args.value(1).toString();
     const qint64 ts = args.value(2).toLongLong();
     const QDateTime when = msToDateTime(ts);
+    const QString preview = content.left(kPreviewMaxChars);
 
     if (!m_conversationModel->contains(convoId)) {
-        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), QString(), when, false);
+        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), QString(), when, false, preview);
     } else {
         m_conversationModel->updateLastActivity(convoId, when);
     }
+    m_conversationModel->updatePreview(convoId, preview);
 
     if (convoId == currentConversationId())
         m_messageModel->addMessage(QStringLiteral("Me"), content, when, true);
@@ -522,7 +538,7 @@ void ChatBackend::applyConversationCreated(const QVariantList& args)
     const QDateTime now = QDateTime::currentDateTime();
 
     if (!m_conversationModel->contains(convoId)) {
-        m_conversationModel->addConversation(convoId, displayName, description, now, isGroup);
+        m_conversationModel->addConversation(convoId, displayName, description, now, isGroup, QString());
     } else {
         m_conversationModel->updateDisplayName(convoId, displayName);
         m_conversationModel->updateDescription(convoId, description);

@@ -21,9 +21,14 @@ Rectangle {
     property string description: ""
     required property string conversationId
     required property bool hasConversation
+    // Whether any conversation exists at all. Optional so the pane stands alone;
+    // drives the empty-thread guidance when nothing is selected.
+    property bool hasConversations: true
     required property bool online
 
     signal messageSubmitted(string text)
+    // Requests the group-details dialog; emitted from the header's Details button.
+    signal groupInfoRequested
 
     // Per-conversation composer drafts, restored on switch so an unsent message
     // is never carried into (or sent to) a different conversation.
@@ -45,6 +50,17 @@ Rectangle {
             visible: root.hasConversation
             title: root.title
             subtitle: root.description
+
+            LogosButton {
+                objectName: "detailsButton"
+                implicitWidth: 84
+                implicitHeight: 30
+                //: Button that opens the group's details dialog
+                text: qsTr("Details")
+                visible: root.currentIsGroup
+                onClicked: root.groupInfoRequested()
+                Layout.alignment: Qt.AlignVCenter
+            }
         }
 
         ListView {
@@ -75,11 +91,11 @@ Rectangle {
                 anchors.centerIn: parent
                 width: parent.width - 2 * Theme.spacing.large
                 visible: threadList.count === 0
-                text: root.hasConversation ? qsTr("No messages yet") : qsTr("Select a conversation to start chatting")
+                text: root.hasConversation ? qsTr("No messages yet") : root.hasConversations ? qsTr("Select a conversation to start chatting") : qsTr("No conversations yet. Start one with New chat or New group in the sidebar.")
             }
         }
 
-        SubmitRow {
+        MessageComposer {
             id: composer
             Layout.fillWidth: true
             placeholder: qsTr("Type a message...")

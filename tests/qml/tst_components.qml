@@ -13,6 +13,7 @@ import ChatUi
 // that is the house-rule-2 proof; a broken import or a misused Logos API surfaces
 // here as a null object.
 Item {
+    id: testRoot
     width: 400
     height: 400
 
@@ -24,14 +25,16 @@ Item {
             displayName: "Alice"
             isGroup: false
             unreadCount: 0
-            lastActivity: 0
+            lastActivityDisplay: "12:34"
+            preview: "See you tomorrow"
         }
         ListElement {
             conversationId: "c2"
             displayName: "Team"
             isGroup: true
             unreadCount: 42
-            lastActivity: 0
+            lastActivityDisplay: "12:34"
+            preview: "Alice: shipping the new theme"
         }
     }
     ListModel {
@@ -41,6 +44,9 @@ Item {
             content: "Hi there"
             timestamp: 0
             isMe: false
+            sameSenderAsPrevious: false
+            showDaySeparator: true
+            dayLabel: "Today"
         }
     }
     ListModel {
@@ -109,9 +115,9 @@ Item {
         }
     }
     Component {
-        id: submitRowC
-        SubmitRow {
-            placeholder: "type..."
+        id: messageComposerC
+        MessageComposer {
+            placeholder: "Type a message..."
             buttonText: "Send"
             submitEnabled: true
         }
@@ -141,13 +147,26 @@ Item {
         MemberAddInfoDialog {}
     }
     Component {
+        id: groupInfoDialogC
+        GroupInfoDialog {
+            groupName: "Book Club"
+            memberCount: 3
+            conversationId: "0xconversationid"
+        }
+    }
+    Component {
+        id: addMemberDialogC
+        AddMemberDialog {}
+    }
+    Component {
         id: conversationDelegateC
         ConversationDelegate {
             conversationId: "c1"
             displayName: "Alice"
             isGroup: true
             unreadCount: 3
-            lastActivity: 0
+            lastActivityDisplay: "12:34"
+            preview: "See you tomorrow"
             currentConversationId: "c1"
         }
     }
@@ -159,6 +178,9 @@ Item {
             timestamp: 0
             sender: "Alice"
             groupContext: true
+            sameSenderAsPrevious: false
+            showDaySeparator: true
+            dayLabel: "Today"
         }
     }
     Component {
@@ -187,6 +209,14 @@ Item {
         id: groupDetailsSpy
         signalName: "groupDetailsEntered"
     }
+    SignalSpy {
+        id: groupInfoSpy
+        signalName: "groupInfoRequested"
+    }
+    SignalSpy {
+        id: addMemberReqSpy
+        signalName: "addMemberRequested"
+    }
 
     TestCase {
         name: "ChatUiComponents"
@@ -196,6 +226,26 @@ Item {
             const obj = createTemporaryObject(comp, this);
             verify(obj, "component failed to instantiate standalone");
             return obj;
+        }
+
+        // Find a named field anywhere under a dialog's content, descending both
+        // the visual children and a Control/ScrollView contentItem, so a field
+        // nested inside a LogosScrollView is still reachable.
+        function findField(obj, objectName) {
+            if (!obj)
+                return null;
+            if (obj.objectName === objectName)
+                return obj;
+            const pools = [obj.children, obj.contentItem ? [obj.contentItem] : []];
+            for (let p = 0; p < pools.length; ++p) {
+                const pool = pools[p];
+                for (let i = 0; pool && i < pool.length; ++i) {
+                    const found = findField(pool[i], objectName);
+                    if (found)
+                        return found;
+                }
+            }
+            return null;
         }
 
         function test_panesInstantiate() {
@@ -208,7 +258,6 @@ Item {
         function test_leafComponentsInstantiate() {
             instantiate(paneHeaderC);
             instantiate(emptyStateC);
-            instantiate(submitRowC);
             instantiate(toastC);
             instantiate(clipboardProxyC);
         }
@@ -227,20 +276,62 @@ Item {
             instantiate(memberAddInfoDialogC);
         }
 
-        // A title-only header keeps its 48px height, so panes that set no
-        // subtitle are unchanged; a subtitled header instantiates and is no
-        // shorter.
+        // The group info dialog renders with both an empty description (the "No
+        // description" fallback) and a long one.
+        function test_groupInfoDialog() {
+            const dlg = instantiate(groupInfoDialogC);
+            compare(dlg.description, "", "starts with no description");
+            dlg.open();
+            dlg.description = "A fairly long group description ".repeat(10);
+            dlg.close();
+        }
+
+        // The Details button shows only for a group and requests the info dialog.
+        // Parented into the shown root and sized so effective visibility tracks
+        // the currentIsGroup binding.
+        function test_threadPaneDetailsButton() {
+            const pane = createTemporaryObject(messageThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const details = findField(pane, "detailsButton");
+            verify(details, "the details button must be reachable");
+            verify(!details.visible, "Details is hidden for a direct conversation");
+
+            pane.currentIsGroup = true;
+            verify(details.visible, "Details shows for a group");
+
+            groupInfoSpy.target = pane;
+            groupInfoSpy.clear();
+            details.clicked();
+            compare(groupInfoSpy.count, 1, "clicking Details requests the group info");
+        }
+
+        // Every pane header is a fixed 48px, subtitle or not, so panes stay
+        // aligned across the window.
         function test_paneHeaderSubtitle() {
             const plain = instantiate(paneHeaderC);
-            compare(plain.implicitHeight, 48, "a title-only header stays 48px");
+            compare(plain.implicitHeight, 48, "a title-only header is 48px");
             const withSubtitle = instantiate(paneHeaderSubtitleC);
-            verify(withSubtitle.implicitHeight >= 48, "a subtitled header is at least as tall");
+            compare(withSubtitle.implicitHeight, 48, "a subtitled header is 48px too");
         }
 
         function test_delegatesInstantiate() {
             instantiate(conversationDelegateC);
             instantiate(messageBubbleC);
             instantiate(memberDelegateC);
+        }
+
+        // The sender label shows on the first message of a run in a group, is
+        // suppressed on continuations, and never shows on own messages.
+        function test_messageBubbleGrouping() {
+            const bubble = instantiate(messageBubbleC);
+            verify(bubble.showSender, "first message of a run in a group shows the sender");
+            bubble.sameSenderAsPrevious = true;
+            verify(!bubble.showSender, "a continuation hides the sender label");
+            bubble.sameSenderAsPrevious = false;
+            bubble.isMe = true;
+            verify(!bubble.showSender, "own messages never show a sender label");
         }
 
         // The current conversation highlights; a different one does not.
@@ -251,22 +342,28 @@ Item {
             verify(!del.highlighted, "a non-current conversation should not be highlighted");
         }
 
-        // SubmitRow trims, emits, and clears; a blank entry is a no-op. This is
-        // the shared composer/member-add behaviour.
-        function test_submitRowTrimsEmitsClears() {
-            const row = instantiate(submitRowC);
-            submitSpy.target = row;
+        // The composer trims, emits, and clears; a blank entry and a gated-off
+        // composer are both no-ops. The Enter/Shift+Enter handling is declarative
+        // in the field's key handlers and not key-simulated here.
+        function test_messageComposerSubmits() {
+            const composer = instantiate(messageComposerC);
+            submitSpy.target = composer;
             submitSpy.clear();
 
-            row.text = "   ";
-            row._submit();
-            compare(submitSpy.count, 0, "a blank entry must not submit");
+            composer.text = "   ";
+            composer._submit();
+            compare(submitSpy.count, 0, "a blank message must not submit");
 
-            row.text = "  hello  ";
-            row._submit();
-            compare(submitSpy.count, 1, "a non-blank entry must submit once");
-            compare(submitSpy.signalArguments[0][0], "hello", "the submitted text must be trimmed");
-            compare(row.text, "", "the field must clear after submit");
+            composer.text = "  hello  ";
+            composer._submit();
+            compare(submitSpy.count, 1, "a non-blank message submits once");
+            compare(submitSpy.signalArguments[0][0], "hello", "the submitted text is trimmed");
+            compare(composer.text, "", "the field clears after submit");
+
+            composer.submitEnabled = false;
+            composer.text = "blocked";
+            composer._submit();
+            compare(submitSpy.count, 1, "a gated-off composer does not submit");
         }
 
         // The dialog only enables Create once there is non-blank input, and emits
@@ -309,6 +406,116 @@ Item {
             compare(groupDetailsSpy.count, 1, "a non-blank name must be accepted once");
             compare(groupDetailsSpy.signalArguments[0][0], "Book Club", "the name must be trimmed");
             compare(groupDetailsSpy.signalArguments[0][1], "", "an unentered description is empty");
+        }
+
+        // A dismissed group dialog keeps its draft; only a successful accept
+        // clears it. Create is gated on both length limits, and Enter cannot
+        // bypass them.
+        function test_newGroupDialogDraftAndLimits() {
+            const dlg = createTemporaryObject(newGroupDialogC, this);
+            verify(dlg);
+            groupDetailsSpy.target = dlg;
+            groupDetailsSpy.clear();
+
+            const nameField = findField(dlg.contentItem, "groupNameField");
+            const descField = findField(dlg.contentItem, "groupDescriptionField");
+            verify(nameField && descField, "both fields must be reachable");
+            const create = dlg.rightActions[0];
+
+            dlg.open();
+            nameField.text = "Draft name";
+            descField.text = "Draft description";
+            dlg.close();
+            compare(nameField.text, "Draft name", "closing keeps the name draft");
+            compare(descField.text, "Draft description", "closing keeps the description draft");
+
+            dlg.open();
+            nameField.text = "x".repeat(dlg.nameLimit + 1);
+            verify(!create.enabled, "Create is disabled over the name limit");
+            dlg._accept();
+            compare(groupDetailsSpy.count, 0, "Enter must not accept over the name limit");
+
+            nameField.text = "Valid";
+            descField.text = "y".repeat(dlg.descriptionLimit + 1);
+            verify(!create.enabled, "Create is disabled over the description limit");
+
+            descField.text = "ok";
+            dlg._accept();
+            compare(groupDetailsSpy.count, 1, "valid input accepts once");
+            compare(nameField.text, "", "accept clears the name");
+            compare(descField.text, "", "accept clears the description");
+        }
+
+        // A dismissed conversation dialog keeps its draft; a successful accept
+        // clears it.
+        function test_newConversationDialogDraft() {
+            const dlg = createTemporaryObject(newConvDialogC, this);
+            verify(dlg);
+            addressSpy.target = dlg;
+            addressSpy.clear();
+            const field = findField(dlg.contentItem, "convAddressField");
+            verify(field, "the address field must be reachable");
+
+            dlg.open();
+            field.text = "0xdraft";
+            dlg.close();
+            compare(field.text, "0xdraft", "closing keeps the address draft");
+
+            dlg.open();
+            dlg._accept();
+            compare(addressSpy.count, 1, "a non-blank draft accepts");
+            compare(field.text, "", "accept clears the address");
+        }
+
+        // The add-member dialog gates Add on non-blank input, keeps its draft
+        // across a close, and clears on accept.
+        function test_addMemberDialog() {
+            const dlg = createTemporaryObject(addMemberDialogC, this);
+            verify(dlg);
+            addressSpy.target = dlg;
+            addressSpy.clear();
+            const field = findField(dlg.contentItem, "addMemberField");
+            verify(field, "the address field must be reachable");
+
+            dlg.open();
+            dlg._accept();
+            compare(addressSpy.count, 0, "an empty address must not be accepted");
+
+            field.text = "0xpeer";
+            dlg.close();
+            compare(field.text, "0xpeer", "closing keeps the address draft");
+
+            dlg.open();
+            dlg._accept();
+            compare(addressSpy.count, 1, "a non-blank draft accepts");
+            compare(addressSpy.signalArguments[0][0], "0xpeer", "the address is emitted");
+            compare(field.text, "", "accept clears the address");
+        }
+
+        // The Add member button reflects connectivity and requests a member add.
+        function test_membersPaneAddButton() {
+            const pane = instantiate(membersPaneC);
+            const btn = findField(pane, "addMemberButton");
+            verify(btn, "the add-member button must be reachable");
+            verify(btn.enabled, "enabled when online");
+            pane.online = false;
+            verify(!btn.enabled, "disabled when offline");
+            pane.online = true;
+
+            addMemberReqSpy.target = pane;
+            addMemberReqSpy.clear();
+            btn.clicked();
+            compare(addMemberReqSpy.count, 1, "clicking requests adding a member");
+        }
+
+        // A copy flashes a brief confirmation on the row that then clears.
+        function test_memberDelegateCopiedFlash() {
+            const del = instantiate(memberDelegateC);
+            del.pending = false;
+            verify(!del.copiedFlashing, "not flashing at rest");
+            del.flashCopied();
+            verify(del.copiedFlashing, "flashing right after a copy");
+            tryCompare(del, "copiedFlashing", false, 3000, "the flash clears");
         }
 
         // Confirming the explainer emits confirmed() so the caller can proceed

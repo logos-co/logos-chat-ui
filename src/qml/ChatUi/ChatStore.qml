@@ -23,6 +23,7 @@ QtObject {
     readonly property bool currentIsGroup: backend ? backend.currentIsGroup : false
     readonly property string currentDisplayName: backend ? backend.currentDisplayName : ""
     readonly property string currentDescription: backend ? backend.currentDescription : ""
+    readonly property int memberCount: backend ? backend.memberCount : 0
     readonly property string statusMessage: backend ? backend.statusMessage : qsTr("No backend")
     readonly property string myIdentity: backend ? backend.myIdentity : ""
 

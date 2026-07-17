@@ -14,14 +14,41 @@ Item {
     required property string sender
     // Whether the thread is a group; drives the sender label on incoming messages.
     property bool groupContext: false
+    // Neighbour-derived roles: suppress a repeated sender label within a run of
+    // messages, and head a new calendar day with a separator above the bubble.
+    required property bool sameSenderAsPrevious
+    required property bool showDaySeparator
+    required property string dayLabel
 
-    readonly property bool showSender: groupContext && !isMe
+    readonly property bool showSender: groupContext && !isMe && !sameSenderAsPrevious
 
     implicitWidth: 200
     implicitHeight: bubble.y + bubble.height
 
+    Accessible.role: Accessible.StaticText
+    Accessible.name: root.content
+    Accessible.description: qsTr("%1, %2").arg(root.sender).arg(timeText.text)
+
+    Item {
+        id: daySeparator
+        y: 0
+        width: root.width
+        visible: root.showDaySeparator
+        height: root.showDaySeparator ? dayLabelText.implicitHeight + 2 * Theme.spacing.small : 0
+
+        LogosText {
+            id: dayLabelText
+            anchors.centerIn: parent
+            text: root.dayLabel
+            textFormat: Text.PlainText
+            color: Theme.palette.textTertiary
+            font.pixelSize: Theme.typography.secondaryText
+        }
+    }
+
     LogosText {
         id: senderLabel
+        y: daySeparator.height
         visible: root.showSender
         anchors.left: parent.left
         anchors.leftMargin: Theme.spacing.large
@@ -33,7 +60,7 @@ Item {
 
     Rectangle {
         id: bubble
-        y: root.showSender ? senderLabel.height + Theme.spacing.tiny : 0
+        y: root.showSender ? senderLabel.y + senderLabel.height + Theme.spacing.tiny : daySeparator.height
         anchors.left: root.isMe ? undefined : parent.left
         anchors.right: root.isMe ? parent.right : undefined
         anchors.leftMargin: Theme.spacing.large

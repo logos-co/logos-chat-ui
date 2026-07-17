@@ -5,18 +5,18 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// Modal dialog that collects a peer address for a new 1:1 conversation and emits
-// it. Open it and connect addressEntered(); its input persists across a close so
-// a dismissed dialog reopens with the same draft, and clears only once a
-// conversation is created. Standalone: instantiate with no context, open(), and
-// read the signal.
+// Modal dialog that collects a peer address to invite into the current group and
+// emits it. Open it and connect addressEntered(); its input persists across a
+// close so a dismissed dialog reopens with the same draft, and clears only once a
+// member is invited. Standalone: instantiate with no context, open(), and read
+// the signal.
 LogosDialog {
     id: root
 
     // Emitted with the trimmed address when the user confirms a non-empty entry.
     signal addressEntered(string address)
 
-    title: qsTr("New Conversation")
+    title: qsTr("Add member")
     modal: true
     focus: true
     closePolicy: Popup.CloseOnEscape
@@ -35,8 +35,8 @@ LogosDialog {
         LogosButton {
             implicitWidth: 96
             implicitHeight: 36
-            //: Button that confirms creating the new conversation
-            text: qsTr("Create")
+            //: Button that invites the entered address into the group
+            text: qsTr("Add")
             enabled: addressField.text.trim() !== ""
             onClicked: root._accept()
         }
@@ -48,7 +48,7 @@ LogosDialog {
         spacing: Theme.spacing.medium
 
         LogosText {
-            text: qsTr("Paste the other user's address:")
+            text: qsTr("Paste the address of the person to invite:")
             color: Theme.palette.textSecondary
             font.pixelSize: Theme.typography.secondaryText
             wrapMode: Text.WordWrap
@@ -61,7 +61,7 @@ LogosDialog {
 
             LogosTextArea {
                 id: addressField
-                objectName: "convAddressField"
+                objectName: "addMemberField"
                 placeholderText: qsTr("peer address (hex)...")
                 font.family: ChatTheme.monoFont
                 // Return submits rather than inserting a newline: the address is
@@ -79,7 +79,7 @@ LogosDialog {
     }
 
     // Emit the trimmed address, clear the field, and close. No-op on empty input,
-    // so neither Return nor Create can submit a blank address.
+    // so neither Return nor Add can submit a blank address.
     function _accept() {
         const address = addressField.text.trim();
         if (address === "")

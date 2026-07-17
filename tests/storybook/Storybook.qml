@@ -21,21 +21,24 @@ Rectangle {
             displayName: "Alice"
             isGroup: false
             unreadCount: 0
-            lastActivity: 0
+            lastActivityDisplay: "12:34"
+            preview: "Sounds good, talk soon"
         }
         ListElement {
             conversationId: "c2"
             displayName: "Design Team"
             isGroup: true
             unreadCount: 128
-            lastActivity: 0
+            lastActivityDisplay: "Yesterday"
+            preview: "Bob: pushed the fix, please review"
         }
         ListElement {
             conversationId: "c3"
             displayName: "Bob"
             isGroup: false
             unreadCount: 3
-            lastActivity: 0
+            lastActivityDisplay: "Mon"
+            preview: "Did you get a chance to look?"
         }
     }
     ListModel {
@@ -45,12 +48,18 @@ Rectangle {
             content: "Hey, did you see the new theme?"
             timestamp: 0
             isMe: false
+            sameSenderAsPrevious: false
+            showDaySeparator: true
+            dayLabel: "Today"
         }
         ListElement {
             sender: "Me"
             content: "Yes, it looks great"
             timestamp: 0
             isMe: true
+            sameSenderAsPrevious: false
+            showDaySeparator: false
+            dayLabel: "Today"
         }
     }
     ListModel {

@@ -1,5 +1,8 @@
 #include "ConversationListModel.h"
 
+#include <QDate>
+#include <QLocale>
+
 ConversationListModel::ConversationListModel(QObject* parent)
     : QAbstractListModel(parent)
 {
@@ -18,34 +21,38 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
 
     const auto& item = m_items.at(index.row());
     switch (role) {
-    case ConversationIdRole: return item.conversationId;
-    case DisplayNameRole:    return item.displayName;
-    case LastActivityRole:   return item.lastActivity;
-    case UnreadCountRole:    return item.unreadCount;
-    case IsGroupRole:        return item.isGroup;
-    default:                 return {};
+    case ConversationIdRole:      return item.conversationId;
+    case DisplayNameRole:         return item.displayName;
+    case LastActivityRole:        return item.lastActivity;
+    case LastActivityDisplayRole: return formatLastActivity(item.lastActivity);
+    case UnreadCountRole:         return item.unreadCount;
+    case IsGroupRole:             return item.isGroup;
+    case PreviewRole:             return item.preview;
+    default:                      return {};
     }
 }
 
 QHash<int, QByteArray> ConversationListModel::roleNames() const
 {
     return {
-        { ConversationIdRole, "conversationId" },
-        { DisplayNameRole,    "displayName" },
-        { LastActivityRole,   "lastActivity" },
-        { UnreadCountRole,    "unreadCount" },
-        { IsGroupRole,        "isGroup" }
+        { ConversationIdRole,      "conversationId" },
+        { DisplayNameRole,         "displayName" },
+        { LastActivityRole,        "lastActivity" },
+        { LastActivityDisplayRole, "lastActivityDisplay" },
+        { UnreadCountRole,         "unreadCount" },
+        { IsGroupRole,             "isGroup" },
+        { PreviewRole,             "preview" }
     };
 }
 
 void ConversationListModel::addConversation(const QString& id, const QString& displayName,
                                             const QString& description, const QDateTime& lastActivity,
-                                            bool isGroup)
+                                            bool isGroup, const QString& preview)
 {
     if (contains(id)) return;
 
     beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
-    m_items.append({ id, displayName, description, lastActivity, 0, isGroup });
+    m_items.append({ id, displayName, description, lastActivity, 0, isGroup, preview });
     endInsertRows();
 }
 
@@ -66,13 +73,23 @@ void ConversationListModel::updateDescription(const QString& id, const QString& 
     m_items[idx].description = description;
 }
 
+void ConversationListModel::updatePreview(const QString& id, const QString& preview)
+{
+    int idx = indexOf(id);
+    if (idx < 0) return;
+
+    if (m_items[idx].preview == preview) return;
+    m_items[idx].preview = preview;
+    emit dataChanged(index(idx), index(idx), { PreviewRole });
+}
+
 void ConversationListModel::updateLastActivity(const QString& id, const QDateTime& lastActivity)
 {
     int idx = indexOf(id);
     if (idx < 0) return;
 
     m_items[idx].lastActivity = lastActivity;
-    emit dataChanged(index(idx), index(idx), { LastActivityRole });
+    emit dataChanged(index(idx), index(idx), { LastActivityRole, LastActivityDisplayRole });
 }
 
 void ConversationListModel::incrementUnread(const QString& id)
@@ -142,4 +159,19 @@ bool ConversationListModel::isGroupFor(const QString& id) const
 {
     const int idx = indexOf(id);
     return idx >= 0 && m_items.at(idx).isGroup;
+}
+
+QString ConversationListModel::formatLastActivity(const QDateTime& lastActivity) const
+{
+    if (!lastActivity.isValid())
+        return {};
+
+    const QLocale locale = QLocale::system();
+    const QDate today = QDate::currentDate();
+    const QDate date = lastActivity.date();
+    if (date == today)
+        return locale.toString(lastActivity.time(), QLocale::ShortFormat);
+    if (date == today.addDays(-1))
+        return tr("Yesterday");
+    return locale.toString(date, QLocale::ShortFormat);
 }

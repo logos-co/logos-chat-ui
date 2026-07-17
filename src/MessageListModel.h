@@ -22,7 +22,13 @@ public:
         SenderRole = Qt::UserRole + 1,
         ContentRole,
         TimestampRole,
-        IsMeRole
+        IsMeRole,
+        // Neighbour-derived, computed from the chronologically previous (older)
+        // message at index+1 (the model is newest-first). Used to group a run of
+        // messages and to break the run with a day heading.
+        SameSenderAsPreviousRole,
+        ShowDaySeparatorRole,
+        DayLabelRole
     };
 
     explicit MessageListModel(QObject* parent = nullptr);
@@ -38,6 +44,9 @@ public:
     void clear();
 
 private:
+    // "Today" / "Yesterday" / short date for a day-separator heading.
+    QString dayLabel(const QDateTime& timestamp) const;
+
     QVector<MessageItem> m_items;
 };
 

@@ -1,5 +1,7 @@
 #include "MessageListModel.h"
 
+#include <QDate>
+#include <QLocale>
 #include <algorithm>
 #include <utility>
 
@@ -20,11 +22,23 @@ QVariant MessageListModel::data(const QModelIndex& index, int role) const
         return {};
 
     const auto& item = m_items.at(index.row());
+    // The older neighbour renders directly above this row (newest-first model,
+    // BottomToTop list), so index+1 is the chronologically previous message.
+    const int older = index.row() + 1;
     switch (role) {
     case SenderRole:    return item.sender;
     case ContentRole:   return item.content;
     case TimestampRole: return item.timestamp;
     case IsMeRole:      return item.isMe;
+    case SameSenderAsPreviousRole: {
+        if (older >= m_items.size()) return false;
+        const auto& prev = m_items.at(older);
+        return item.sender == prev.sender && item.isMe == prev.isMe
+            && item.timestamp.date() == prev.timestamp.date();
+    }
+    case ShowDaySeparatorRole:
+        return older >= m_items.size() || item.timestamp.date() != m_items.at(older).timestamp.date();
+    case DayLabelRole:  return dayLabel(item.timestamp);
     default:            return {};
     }
 }
@@ -32,10 +46,13 @@ QVariant MessageListModel::data(const QModelIndex& index, int role) const
 QHash<int, QByteArray> MessageListModel::roleNames() const
 {
     return {
-        { SenderRole,    "sender" },
-        { ContentRole,   "content" },
-        { TimestampRole, "timestamp" },
-        { IsMeRole,      "isMe" }
+        { SenderRole,                 "sender" },
+        { ContentRole,                "content" },
+        { TimestampRole,              "timestamp" },
+        { IsMeRole,                   "isMe" },
+        { SameSenderAsPreviousRole,   "sameSenderAsPrevious" },
+        { ShowDaySeparatorRole,       "showDaySeparator" },
+        { DayLabelRole,               "dayLabel" }
     };
 }
 
@@ -71,6 +88,12 @@ void MessageListModel::addMessages(QVector<MessageItem> items)
     beginInsertRows(QModelIndex(), firstRow, firstRow + n - 1);
     m_items += std::move(items);
     endInsertRows();
+
+    // The row that was oldest now has an older neighbour beneath it, so its
+    // day-separator and grouping flags may have flipped.
+    if (firstRow > 0)
+        emit dataChanged(index(firstRow - 1), index(firstRow - 1),
+                         { SameSenderAsPreviousRole, ShowDaySeparatorRole });
 }
 
 void MessageListModel::setMessages(QVector<MessageItem> items)
@@ -92,4 +115,18 @@ void MessageListModel::clear()
     beginResetModel();
     m_items.clear();
     endResetModel();
+}
+
+QString MessageListModel::dayLabel(const QDateTime& timestamp) const
+{
+    if (!timestamp.isValid())
+        return {};
+
+    const QDate today = QDate::currentDate();
+    const QDate date = timestamp.date();
+    if (date == today)
+        return tr("Today");
+    if (date == today.addDays(-1))
+        return tr("Yesterday");
+    return QLocale::system().toString(date, QLocale::ShortFormat);
 }

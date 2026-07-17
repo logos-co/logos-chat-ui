@@ -44,27 +44,11 @@ Rectangle {
                 Layout.alignment: Qt.AlignVCenter
             }
             LogosButton {
-                id: groupButton
-                implicitWidth: 68
-                implicitHeight: 30
-                //: Button that starts a new group conversation
-                text: qsTr("Group")
-                enabled: root.online
-                onClicked: root.newGroupRequested()
-                Layout.alignment: Qt.AlignVCenter
-
-                LogosToolTip {
-                    text: qsTr("New group conversation")
-                    placement: LogosToolTip.Bottom
-                    visible: groupButton.hovered
-                }
-            }
-            LogosButton {
                 id: newButton
-                implicitWidth: 56
+                implicitWidth: 84
                 implicitHeight: 30
                 //: Button that starts a new one-to-one conversation
-                text: qsTr("New")
+                text: qsTr("New chat")
                 enabled: root.online
                 onClicked: root.newConversationRequested()
                 Layout.alignment: Qt.AlignVCenter
@@ -73,6 +57,22 @@ Rectangle {
                     text: qsTr("New conversation")
                     placement: LogosToolTip.Bottom
                     visible: newButton.hovered
+                }
+            }
+            LogosButton {
+                id: groupButton
+                implicitWidth: 84
+                implicitHeight: 30
+                //: Button that starts a new group conversation
+                text: qsTr("New group")
+                enabled: root.online
+                onClicked: root.newGroupRequested()
+                Layout.alignment: Qt.AlignVCenter
+
+                LogosToolTip {
+                    text: qsTr("New group conversation")
+                    placement: LogosToolTip.Bottom
+                    visible: groupButton.hovered
                 }
             }
         }
@@ -106,7 +106,7 @@ Rectangle {
                 anchors.centerIn: parent
                 width: parent.width - 2 * Theme.spacing.large
                 visible: convList.count === 0
-                text: root.online ? qsTr("No conversations yet") : qsTr("Waiting for connection...")
+                text: root.online ? qsTr("No conversations yet. Start one with New chat, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
             }
         }
 
