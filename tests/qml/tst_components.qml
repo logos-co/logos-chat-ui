@@ -334,6 +334,39 @@ Item {
             verify(!bubble.showSender, "own messages never show a sender label");
         }
 
+        // The body is read-only selectable text, and a selection yields the raw
+        // string, so markup in a message stays literal.
+        function test_messageBubbleTextSelectable() {
+            const bubble = instantiate(messageBubbleC);
+            const body = findField(bubble, "messageText");
+            verify(body, "the message text must be reachable");
+            verify(body.readOnly, "the body must not be editable");
+            verify(body.selectByMouse, "the body must be selectable with the mouse");
+
+            body.selectAll();
+            compare(body.selectedText, "<b>not bold</b>", "the selection is the literal plain text");
+        }
+
+        // The bubble hugs a short message and caps a long one at 70% of the row.
+        // Guards the sizing formula, which reads the body's implicit size.
+        function test_messageBubbleSizing() {
+            const shortBubble = createTemporaryObject(messageBubbleC, testRoot);
+            const longBubble = createTemporaryObject(messageBubbleC, testRoot);
+            verify(shortBubble && longBubble, "both bubbles must instantiate");
+            shortBubble.width = 400;
+            shortBubble.content = "Hi";
+            longBubble.width = 400;
+            longBubble.content = "A message long enough to need wrapping. ".repeat(10);
+
+            const shortBox = findField(shortBubble, "bubble");
+            const longBox = findField(longBubble, "bubble");
+            verify(shortBox && longBox, "both bubble backgrounds must be reachable");
+            verify(shortBox.width > 0, "a short bubble must still have a width");
+            verify(shortBox.width < longBox.width, "a short message makes a narrower bubble");
+            compare(longBox.width, 280, "a long message caps at 70% of the row");
+            verify(longBox.height > shortBox.height, "wrapped content makes a taller bubble");
+        }
+
         // The current conversation highlights; a different one does not.
         function test_conversationDelegateHighlight() {
             const del = instantiate(conversationDelegateC);
