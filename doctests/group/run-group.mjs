@@ -7,7 +7,7 @@
 // logos-qt-mcp inspector protocol to all three instances: Alice creates a group,
 // invites Bob and Carol by address, waits for the roster to converge, then sends
 // one message that fans out to both — exercising the members pane and the
-// per-message sender attribution the group UI adds over a 1:1 chat. Launch and
+// per-message sender attribution the group UI adds over a DM. Launch and
 // teardown of the three apps is handled by run-group.sh; this script attaches to
 // the three inspector ports it is given.
 //

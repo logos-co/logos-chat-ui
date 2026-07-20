@@ -91,7 +91,7 @@ Rectangle {
                 anchors.centerIn: parent
                 width: parent.width - 2 * Theme.spacing.large
                 visible: threadList.count === 0
-                text: root.hasConversation ? qsTr("No messages yet") : root.hasConversations ? qsTr("Select a conversation to start chatting") : qsTr("No conversations yet. Start one with New chat or New group in the sidebar.")
+                text: root.hasConversation ? qsTr("No messages yet") : root.hasConversations ? qsTr("Select a conversation to start chatting") : qsTr("No conversations yet. Start one with New DM or New group in the sidebar.")
             }
         }
 

@@ -277,12 +277,12 @@ void ChatBackend::createConversation(QString peerAddress)
         return;
     }
 
-    setStatusMessage(QStringLiteral("Creating new conversation..."));
+    setStatusMessage(QStringLiteral("Creating DM..."));
     const LogosResult res = modules().chat_module.create_conversation(peerAddress);
     if (!res.success) {
         const QString reason = res.getError<QString>();
-        setStatusMessage(QStringLiteral("Failed to create conversation: ") + reason);
-        emit error(QStringLiteral("Failed to create conversation: ") + reason);
+        setStatusMessage(QStringLiteral("Failed to create DM: ") + reason);
+        emit error(QStringLiteral("Failed to create DM: ") + reason);
     }
     // The conversation_created event surfaces via the push subscription — the
     // appliers handle the UI side from there.
@@ -594,7 +594,7 @@ QString ChatBackend::fallbackDisplayName(const QString& convoId, const QString& 
                                          bool isGroup)
 {
     const QString label = peerLabel.isEmpty() ? convoId.left(8) : peerLabel;
-    return (isGroup ? QStringLiteral("Group ") : QStringLiteral("Chat ")) + label;
+    return (isGroup ? QStringLiteral("Group ") : QStringLiteral("DM ")) + label;
 }
 
 QString ChatBackend::shortSenderLabel(const QString& sender)

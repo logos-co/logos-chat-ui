@@ -47,14 +47,14 @@ Rectangle {
                 id: newButton
                 implicitWidth: 84
                 implicitHeight: 30
-                //: Button that starts a new one-to-one conversation
-                text: qsTr("New chat")
+                //: Button that starts a new direct message (1:1) conversation
+                text: qsTr("New DM")
                 enabled: root.online
                 onClicked: root.newConversationRequested()
                 Layout.alignment: Qt.AlignVCenter
 
                 LogosToolTip {
-                    text: qsTr("New conversation")
+                    text: qsTr("New direct message")
                     placement: LogosToolTip.Bottom
                     visible: newButton.hovered
                 }
@@ -106,7 +106,7 @@ Rectangle {
                 anchors.centerIn: parent
                 width: parent.width - 2 * Theme.spacing.large
                 visible: convList.count === 0
-                text: root.online ? qsTr("No conversations yet. Start one with New chat, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
+                text: root.online ? qsTr("No conversations yet. Start one with New DM, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
             }
         }
 
