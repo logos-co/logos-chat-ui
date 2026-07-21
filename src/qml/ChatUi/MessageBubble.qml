@@ -60,6 +60,7 @@ Item {
 
     Rectangle {
         id: bubble
+        objectName: "bubble"
         y: root.showSender ? senderLabel.y + senderLabel.height + Theme.spacing.tiny : daySeparator.height
         anchors.left: root.isMe ? undefined : parent.left
         anchors.right: root.isMe ? parent.right : undefined
@@ -83,14 +84,15 @@ Item {
             anchors.bottomMargin: Theme.spacing.small
             spacing: Theme.spacing.tiny
 
-            LogosText {
+            SelectableText {
                 id: contentText
+                objectName: "messageText"
                 width: parent.width
                 text: root.content
-                textFormat: Text.PlainText
                 color: root.isMe ? ChatTheme.bubbleOwnText : ChatTheme.bubblePeerText
+                selectionColor: root.isMe ? ChatTheme.bubbleOwnSelection : ChatTheme.bubblePeerSelection
+                selectedTextColor: root.isMe ? ChatTheme.bubbleOwnSelectedText : ChatTheme.bubblePeerSelectedText
                 font.pixelSize: Theme.typography.primaryText
-                wrapMode: Text.Wrap
             }
 
             LogosText {

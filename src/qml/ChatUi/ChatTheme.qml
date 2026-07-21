@@ -23,4 +23,12 @@ QtObject {
     readonly property color bubblePeerText: Theme.palette.text
     readonly property color bubbleOwn: Theme.palette.primary
     readonly property color bubbleOwnText: "#000000"
+
+    // Selection highlight for message text, inverted per side so the marked run
+    // stays legible on either bubble background.
+    // TODO(upstream: logos-design-system): selection roles.
+    readonly property color bubblePeerSelection: Theme.palette.primary
+    readonly property color bubblePeerSelectedText: "#000000"
+    readonly property color bubbleOwnSelection: "#000000"
+    readonly property color bubbleOwnSelectedText: Theme.palette.primary
 }

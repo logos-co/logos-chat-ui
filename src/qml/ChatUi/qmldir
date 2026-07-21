@@ -3,6 +3,7 @@ singleton ChatTheme 1.0 ChatTheme.qml
 ChatStore 1.0 ChatStore.qml
 PaneHeader 1.0 PaneHeader.qml
 EmptyState 1.0 EmptyState.qml
+SelectableText 1.0 SelectableText.qml
 ClipboardProxy 1.0 ClipboardProxy.qml
 StatusBar 1.0 StatusBar.qml
 MessageComposer 1.0 MessageComposer.qml
