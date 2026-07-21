@@ -19,21 +19,20 @@ out of her window and hand it to Bob, then capture each side of the
 conversation. The screenshots below are produced by that script.
 
 Two instances coexist on one host because each picks a random QtRO socket name;
-the script gives each its own data dir (`CHAT_MODULE_INSTANCE_PATH`), delivery
-node port (`CHAT_MODULE_DELIVERY_PORT`), and QML inspector port
-(`QML_INSPECTOR_PORT`).
+the script gives each its own session dir (`--user-dir`), delivery node port
+(`CHAT_MODULE_DELIVERY_PORT`), and QML inspector port (`QML_INSPECTOR_PORT`).
 
 ## Run two instances interactively
 
 To exchange a message by hand, launch two standalone apps; the delivery ports
-must differ (each is bound by its node), and a distinct instance dir keeps the
+must differ (each is bound by its node), and a distinct session dir keeps the
 two module instances cleanly apart:
 
 ```bash
 # window A
-CHAT_MODULE_INSTANCE_PATH=~/.local/share/chat_a CHAT_MODULE_DELIVERY_PORT=60000 nix run
+CHAT_MODULE_DELIVERY_PORT=60000 nix run . -- --user-dir ~/.local/share/chat_a
 # window B
-CHAT_MODULE_INSTANCE_PATH=~/.local/share/chat_b CHAT_MODULE_DELIVERY_PORT=60001 nix run
+CHAT_MODULE_DELIVERY_PORT=60001 nix run . -- --user-dir ~/.local/share/chat_b
 ```
 
 Both nodes join the `logos.test` Waku fleet (and publish their key packages to

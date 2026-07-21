@@ -48,10 +48,6 @@ public slots:
     void refreshMembers() override;
 
 private:
-    // Honours $CHAT_MODULE_INSTANCE_PATH, otherwise QStandardPaths::AppDataLocation.
-    // Creates the directory if missing.
-    static QString resolveInstancePath();
-
     // Honours $CHAT_MODULE_DELIVERY_PORT, otherwise the compiled-in default.
     // Lets multiple instances coexist on one host.
     static int resolveDeliveryPort();
@@ -95,7 +91,6 @@ private:
     MessageListModel* m_messageModel;
     MemberListModel* m_memberModel;
 
-    QString m_instancePath;
     // This installation's own address, cached lazily on first roster refresh to
     // mark the self entry.
     QString m_myAddress;
