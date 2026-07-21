@@ -16,7 +16,7 @@ LogosDialog {
     // Emitted with the trimmed address when the user confirms a non-empty entry.
     signal addressEntered(string address)
 
-    title: qsTr("New Conversation")
+    title: qsTr("New DM")
     modal: true
     focus: true
     closePolicy: Popup.CloseOnEscape

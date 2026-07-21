@@ -4,7 +4,7 @@ project_name: logos-chat-ui
 release: ""
 
 intro: |
-  A group conversation goes further than a 1:1 chat: one person creates it,
+  A group conversation goes further than a DM: one person creates it,
   invites others by address, and every message fans out to the whole roster with
   the sender attributed. That spans **three** app instances and grows by
   membership commits over the live network — more than the single-window
@@ -22,7 +22,7 @@ what_you_build: "A verified three-member, end-to-end-encrypted group conversatio
 
 what_you_learn:
   - "How the `group` app forms a three-member group and fans a message out to it, headless over the live network"
-  - "How the group UI adds a members pane and per-message sender attribution over a 1:1 chat"
+  - "How the group UI adds a members pane and per-message sender attribution over a DM"
   - "Why a multi-window group needs a dedicated runner rather than the single-instance `ui_test` driver"
 
 prerequisites:

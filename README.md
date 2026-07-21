@@ -20,8 +20,8 @@ Core functionality:
 
 - **Identity** — on startup, initializes a chat identity and displays the user's ID in the status bar
 - **Addresses** — show your address (the **Show My Address** button) and share it with others to let them start a conversation with you
-- **New conversations** — paste another user's address to open a private (1:1) conversation
-- **Group conversations** — start a group with **Group**, then invite peers by address from the members panel (see below)
+- **Direct messages** — paste another user's address into **New DM** to open a private (1:1) conversation
+- **Group conversations** — start a group with **New group**, then invite peers by address from the members panel (see below)
 - **Messaging** — send and receive messages in real-time over the Logos network
 - **Chat lifecycle** — auto-initializes and starts on launch; status shown in the bottom bar
 
@@ -76,7 +76,7 @@ port (`chat_c` / `60002`, and so on).
 Each node joins the `logos.test` Waku fleet and publishes its key package during
 init, so this needs internet and ~5-20s per window to reach **Online**. Then
 share one window's address (**Show My Address**) and paste it into another
-(**New** for a 1:1, or **Group** then the members panel for a group). For
+(**New DM** for a 1:1, or **New group** then the members panel for a group). For
 the full walkthrough with screenshots, and the scripted drivers that automate it
 (`doctests/exchange/run-exchange.sh` for a two-party exchange,
 `doctests/group/run-group.sh` for a three-party group), see
