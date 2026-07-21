@@ -80,9 +80,9 @@ launch() {
   mkdir -p "$WORK_DIR/$name"
   QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 \
     QML_INSPECTOR_PORT="$inspector" \
-    CHAT_MODULE_INSTANCE_PATH="$WORK_DIR/$name" \
     CHAT_MODULE_DELIVERY_PORT="$delivery" \
-    setsid "$APP_BIN" -platform offscreen > "$WORK_DIR/$name.log" 2>&1 &
+    setsid "$APP_BIN" -platform offscreen --user-dir "$WORK_DIR/$name" \
+      > "$WORK_DIR/$name.log" 2>&1 &
   echo "launched $name (inspector $inspector, delivery $delivery)"
 }
 

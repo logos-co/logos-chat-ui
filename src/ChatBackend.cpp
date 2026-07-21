@@ -10,8 +10,6 @@
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
-#include <QDir>
-#include <QStandardPaths>
 #include <QVariantMap>
 #include <cstdlib>
 #include <utility>
@@ -23,7 +21,6 @@ constexpr int kDefaultDeliveryPort = 60000;
 // matches the one a rehydrate reads back from the module.
 constexpr int kPreviewMaxChars = 160;
 constexpr const char* kDefaultDeliveryPreset = "logos.test";
-constexpr const char* kInstancePathEnvVar = "CHAT_MODULE_INSTANCE_PATH";
 constexpr const char* kDeliveryPortEnvVar = "CHAT_MODULE_DELIVERY_PORT";
 
 QDateTime msToDateTime(qint64 ms)
@@ -51,7 +48,6 @@ ChatBackend::ChatBackend(QObject* parent)
     , m_conversationProxy(new QSortFilterProxyModel(this))
     , m_messageModel(new MessageListModel(this))
     , m_memberModel(new MemberListModel(this))
-    , m_instancePath(resolveInstancePath())
 {
     // Present conversations newest-first without disturbing the source's
     // insertion order; the proxy re-sorts live as last_activity changes.
@@ -96,27 +92,7 @@ MemberListModel* ChatBackend::memberModel() const
     return m_memberModel;
 }
 
-// ── instance path ───────────────────────────────────────────────────────────
-
-// The chat_module's own instance directory, passed to it via init(). The UI
-// only chooses the location — the module owns the contents. Override with
-// CHAT_MODULE_INSTANCE_PATH to run side-by-side instances; otherwise it
-// defaults under the app's data location.
-QString ChatBackend::resolveInstancePath()
-{
-    if (const char* env = std::getenv(kInstancePathEnvVar); env && *env) {
-        QString path = QString::fromUtf8(env);
-        QDir().mkpath(path);
-        return path;
-    }
-
-    QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    if (base.isEmpty())
-        base = QDir::homePath() + QStringLiteral("/.local/share");
-    const QString path = base + QStringLiteral("/chat_module");
-    QDir().mkpath(path);
-    return path;
-}
+// ── delivery port ───────────────────────────────────────────────────────────
 
 int ChatBackend::resolveDeliveryPort()
 {
@@ -139,11 +115,10 @@ void ChatBackend::initialiseModule()
     setChatStatus(ChatBackendSimpleSource::Initialising);
     setStatusMessage(QStringLiteral("Initialising chat..."));
     const int port = resolveDeliveryPort();
-    qDebug() << "ChatBackend: init at" << m_instancePath << "port" << port;
+    qDebug() << "ChatBackend: init, delivery port" << port;
 
-    const LogosResult res = modules().chat_module.init(m_instancePath,
-                                                      QString::fromLatin1(kDefaultDeliveryPreset),
-                                                      port);
+    const LogosResult res = modules().chat_module.init(QString::fromLatin1(kDefaultDeliveryPreset),
+                                                       port);
     if (!res.success) {
         const QString reason = res.getError<QString>();
         setChatStatus(ChatBackendSimpleSource::Error);
