@@ -9,8 +9,8 @@ name: Two-instance exchange
 # the UI changes.
 #
 # This job is Linux only: it launches two standalone app instances on one host,
-# which the script keeps apart via distinct data dirs, delivery ports, and
-# inspector ports. macOS still exercises the round-trip through the exchange spec
+# which the script keeps apart via distinct data dirs and inspector ports. macOS
+# still exercises the round-trip through the exchange spec
 # in doctests.yml; this job is the dedicated, robust gate for it.
 
 on:

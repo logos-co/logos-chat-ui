@@ -8,8 +8,8 @@ name: Group chat
 # screenshots as an artifact for review.
 #
 # This job is Linux only: it launches three standalone app instances on one host,
-# which the script keeps apart via distinct data dirs, delivery ports, and
-# inspector ports. macOS still exercises the group flow through the chat-ui-group
+# which the script keeps apart via distinct data dirs and inspector ports. macOS
+# still exercises the group flow through the chat-ui-group
 # spec in doctests.yml; this job is the dedicated, race-free gate for it (it runs
 # the flow against the checked-out tree rather than a freshly pushed github ref).
 

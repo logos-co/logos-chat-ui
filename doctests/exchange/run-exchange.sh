@@ -2,13 +2,13 @@
 # Role: headless two-party exchange test driver (CI); see run-exchange-show.sh for the doc-test display variant.
 # Regenerate the two-instance message-exchange screenshots for the docs.
 #
-# Launches two logos-chat-ui instances offscreen — each with its own data dir,
-# delivery-node port, and QML inspector port — drives a real bidirectional
-# message exchange between them via the logos-qt-mcp inspector protocol
-# (run-exchange.mjs), and writes the screenshots to OUT_DIR. Exits non-zero if
-# the exchange does not complete, so this doubles as an end-to-end integration
-# check. Two instances coexist because each picks a random QtRO socket name and
-# we give each a distinct data dir / delivery port / inspector port.
+# Launches two logos-chat-ui instances offscreen — each with its own data dir
+# and QML inspector port — drives a real bidirectional message exchange between
+# them via the logos-qt-mcp inspector protocol (run-exchange.mjs), and writes the
+# screenshots to OUT_DIR. Exits non-zero if the exchange does not complete, so
+# this doubles as an end-to-end integration check. Two instances coexist because
+# each picks a random QtRO socket name and its own delivery ports, and we give
+# each a distinct data dir / inspector port.
 #
 # Usage:
 #   doctests/exchange/run-exchange.sh [out-dir]
@@ -30,8 +30,6 @@ OUT_DIR="${OUT_DIR:-${1:-$repo_root/docs/images/exchange}}"
 FLAKE="${FLAKE:-$repo_root}"
 ALICE_PORT="${ALICE_PORT:-3768}"
 BOB_PORT="${BOB_PORT:-3769}"
-ALICE_DELIVERY="${ALICE_DELIVERY:-60010}"
-BOB_DELIVERY="${BOB_DELIVERY:-60011}"
 WORK_DIR="${WORK_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/chat-exchange.XXXXXX")}"
 mkdir -p "$OUT_DIR" "$WORK_DIR"
 
@@ -88,14 +86,13 @@ cleanup() {
 trap cleanup EXIT
 
 launch() {
-  local name="$1" inspector="$2" delivery="$3"
+  local name="$1" inspector="$2"
   mkdir -p "$WORK_DIR/$name"
   QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 \
     QML_INSPECTOR_PORT="$inspector" \
-    CHAT_MODULE_DELIVERY_PORT="$delivery" \
     setsid "$APP_BIN" -platform offscreen --user-dir "$WORK_DIR/$name" \
       > "$WORK_DIR/$name.log" 2>&1 &
-  echo "launched $name (inspector $inspector, delivery $delivery)"
+  echo "launched $name (inspector $inspector)"
 }
 
 wait_for_port() {
@@ -109,8 +106,8 @@ wait_for_port() {
   return 1
 }
 
-launch alice "$ALICE_PORT" "$ALICE_DELIVERY"
-launch bob   "$BOB_PORT"   "$BOB_DELIVERY"
+launch alice "$ALICE_PORT"
+launch bob   "$BOB_PORT"
 wait_for_port "$ALICE_PORT"
 wait_for_port "$BOB_PORT"
 

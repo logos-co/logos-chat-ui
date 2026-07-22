@@ -48,10 +48,6 @@ public slots:
     void refreshMembers() override;
 
 private:
-    // Honours $CHAT_MODULE_DELIVERY_PORT, otherwise the compiled-in default.
-    // Lets multiple instances coexist on one host.
-    static int resolveDeliveryPort();
-
     void initialiseModule();
     void subscribeToEvents();
     void rehydrateConversations();
