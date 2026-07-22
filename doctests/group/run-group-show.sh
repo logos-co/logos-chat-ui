@@ -28,9 +28,9 @@ OUT_DIR="${OUT_DIR:-$BASE/images}"
 SHOW_PORT="${SHOW_PORT:-3768}"
 # Carol (the last member to join) is the window we expose: her screen shows the
 # creator's message received with a sender label beside the full roster.
-# The flow runs on 4778-4780 / delivery 60020-60022 — distinct from the #exchange
-# app's 4768-4769 / 60010-60011, so the two don't collide when the doc-test runs
-# both specs in one job and a prior app's setsid'd module hosts outlive teardown.
+# The flow runs on inspector ports 4778-4780 — distinct from the #exchange app's
+# 4768-4769, so the two don't collide when the doc-test runs both specs in one
+# job and a prior app's setsid'd module hosts outlive teardown.
 CAROL_PORT=4780
 mkdir -p "$DATA_DIR" "$OUT_DIR"
 
@@ -56,7 +56,6 @@ trap show_cleanup EXIT
 # three running with the completed group on screen.
 echo "=== phase 1: three-party group chat (instances kept alive) ==="
 ALICE_PORT=4778 BOB_PORT=4779 CAROL_PORT="$CAROL_PORT" \
-  ALICE_DELIVERY=60020 BOB_DELIVERY=60021 CAROL_DELIVERY=60022 \
   WORK_DIR="$DATA_DIR" KEEP_WORK_DIR=1 KEEP_INSTANCES=1 OUT_DIR="$OUT_DIR" \
   bash "$here/run-group.sh" "$OUT_DIR"
 

@@ -50,7 +50,7 @@ trap show_cleanup EXIT
 # closed until the finished window is ready. KEEP_INSTANCES leaves Alice and Bob
 # running with the completed thread on screen.
 echo "=== phase 1: two-party exchange (instances kept alive) ==="
-ALICE_PORT="$ALICE_PORT" BOB_PORT=4769 ALICE_DELIVERY=60010 BOB_DELIVERY=60011 \
+ALICE_PORT="$ALICE_PORT" BOB_PORT=4769 \
   WORK_DIR="$DATA_DIR" KEEP_WORK_DIR=1 KEEP_INSTANCES=1 OUT_DIR="$OUT_DIR" \
   bash "$here/run-exchange.sh" "$OUT_DIR"
 

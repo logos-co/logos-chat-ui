@@ -9,19 +9,15 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
-#include <QDebug>
 #include <QVariantMap>
-#include <cstdlib>
 #include <utility>
 
 namespace {
 
-constexpr int kDefaultDeliveryPort = 60000;
 // Preview cap; mirrors chat_module's own 160-char truncation so a live preview
 // matches the one a rehydrate reads back from the module.
 constexpr int kPreviewMaxChars = 160;
 constexpr const char* kDefaultDeliveryPreset = "logos.test";
-constexpr const char* kDeliveryPortEnvVar = "CHAT_MODULE_DELIVERY_PORT";
 
 QDateTime msToDateTime(qint64 ms)
 {
@@ -92,33 +88,14 @@ MemberListModel* ChatBackend::memberModel() const
     return m_memberModel;
 }
 
-// ── delivery port ───────────────────────────────────────────────────────────
-
-int ChatBackend::resolveDeliveryPort()
-{
-    const char* env = std::getenv(kDeliveryPortEnvVar);
-    if (!env || !*env) return kDefaultDeliveryPort;
-
-    bool ok = false;
-    const int parsed = QString::fromUtf8(env).toInt(&ok);
-    if (!ok) {
-        qWarning() << "ChatBackend: ignoring non-integer" << kDeliveryPortEnvVar << "=" << env;
-        return kDefaultDeliveryPort;
-    }
-    return parsed;
-}
-
 // ── lifecycle ───────────────────────────────────────────────────────────────
 
 void ChatBackend::initialiseModule()
 {
     setChatStatus(ChatBackendSimpleSource::Initialising);
     setStatusMessage(QStringLiteral("Initialising chat..."));
-    const int port = resolveDeliveryPort();
-    qDebug() << "ChatBackend: init, delivery port" << port;
 
-    const LogosResult res = modules().chat_module.init(QString::fromLatin1(kDefaultDeliveryPreset),
-                                                       port);
+    const LogosResult res = modules().chat_module.init(QString::fromLatin1(kDefaultDeliveryPreset));
     if (!res.success) {
         const QString reason = res.getError<QString>();
         setChatStatus(ChatBackendSimpleSource::Error);
