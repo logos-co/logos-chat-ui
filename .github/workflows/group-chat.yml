@@ -23,9 +23,15 @@ concurrency:
   group: group-chat-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  ATTIC_CACHE: ${{ github.ref == 'refs/heads/master' && 'public' || 'ci' }}
+
 jobs:
   group:
     name: group chat (ubuntu-latest)
+    environment: ${{ github.ref == 'refs/heads/master' && 'public-cache' || '' }}
+    env:
+      ATTIC_CONFIGURED: ${{ secrets.ATTIC_ENDPOINT != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
@@ -35,12 +41,33 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            extra-substituters = https://cache.nix.logos.co/public https://cache.nix.logos.co/ci
+            extra-trusted-public-keys = public:l4HrXgL4nw246+LBh2SOJyhz64BoGegOYLheT/iIAPU= ci:aVJqjS4NWX5WfqHO0AEhIScjGu/JyK5FoydPrnEbMvc=
+            fallback = true
 
+      # Read-only, and the sole source for a large part of the Rust crate
+      # closure. Drop it once a run shows Attic serving those paths.
       - name: Setup Cachix
         uses: cachix/cachix-action@v15
         with:
           name: logos-co
-          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+          skipPush: true
+
+      # Publishing only; both caches are public to read, which the substituter
+      # above already covers. ATTIC_TOKEN_PUBLIC lives in the public-cache
+      # environment, so only the master jobs that opt into it reach the public
+      # cache; every other ref pushes to ci with the repo-wide token. Skipped
+      # until this repo is granted Attic credentials, and on fork PRs, which get
+      # no secrets: an empty endpoint fails `attic use`.
+      - name: Setup Attic cache
+        if: env.ATTIC_CONFIGURED == 'true'
+        uses: ryanccn/attic-action@v0.4.1
+        with:
+          endpoint: ${{ secrets.ATTIC_ENDPOINT }}
+          cache: ${{ env.ATTIC_CACHE }}
+          token: ${{ github.ref == 'refs/heads/master' && secrets.ATTIC_TOKEN_PUBLIC || secrets.ATTIC_TOKEN_CI }}
 
       # The flow runs against the commit under test (FLAKE defaults to the
       # checked-out tree) and needs a real network: the three delivery nodes find
