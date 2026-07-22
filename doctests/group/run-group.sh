@@ -2,15 +2,14 @@
 # Role: headless three-party group-chat test driver (CI); see run-group-show.sh for the doc-test display variant.
 # Regenerate the three-instance group-chat screenshots for the docs.
 #
-# Launches three logos-chat-ui instances offscreen — each with its own data dir,
-# delivery-node port, and QML inspector port — drives a real group conversation
-# between them via the logos-qt-mcp inspector protocol (run-group.mjs): Alice
-# creates the group, invites Bob and Carol, and once the roster converges sends a
-# message that fans out to both. Writes the screenshots to OUT_DIR and exits
-# non-zero if the flow does not complete, so this doubles as an end-to-end
-# integration check. The three instances coexist because each picks a random
-# QtRO socket name and we give each a distinct data dir / delivery port /
-# inspector port.
+# Launches three logos-chat-ui instances offscreen — each with its own data dir
+# and QML inspector port — drives a real group conversation between them via the
+# logos-qt-mcp inspector protocol (run-group.mjs): Alice creates the group,
+# invites Bob and Carol, and once the roster converges sends a message that fans
+# out to both. Writes the screenshots to OUT_DIR and exits non-zero if the flow
+# does not complete, so this doubles as an end-to-end integration check. The three
+# instances coexist because each picks a random QtRO socket name and its own
+# delivery ports, and we give each a distinct data dir / inspector port.
 #
 # Usage:
 #   doctests/group/run-group.sh [out-dir]
@@ -33,9 +32,6 @@ FLAKE="${FLAKE:-$repo_root}"
 ALICE_PORT="${ALICE_PORT:-3768}"
 BOB_PORT="${BOB_PORT:-3769}"
 CAROL_PORT="${CAROL_PORT:-3770}"
-ALICE_DELIVERY="${ALICE_DELIVERY:-60010}"
-BOB_DELIVERY="${BOB_DELIVERY:-60011}"
-CAROL_DELIVERY="${CAROL_DELIVERY:-60012}"
 WORK_DIR="${WORK_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/chat-group.XXXXXX")}"
 mkdir -p "$OUT_DIR" "$WORK_DIR"
 
@@ -76,14 +72,13 @@ cleanup() {
 trap cleanup EXIT
 
 launch() {
-  local name="$1" inspector="$2" delivery="$3"
+  local name="$1" inspector="$2"
   mkdir -p "$WORK_DIR/$name"
   QT_QPA_PLATFORM=offscreen QT_FORCE_STDERR_LOGGING=1 \
     QML_INSPECTOR_PORT="$inspector" \
-    CHAT_MODULE_INSTANCE_PATH="$WORK_DIR/$name" \
-    CHAT_MODULE_DELIVERY_PORT="$delivery" \
-    setsid "$APP_BIN" -platform offscreen > "$WORK_DIR/$name.log" 2>&1 &
-  echo "launched $name (inspector $inspector, delivery $delivery)"
+    setsid "$APP_BIN" -platform offscreen --user-dir "$WORK_DIR/$name" \
+      > "$WORK_DIR/$name.log" 2>&1 &
+  echo "launched $name (inspector $inspector)"
 }
 
 # Surface each instance's boot/runtime output — the apps launch headless, so
@@ -110,9 +105,9 @@ wait_for_port() {
   return 1
 }
 
-launch alice "$ALICE_PORT" "$ALICE_DELIVERY"
-launch bob   "$BOB_PORT"   "$BOB_DELIVERY"
-launch carol "$CAROL_PORT" "$CAROL_DELIVERY"
+launch alice "$ALICE_PORT"
+launch bob   "$BOB_PORT"
+launch carol "$CAROL_PORT"
 wait_for_port "$ALICE_PORT"
 wait_for_port "$BOB_PORT"
 wait_for_port "$CAROL_PORT"

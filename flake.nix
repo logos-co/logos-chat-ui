@@ -2,17 +2,15 @@
   description = "Logos Chat UI - QML view + C++ backend module";
 
   inputs = {
-    # Must be the same builder chat_module consumes, so the
-    # logos-protocol/logos-qt-sdk chain matches across both.
-    logos-module-builder.url = "github:logos-co/logos-module-builder";
-    nix-bundle-lgx.url = "github:logos-co/nix-bundle-lgx";
-    # Pinned to the v0.2.0 release tag. Delivery stays on the v0.1.3 tag below,
-    # matching chat_module's own delivery pin.
-    chat_module.url = "github:logos-co/logos-chat-module/v0.2.0";
-    # Pinned to the v0.1.3 release tag, which includes the zerokit/RLN nix build
-    # fix (delivery-module #49: zerokit's cargo vendor no longer hits crates.io's
-    # python-requests 403). Kept in lockstep with chat_module's delivery pin.
-    logos-delivery-module.url = "github:logos-co/logos-delivery-module/v0.1.3";
+    # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
+    # chain matches across both.
+    logos-module-builder.follows = "chat_module/logos-module-builder";
+    # Pinned to the chat_module rev whose init contract drops the delivery port;
+    # release tags predate it.
+    chat_module.url = "github:logos-co/logos-chat-module/4983eb7343057bc12d51f6e7067ffb9cb681403a";
+    # Follow chat_module's delivery pin, so both build against the same
+    # delivery module.
+    logos-delivery-module.follows = "chat_module/logos-delivery-module";
   };
 
   outputs = inputs@{ logos-module-builder, logos-delivery-module, ... }:

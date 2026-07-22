@@ -53,24 +53,27 @@ The standalone app starts Logos Core, loads `capability_module` and `chat_module
 ### Running multiple instances on one machine
 
 To try a real conversation or group locally, run two or more standalone apps
-side by side on the same host. Each instance needs its own module data directory
-and its own delivery-node port; the UI-to-backend QtRO socket name is randomized
-per instance, so nothing else has to be set:
+side by side on the same host. Each instance needs its own session directory;
+the UI-to-backend QtRO socket name is randomized per instance and the delivery
+node listens on ports it picks itself, so nothing else has to be set:
 
 ```bash
 # window A
-CHAT_MODULE_INSTANCE_PATH=~/.local/share/chat_a CHAT_MODULE_DELIVERY_PORT=60000 nix run
+nix run . -- --user-dir ~/.local/share/chat_a
 # window B
-CHAT_MODULE_INSTANCE_PATH=~/.local/share/chat_b CHAT_MODULE_DELIVERY_PORT=60001 nix run
+nix run . -- --user-dir ~/.local/share/chat_b
 ```
 
-Add further windows the same way, giving each a fresh instance path and delivery
-port (`chat_c` / `60002`, and so on).
+Add further windows the same way, giving each a fresh session directory
+(`chat_c`, and so on).
+
+The standalone app hands every module its own directory under
+`<session dir>/module_data`, so `--user-dir` is what keeps two instances' chat
+state apart; it defaults to the platform application data location.
 
 | Variable | Purpose |
 |---|---|
-| `CHAT_MODULE_INSTANCE_PATH` | The `chat_module` instance's data directory. Two instances must not share one. Defaults to a directory under the app's data location. |
-| `CHAT_MODULE_DELIVERY_PORT` | The local delivery (Waku) node's port, bound by the node, so it must be distinct per instance. Defaults to a compiled-in port. |
+| `LOGOS_USER_DIR` | The standalone app's session directory, for when setting it by environment is easier than by flag. `--user-dir` wins over it. |
 | `QML_INSPECTOR_PORT` | Only needed when attaching the [logos-qt-mcp](https://github.com/logos-co/logos-qt-mcp) inspector to drive an instance programmatically (default 3768); give each a distinct one then. Interactive use does not need it. |
 
 Each node joins the `logos.test` Waku fleet and publishes its key package during
