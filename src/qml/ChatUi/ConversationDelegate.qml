@@ -33,6 +33,9 @@ LogosItemDelegate {
     implicitHeight: 56
     radius: 0
     highlighted: conversationId === currentConversationId
+    // A selection tint that stands apart from the hover tint, so the open
+    // conversation is picked out at a glance.
+    highlightColor: Theme.colors.getColor(Theme.palette.primary, 0.30)
 
     Accessible.role: Accessible.ListItem
     Accessible.name: {
@@ -64,7 +67,9 @@ LogosItemDelegate {
                 spacing: Theme.spacing.small
 
                 LogosText {
-                    text: root.preview
+                    objectName: "previewLabel"
+                    //: Placeholder in a conversation row that has no messages yet
+                    text: root.preview !== "" ? root.preview : qsTr("No messages yet")
                     textFormat: Text.PlainText
                     color: Theme.palette.textTertiary
                     font.pixelSize: Theme.typography.secondaryText
