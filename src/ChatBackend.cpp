@@ -298,7 +298,7 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
         m_pendingMembers.insert(peerAddress);
         refreshMembers();
     }
-    setStatusMessage(QStringLiteral("Invite sent; peer joins when the group commits"));
+    setStatusMessage(QStringLiteral("Invitation sent. They'll appear once the group updates (usually under a minute)."));
 }
 
 void ChatBackend::requestMyAddress()
