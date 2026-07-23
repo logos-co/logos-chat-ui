@@ -45,8 +45,10 @@ LogosDialog {
             spacing: Theme.spacing.small
 
             LogosScrollView {
+                objectName: "addressScroll"
                 Layout.fillWidth: true
-                Layout.preferredHeight: 120
+                // Fit the address, growing no further than a few wrapped lines.
+                Layout.preferredHeight: Math.min(addressDisplay.implicitHeight, 120)
 
                 LogosTextArea {
                     id: addressDisplay

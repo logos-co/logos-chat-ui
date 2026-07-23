@@ -56,19 +56,18 @@ LogosDialog {
             Layout.fillWidth: true
         }
 
-        LogosScrollView {
-            id: descriptionScroll
+        LogosText {
+            objectName: "descriptionText"
             Layout.fillWidth: true
-            Layout.preferredHeight: 80
-
-            LogosText {
-                width: descriptionScroll.width
-                text: root.description !== "" ? root.description : qsTr("No description")
-                textFormat: Text.PlainText
-                color: root.description !== "" ? Theme.palette.text : Theme.palette.textTertiary
-                font.pixelSize: Theme.typography.primaryText
-                wrapMode: Text.WordWrap
-            }
+            // A height-capped bare Text that elides; a scroll view here would
+            // clip to its content size and shear the label below it.
+            text: root.description !== "" ? root.description : qsTr("No description")
+            textFormat: Text.PlainText
+            color: root.description !== "" ? Theme.palette.text : Theme.palette.textTertiary
+            font.pixelSize: Theme.typography.primaryText
+            wrapMode: Text.WordWrap
+            maximumLineCount: 5
+            elide: Text.ElideRight
         }
 
         LogosText {

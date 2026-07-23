@@ -709,6 +709,23 @@ Item {
             compare(preview.text, "No messages yet", "an untouched conversation says so");
         }
 
+        // A dialog's display area is as tall as what it shows, up to a cap, so a
+        // one-line value gets neither dead space nor a scrollbar.
+        function test_dialogDisplayAreasFitContent() {
+            const dlg = createTemporaryObject(addressDialogC, testRoot);
+            verify(dlg, "the dialog must instantiate");
+            dlg.open();
+            const view = findField(dlg, "addressScroll");
+            verify(view, "the address display must be reachable");
+
+            dlg.addressText = "0xshort";
+            tryVerify(() => view.height > 0 && view.height < 120, 2000, "a short address takes only the room it needs");
+
+            dlg.addressText = "0xdeadbeef".repeat(40);
+            tryCompare(view, "height", 120, 2000, "a long one stops at the cap and scrolls");
+            dlg.close();
+        }
+
         // Every pane header is a fixed 48px, subtitle or not, so panes stay
         // aligned across the window.
         function test_paneHeaderSubtitle() {
