@@ -20,20 +20,12 @@ LogosDialog {
     anchors.centerIn: Overlay.overlay
     width: Math.min(480, (Overlay.overlay ? Overlay.overlay.width : 480) - 2 * Theme.spacing.large)
 
-    leftActions: [
+    rightActions: [
         LogosButton {
             implicitWidth: 96
             implicitHeight: 36
             text: qsTr("Close")
             onClicked: root.close()
-        }
-    ]
-    rightActions: [
-        LogosButton {
-            implicitWidth: 150
-            implicitHeight: 36
-            text: qsTr("Copy address")
-            onClicked: root._copy()
         }
     ]
 
@@ -48,15 +40,31 @@ LogosDialog {
             Layout.fillWidth: true
         }
 
-        LogosScrollView {
+        RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 120
+            spacing: Theme.spacing.small
 
-            LogosTextArea {
-                id: addressDisplay
-                readOnly: true
-                color: Theme.palette.primary
-                font.family: ChatTheme.monoFont
+            LogosScrollView {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 120
+
+                LogosTextArea {
+                    id: addressDisplay
+                    readOnly: true
+                    color: Theme.palette.primary
+                    font.family: ChatTheme.monoFont
+                }
+            }
+
+            LogosIconButton {
+                objectName: "copyMyAddressButton"
+                size: 32
+                iconSize: 16
+                iconSource: Qt.resolvedUrl("icons/copy.png")
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Copy address")
+                onClicked: root._copy()
+                Layout.alignment: Qt.AlignVCenter
             }
         }
 
@@ -64,17 +72,17 @@ LogosDialog {
         // toggles) so revealing it never resizes the dialog.
         LogosText {
             id: copiedLabel
+            objectName: "copiedLabel"
             text: qsTr("Copied to clipboard")
             color: Theme.palette.success
             font.pixelSize: Theme.typography.secondaryText
-            opacity: 0
+            opacity: copiedTimer.running ? 1 : 0
             Layout.fillWidth: true
         }
 
         Timer {
             id: copiedTimer
             interval: 2000
-            onTriggered: copiedLabel.opacity = 0
         }
 
         ClipboardProxy {
@@ -82,10 +90,11 @@ LogosDialog {
         }
     }
 
-    // Copy the shown address, then show the confirmation.
+    // A reopened dialog starts without a stale confirmation.
+    onOpened: copiedTimer.stop()
+
     function _copy() {
         clipboard.copy(root.addressText);
-        copiedLabel.opacity = 1;
         copiedTimer.restart();
     }
 }

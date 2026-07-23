@@ -121,11 +121,9 @@ sections:
                 key package was published to the registry during `init`, so the
                 address alone is enough). It is shown in a dialog, ready to share.
             - name: "Copy to clipboard"
-              action: call_method
-              find_by: "text"
-              find_value: "Copy address"
-              method: "clicked"
-              args: []
+              action: click_object
+              find_by: "objectName"
+              find_value: "copyMyAddressButton"
             - name: "Copied confirmation"
               action: wait_for
               texts: ["Copied to clipboard"]

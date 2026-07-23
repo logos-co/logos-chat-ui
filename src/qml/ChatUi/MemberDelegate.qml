@@ -4,10 +4,10 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// A group-roster row: the member label with a self marker, revealing the full
-// address on hover and requesting a copy on click. A pending member (invited but
-// not yet committed to the roster) dims and shows a busy spinner. Delegate roles
-// bind by name.
+// A group-roster row: the member label with a self marker and a copy action,
+// revealing the full address on hover and requesting a copy on click or from the
+// copy button. A pending member (invited but not yet committed to the roster)
+// dims and shows a busy spinner. Delegate roles bind by name.
 LogosItemDelegate {
     id: root
 
@@ -74,6 +74,28 @@ LogosItemDelegate {
             color: Theme.palette.primary
             font.pixelSize: Theme.typography.badgeText
             Layout.alignment: Qt.AlignVCenter
+        }
+
+        // Copying by clicking the row alone is invisible, so the row carries the
+        // affordance too, revealed on hover so a resting roster stays clean. It
+        // keeps its slot when hidden, so the row does not reflow. The icon is a
+        // raster: the hosts' Qt carries no SVG image plugin.
+        LogosIconButton {
+            objectName: "copyMemberAddressButton"
+            visible: root.address !== ""
+            opacity: root.hovered ? 1 : 0
+            size: 24
+            iconSize: 12
+            iconSource: Qt.resolvedUrl("icons/copy.png")
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Copy address")
+            onClicked: {
+                root.copyRequested(root.address);
+                root.flashCopied();
+            }
+            Layout.alignment: Qt.AlignVCenter
+
+            Behavior on opacity { NumberAnimation { duration: 100 } }
         }
     }
 
