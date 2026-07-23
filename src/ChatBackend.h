@@ -42,9 +42,9 @@ public slots:
     void requestMyAddress() override;
     void sendMessage(QString conversationId, QString content) override;
     void selectConversation(QString conversationId) override;
-    // Reloads the current group's roster into memberModel; clears it for a
-    // direct conversation. A synchronous module read, so never call it from
-    // inside a module event callback without deferToEventLoop.
+    // Reloads the current conversation's roster into memberModel. A synchronous
+    // module read, so never call it from inside a module event callback without
+    // deferToEventLoop.
     void refreshMembers() override;
 
 private:
@@ -75,6 +75,10 @@ private:
     void applyConversationUpdated(const QVariantList& args);
     void applyMembersChanged(const QVariantList& args);
     void applyConversationDeleted(const QVariantList& args);
+
+    // The other participant in a direct conversation's roster; empty for a group
+    // or when no other account is on it.
+    static QString peerAddressOf(const QVector<MemberItem>& members, bool isGroup);
 
     static QString fallbackDisplayName(const QString& convoId, const QString& peerLabel = QString(),
                                        bool isGroup = false);

@@ -27,6 +27,9 @@ class ChatBackend
     PROP(int memberCount READONLY)
     // Members invited into the current group but not yet on its roster.
     PROP(int pendingMemberCount READONLY)
+    // The other participant's address in the current direct conversation, empty
+    // for a group or while the roster is unknown.
+    PROP(QString currentPeerAddress READONLY)
 
     SLOT(void createConversation(QString peerAddress))
     SLOT(void createGroupConversation(QString name, QString description))
