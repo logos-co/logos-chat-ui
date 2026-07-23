@@ -78,8 +78,8 @@ LogosItemDelegate {
     }
 
     LogosToolTip {
-        //: Tooltip on a member still being committed into the group
-        text: root.pending ? qsTr("waiting for commit") : (root.copiedFlashing ? qsTr("Copied") : root.address)
+        //: Tooltip on a member who has been invited but has not joined yet
+        text: root.pending ? qsTr("waiting to join") : (root.copiedFlashing ? qsTr("Copied") : root.address)
         placement: LogosToolTip.Left
         visible: (root.hovered || root.copiedFlashing) && (root.pending || root.address !== "")
     }
