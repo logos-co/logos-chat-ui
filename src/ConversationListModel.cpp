@@ -118,6 +118,26 @@ void ConversationListModel::clearUnread(const QString& id)
     emit dataChanged(index(idx), index(idx), { UnreadCountRole });
 }
 
+QHash<QString, int> ConversationListModel::unreadCounts() const
+{
+    QHash<QString, int> counts;
+    for (const auto& item : m_items) {
+        if (item.unreadCount > 0)
+            counts.insert(item.conversationId, item.unreadCount);
+    }
+    return counts;
+}
+
+void ConversationListModel::restoreUnreadCounts(const QHash<QString, int>& counts)
+{
+    for (int i = 0; i < m_items.size(); ++i) {
+        const int count = counts.value(m_items.at(i).conversationId, 0);
+        if (count == 0 || m_items[i].unreadCount == count) continue;
+        m_items[i].unreadCount = count;
+        emit dataChanged(index(i), index(i), { UnreadCountRole });
+    }
+}
+
 void ConversationListModel::removeConversation(const QString& id)
 {
     int idx = indexOf(id);

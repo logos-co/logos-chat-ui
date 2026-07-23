@@ -156,6 +156,8 @@ void ChatBackend::rehydrateConversations()
     if (!m_moduleInitialised) return;
 
     const QVariantList convos = modules().chat_module.list_conversations();
+    // Unread counts live only here, so carry them across the rebuild.
+    const QHash<QString, int> unread = m_conversationModel->unreadCounts();
     m_conversationModel->clear();
     for (const QVariant& v : convos) {
         const QVariantMap obj = v.toMap();
@@ -174,6 +176,7 @@ void ChatBackend::rehydrateConversations()
         m_conversationModel->addConversation(convoId, displayName, description,
                                              msToDateTime(lastActivity), isGroup, preview);
     }
+    m_conversationModel->restoreUnreadCounts(unread);
     // The rebuilt list may now know the current conversation's kind/name.
     syncCurrentConversationMeta();
 }
@@ -535,8 +538,13 @@ void ChatBackend::applyConversationCreated(const QVariantList& args)
     // Open a conversation we just created, so creating a chat or group lands
     // the user in it. Deferred: selectConversation makes a synchronous module
     // read and this runs inside a module event callback (see deferToEventLoop).
-    if (isOutgoing)
+    if (isOutgoing) {
         deferToEventLoop([this, convoId] { selectConversation(convoId); });
+    } else if (convoId != currentConversationId()) {
+        // Being invited comes with no message of its own, so the unread badge is
+        // the only thing marking the new row as unseen.
+        m_conversationModel->incrementUnread(convoId);
+    }
 }
 
 void ChatBackend::applyConversationUpdated(const QVariantList& args)

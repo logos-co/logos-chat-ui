@@ -3,6 +3,7 @@
 
 #include <QAbstractListModel>
 #include <QDateTime>
+#include <QHash>
 #include <QString>
 #include <QVector>
 
@@ -53,6 +54,10 @@ public:
     void updateLastActivity(const QString& id, const QDateTime& lastActivity);
     void incrementUnread(const QString& id);
     void clearUnread(const QString& id);
+    // Unread counts by conversation id, and their restoration onto a rebuilt
+    // list: the module does not track them, so a rebuild would drop them.
+    QHash<QString, int> unreadCounts() const;
+    void restoreUnreadCounts(const QHash<QString, int>& counts);
     void removeConversation(const QString& id);
     void clear();
     bool contains(const QString& id) const;
