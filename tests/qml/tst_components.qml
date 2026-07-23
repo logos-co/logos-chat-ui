@@ -278,6 +278,10 @@ Item {
         id: copyRequestedSpy
         signalName: "copyRequested"
     }
+    SignalSpy {
+        id: contextMenuSpy
+        signalName: "contextMenuRequested"
+    }
 
     TestCase {
         name: "ChatUiComponents"
@@ -651,6 +655,46 @@ Item {
             compare(copyRequestedSpy.count, 1, "the button requests the copy");
             compare(copyRequestedSpy.signalArguments[0][0], "0xcarol", "with the row's address");
             verify(del.copiedFlashing, "and confirms it on the row");
+        }
+
+        // A right-click asks for the message actions, offering the selection
+        // when the user made one and the whole message otherwise.
+        function test_messageBubbleContextMenu() {
+            const bubble = createTemporaryObject(messageBubbleC, testRoot);
+            verify(bubble, "the bubble must instantiate");
+            bubble.width = 300;
+            const body = findField(bubble, "messageText");
+            const box = findField(bubble, "bubble");
+            verify(body && box, "the message text and its background must be reachable");
+
+            compare(bubble.copyText, "<b>not bold</b>", "a message with no selection copies whole");
+            body.select(0, 3);
+            compare(bubble.copyText, "<b>", "a selection copies just that");
+            body.deselect();
+
+            contextMenuSpy.target = bubble;
+            contextMenuSpy.clear();
+            mouseClick(box, box.width / 2, box.height / 2, Qt.RightButton);
+            compare(contextMenuSpy.count, 1, "a right-click asks for the menu");
+            compare(contextMenuSpy.signalArguments[0][0], "<b>not bold</b>", "carrying what to copy");
+        }
+
+        // A row's right-click hands the thread's shared menu that row's text.
+        function test_threadPaneMessageMenu() {
+            const pane = createTemporaryObject(messageThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const entry = findField(pane, "copyMessageMenuItem");
+            const menu = findField(pane, "messageMenu");
+            const list = findField(pane, "threadList");
+            verify(entry && menu && list, "the menu, its copy entry and the thread must be reachable");
+            compare(menu.copyText, "", "nothing to copy before a row asks");
+
+            tryVerify(() => list.itemAtIndex(0) !== null, 2000, "the message row must be realised");
+            list.itemAtIndex(0).contextMenuRequested("Hi there");
+            compare(menu.copyText, "Hi there", "the row hands the menu its text");
+            entry.triggered();
         }
 
         // Every pane header is a fixed 48px, subtitle or not, so panes stay

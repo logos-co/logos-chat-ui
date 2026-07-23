@@ -81,6 +81,28 @@ Rectangle {
         interval: 300
     }
 
+    // One menu serves every row: a thread holds far more messages than the menu
+    // has entries.
+    LogosMenu {
+        id: messageMenu
+        objectName: "messageMenu"
+
+        // What the Copy entry puts on the clipboard, set by the row that asked
+        // for the menu.
+        property string copyText: ""
+
+        LogosMenuItem {
+            objectName: "copyMessageMenuItem"
+            //: Menu entry that copies a message
+            text: qsTr("Copy")
+            onTriggered: clipboard.copy(messageMenu.copyText)
+        }
+    }
+
+    ClipboardProxy {
+        id: clipboard
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
@@ -129,6 +151,10 @@ Rectangle {
                 delegate: MessageBubble {
                     width: ListView.view.width
                     groupContext: root.currentIsGroup
+                    onContextMenuRequested: function (text) {
+                        messageMenu.copyText = text;
+                        messageMenu.popup();
+                    }
                 }
             }
 

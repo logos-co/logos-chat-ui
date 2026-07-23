@@ -22,6 +22,12 @@ Item {
     required property string dayLabel
 
     readonly property bool showSender: groupContext && !isMe && !sameSenderAsPrevious
+    // What a copy of this message takes: the selection when the user made one,
+    // else the whole message.
+    readonly property string copyText: contentText.selectedText !== "" ? contentText.selectedText : root.content
+
+    // Emitted on a right-click, so the thread can offer its message actions.
+    signal contextMenuRequested(string text)
 
     implicitWidth: 200
     implicitHeight: bubble.y + bubble.height
@@ -76,6 +82,11 @@ Item {
         color: root.isMe ? ChatTheme.bubbleOwn : ChatTheme.bubblePeer
         border.width: root.isMe ? 0 : 1
         border.color: Theme.palette.borderSubtle
+
+        TapHandler {
+            acceptedButtons: Qt.RightButton
+            onTapped: root.contextMenuRequested(root.copyText)
+        }
 
         Column {
             anchors.fill: parent
