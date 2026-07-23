@@ -19,7 +19,7 @@ QtObject {
     readonly property bool online: backend ? backend.chatStatus === ChatBackend.Online : false
     readonly property bool hasError: backend ? backend.chatStatus === ChatBackend.Error : false
     readonly property string currentConversationId: backend ? backend.currentConversationId : ""
-    readonly property bool hasCurrentConversation: currentConversationId !== ""
+    readonly property string loadedConversationId: backend ? backend.loadedConversationId : ""
     readonly property bool currentIsGroup: backend ? backend.currentIsGroup : false
     readonly property string currentDisplayName: backend ? backend.currentDisplayName : ""
     readonly property string currentDescription: backend ? backend.currentDescription : ""

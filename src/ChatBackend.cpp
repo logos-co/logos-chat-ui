@@ -56,6 +56,7 @@ ChatBackend::ChatBackend(QObject* parent)
     setMyIdentity(QString());
     setStatusMessage(QStringLiteral("Ready"));
     setCurrentConversationId(QString());
+    setLoadedConversationId(QString());
     syncCurrentConversationMeta();
 }
 
@@ -189,14 +190,28 @@ void ChatBackend::syncCurrentConversationMeta()
     setCurrentDescription(m_conversationModel->descriptionFor(id));
 }
 
-void ChatBackend::showConversationMessages(const QString& convoId)
+bool ChatBackend::showConversationMessages(const QString& convoId)
 {
-    if (!m_moduleInitialised || convoId.isEmpty()) {
+    if (convoId.isEmpty()) {
         m_messageModel->clear();
-        return;
+        return true;
+    }
+    if (!m_moduleInitialised) {
+        m_messageModel->clear();
+        return false;
     }
 
-    const QVariantList msgs = modules().chat_module.get_messages(convoId);
+    // A failed read comes back as an empty list, so ask for the error too: an
+    // empty thread and an unreachable module must not look alike.
+    logos::CallError err;
+    const QVariantList msgs = modules().chat_module.get_messages(convoId, &err);
+    if (!err.ok()) {
+        const QString reason = QString::fromStdString(err.message);
+        setStatusMessage(QStringLiteral("Could not load messages: ") + reason);
+        emit error(QStringLiteral("Could not load messages: ") + reason);
+        return false;
+    }
+
     QVector<MessageItem> rows;
     rows.reserve(msgs.size());
     for (const QVariant& v : msgs) {
@@ -209,6 +224,7 @@ void ChatBackend::showConversationMessages(const QString& convoId)
                       content, msToDateTime(ts), fromSelf });
     }
     m_messageModel->setMessages(std::move(rows));
+    return true;
 }
 
 void ChatBackend::deferToEventLoop(std::function<void()> work)
@@ -323,12 +339,16 @@ void ChatBackend::sendMessage(QString conversationId, QString content)
 
 void ChatBackend::selectConversation(QString conversationId)
 {
-    if (conversationId == currentConversationId()) return;
+    // Re-selecting the conversation on screen is a no-op only once its messages
+    // are in; while they are not, it is the user's retry.
+    if (conversationId == currentConversationId() && conversationId == loadedConversationId())
+        return;
 
+    setLoadedConversationId(QString());
     setCurrentConversationId(conversationId);
     syncCurrentConversationMeta();
     m_conversationModel->clearUnread(conversationId);
-    showConversationMessages(conversationId);
+    const bool loaded = showConversationMessages(conversationId);
     // Reset the roster on every switch: a group whose roster we can't fetch
     // right now (offline) must show empty, not the previous conversation's
     // members. refreshMembers then loads the new group's roster when it can, and
@@ -338,6 +358,8 @@ void ChatBackend::selectConversation(QString conversationId)
     m_memberModel->clear();
     setMemberCount(0);
     refreshMembers();
+    if (loaded)
+        setLoadedConversationId(conversationId);
 }
 
 void ChatBackend::refreshMembers()
@@ -414,8 +436,16 @@ void ChatBackend::applyDeliveryState(const QString& state, const QString& detail
     if (becameOnline && m_initialSnapshotDone) {
         deferToEventLoop([this] {
             rehydrateConversations();
-            if (!currentConversationId().isEmpty())
-                showConversationMessages(currentConversationId());
+            const QString convoId = currentConversationId();
+            if (convoId.isEmpty())
+                return;
+            // The refetch replaces the thread, so the models stop holding it
+            // until the reload lands.
+            setLoadedConversationId(QString());
+            const bool loaded = showConversationMessages(convoId);
+            refreshMembers();
+            if (loaded)
+                setLoadedConversationId(convoId);
         });
     }
 }
@@ -537,6 +567,7 @@ void ChatBackend::applyConversationDeleted(const QVariantList& args)
     m_conversationModel->removeConversation(convoId);
     if (convoId == currentConversationId()) {
         setCurrentConversationId(QString());
+        setLoadedConversationId(QString());
         syncCurrentConversationMeta();
         m_messageModel->clear();
     }

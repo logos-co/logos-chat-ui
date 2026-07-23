@@ -23,6 +23,7 @@ Rectangle {
             unreadCount: 0
             lastActivityDisplay: "12:34"
             preview: "Sounds good, talk soon"
+            description: ""
         }
         ListElement {
             conversationId: "c2"
@@ -31,6 +32,7 @@ Rectangle {
             unreadCount: 128
             lastActivityDisplay: "Yesterday"
             preview: "Bob: pushed the fix, please review"
+            description: "Design reviews and theme work"
         }
         ListElement {
             conversationId: "c3"
@@ -39,6 +41,7 @@ Rectangle {
             unreadCount: 3
             lastActivityDisplay: "Mon"
             preview: "Did you get a chance to look?"
+            description: ""
         }
     }
     ListModel {
@@ -109,12 +112,14 @@ Rectangle {
                 conversationId: "c2"
                 hasConversation: true
                 online: true
+                ready: true
             }
             MembersPane {
                 Layout.preferredWidth: 220
                 Layout.fillHeight: true
                 memberModel: membersMock
                 online: true
+                ready: true
             }
         }
 

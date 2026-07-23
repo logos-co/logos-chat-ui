@@ -30,6 +30,7 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     case UnreadCountRole:         return item.unreadCount;
     case IsGroupRole:             return item.isGroup;
     case PreviewRole:             return item.preview;
+    case DescriptionRole:         return item.description;
     default:                      return {};
     }
 }
@@ -43,7 +44,8 @@ QHash<int, QByteArray> ConversationListModel::roleNames() const
         { LastActivityDisplayRole, "lastActivityDisplay" },
         { UnreadCountRole,         "unreadCount" },
         { IsGroupRole,             "isGroup" },
-        { PreviewRole,             "preview" }
+        { PreviewRole,             "preview" },
+        { DescriptionRole,         "description" }
     };
 }
 
@@ -72,7 +74,10 @@ void ConversationListModel::updateDescription(const QString& id, const QString& 
 {
     int idx = indexOf(id);
     if (idx < 0) return;
+
+    if (m_items[idx].description == description) return;
     m_items[idx].description = description;
+    emit dataChanged(index(idx), index(idx), { DescriptionRole });
 }
 
 void ConversationListModel::updatePreview(const QString& id, const QString& preview)

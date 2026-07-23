@@ -18,10 +18,13 @@ LogosItemDelegate {
     required property string lastActivityDisplay
     // Truncated last-message content shown under the name.
     required property string preview
+    // The group's shared description, carried so a selection can be rendered
+    // from the row itself.
+    required property string description
     // The open conversation, so this row highlights when it is the current one.
     property string currentConversationId: ""
 
-    signal activated(string conversationId)
+    signal activated(string conversationId, string displayName, bool isGroup, string description)
 
     // True while this is the ListView's current item and the list has focus.
     readonly property bool keyboardFocused: ListView.isCurrentItem && ListView.view && ListView.view.activeFocus
@@ -38,7 +41,7 @@ LogosItemDelegate {
     }
     Accessible.selected: highlighted
 
-    onClicked: root.activated(root.conversationId)
+    onClicked: root.activated(root.conversationId, root.displayName, root.isGroup, root.description)
 
     contentItem: RowLayout {
         spacing: Theme.spacing.small

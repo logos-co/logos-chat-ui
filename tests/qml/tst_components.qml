@@ -27,6 +27,7 @@ Item {
             unreadCount: 0
             lastActivityDisplay: "12:34"
             preview: "See you tomorrow"
+            description: ""
         }
         ListElement {
             conversationId: "c2"
@@ -35,6 +36,7 @@ Item {
             unreadCount: 42
             lastActivityDisplay: "12:34"
             preview: "Alice: shipping the new theme"
+            description: "Shipping the new theme"
         }
     }
     ListModel {
@@ -48,6 +50,12 @@ Item {
             showDaySeparator: true
             dayLabel: "Today"
         }
+    }
+    ListModel {
+        id: emptyMessagesMock
+    }
+    ListModel {
+        id: emptyMembersMock
     }
     ListModel {
         id: membersMock
@@ -77,6 +85,27 @@ Item {
             conversationId: "c1"
             hasConversation: true
             online: true
+            ready: true
+        }
+    }
+    Component {
+        id: emptyMembersPaneC
+        MembersPane {
+            memberModel: emptyMembersMock
+            online: true
+            ready: true
+        }
+    }
+    Component {
+        id: emptyThreadPaneC
+        MessageThreadPane {
+            messageModel: emptyMessagesMock
+            currentIsGroup: false
+            title: "Alice"
+            conversationId: "c1"
+            hasConversation: true
+            online: true
+            ready: true
         }
     }
     Component {
@@ -84,6 +113,7 @@ Item {
         MembersPane {
             memberModel: membersMock
             online: true
+            ready: true
         }
     }
     Component {
@@ -167,6 +197,7 @@ Item {
             unreadCount: 3
             lastActivityDisplay: "12:34"
             preview: "See you tomorrow"
+            description: "Ship it"
             currentConversationId: "c1"
         }
     }
@@ -182,6 +213,10 @@ Item {
             showDaySeparator: true
             dayLabel: "Today"
         }
+    }
+    Component {
+        id: messageSkeletonC
+        MessageSkeleton {}
     }
     Component {
         id: memberDelegateC
@@ -216,6 +251,10 @@ Item {
     SignalSpy {
         id: addMemberReqSpy
         signalName: "addMemberRequested"
+    }
+    SignalSpy {
+        id: conversationSelectedSpy
+        signalName: "conversationSelected"
     }
 
     TestCase {
@@ -257,6 +296,7 @@ Item {
 
         function test_leafComponentsInstantiate() {
             instantiate(paneHeaderC);
+            instantiate(messageSkeletonC);
             instantiate(emptyStateC);
             instantiate(toastC);
             instantiate(clipboardProxyC);
@@ -305,6 +345,114 @@ Item {
             groupInfoSpy.clear();
             details.clicked();
             compare(groupInfoSpy.count, 1, "clicking Details requests the group info");
+        }
+
+        // A conversation whose messages have not arrived yet shows neither the
+        // rows left behind by the previous one nor a premature empty state; the
+        // skeleton waits out the grace interval, and the row count keeps
+        // reporting the model.
+        function test_threadPaneGatesUnloadedConversation() {
+            const pane = createTemporaryObject(messageThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const list = findField(pane, "threadList");
+            const skeleton = findField(pane, "threadSkeleton");
+            const empty = findField(pane, "threadEmptyState");
+            verify(list && skeleton && empty, "the thread parts must be reachable");
+            verify(list.visible, "a loaded thread shows its rows");
+            verify(!skeleton.visible, "a loaded thread shows no skeleton");
+
+            pane.conversationId = "c2";
+            pane.ready = false;
+            verify(!pane.threadReady, "a conversation still loading is not ready");
+            verify(!list.visible, "rows of the previous conversation stay hidden");
+            verify(!empty.visible, "no empty state while the thread is loading");
+            verify(!skeleton.visible, "no skeleton within the grace interval");
+            compare(pane.messageCount, 1, "the row count still reports the model");
+            tryCompare(skeleton, "visible", true, 3000, "a longer wait shows the skeleton");
+
+            pane.ready = true;
+            verify(list.visible, "the thread shows once its messages are loaded");
+            verify(!skeleton.visible, "the skeleton goes with the wait");
+
+            // A refetch under the same conversation is a wait like any other.
+            pane.ready = false;
+            verify(!skeleton.visible, "a reload gets the grace interval too");
+            tryCompare(skeleton, "visible", true, 3000, "and the skeleton after it");
+        }
+
+        // An actually empty thread says so, but only after the model has had a
+        // moment to fill: the messages arrive on their own replica, a beat after
+        // the conversation counts as loaded.
+        function test_threadPaneEmptyStateSettles() {
+            const pane = createTemporaryObject(emptyThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const empty = findField(pane, "threadEmptyState");
+            verify(empty, "the empty state must be reachable");
+
+            pane.conversationId = "c2";
+            verify(!empty.visible, "an empty model right after a switch says nothing");
+            tryCompare(empty, "visible", true, 3000, "a thread that stays empty says so");
+        }
+
+        // A roster that has just loaded does not claim to be empty until the
+        // model has had a moment to fill, for the same reason the thread waits.
+        function test_membersPaneEmptyStateSettles() {
+            const pane = createTemporaryObject(emptyMembersPaneC, testRoot);
+            verify(pane, "the members pane must instantiate");
+            pane.width = 220;
+            pane.height = 300;
+            const empty = findField(pane, "memberEmptyState");
+            verify(empty, "the empty state must be reachable");
+
+            pane.ready = false;
+            pane.ready = true;
+            verify(!empty.visible, "an empty model right after a switch says nothing");
+            tryCompare(empty, "visible", true, 3000, "a roster that stays empty says so");
+        }
+
+        // The roster is gated the same way: a switch never shows the previous
+        // conversation's members, nor claims the new one has none.
+        function test_membersPaneGatesUnloadedRoster() {
+            const pane = createTemporaryObject(membersPaneC, testRoot);
+            verify(pane, "the members pane must instantiate");
+            pane.width = 220;
+            pane.height = 300;
+            const list = findField(pane, "memberList");
+            const empty = findField(pane, "memberEmptyState");
+            verify(list && empty, "the roster parts must be reachable");
+            verify(list.visible, "a loaded roster shows its rows");
+
+            pane.ready = false;
+            verify(!list.visible, "rows of the previous conversation stay hidden");
+            verify(!empty.visible, "no empty state while the roster is loading");
+        }
+
+        // Selecting a row carries the row's own data, which is what lets a view
+        // render the selection before the backend has switched to it.
+        function test_conversationsPaneSelectionCarriesTheRow() {
+            const pane = createTemporaryObject(conversationsPaneC, testRoot);
+            verify(pane, "the sidebar must instantiate");
+            pane.width = 260;
+            pane.height = 400;
+
+            conversationSelectedSpy.target = pane;
+            conversationSelectedSpy.clear();
+
+            const list = findField(pane, "conversationList");
+            verify(list, "the conversation list must be reachable");
+            tryVerify(() => list.itemAtIndex(1) !== null, 2000, "the second row must be realised");
+            list.itemAtIndex(1).clicked();
+
+            compare(conversationSelectedSpy.count, 1, "clicking a row selects it once");
+            const args = conversationSelectedSpy.signalArguments[0];
+            compare(args[0], "c2", "the conversation id");
+            compare(args[1], "Team", "its display name");
+            compare(args[2], true, "whether it is a group");
+            compare(args[3], "Shipping the new theme", "and its description");
         }
 
         // Every pane header is a fixed 48px, subtitle or not, so panes stay

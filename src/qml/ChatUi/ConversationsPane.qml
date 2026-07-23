@@ -17,7 +17,9 @@ Rectangle {
     required property string currentConversationId
     required property bool online
 
-    signal conversationSelected(string conversationId)
+    // Carries the selected row's own data, so a view can render the selection
+    // before the backend has switched to it.
+    signal conversationSelected(string conversationId, string displayName, bool isGroup, string description)
     signal newConversationRequested
     signal newGroupRequested
     signal showAddressRequested
@@ -27,6 +29,17 @@ Rectangle {
 
     implicitWidth: 260
     color: Theme.palette.backgroundInset
+
+    QtObject {
+        id: d
+
+        // Select the keyboard-focused row, giving it the same effect as a click.
+        function activateCurrent() {
+            const row = convList.currentItem as ConversationDelegate;
+            if (row)
+                root.conversationSelected(row.conversationId, row.displayName, row.isGroup, row.description);
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -79,6 +92,7 @@ Rectangle {
 
         ListView {
             id: convList
+            objectName: "conversationList"
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
@@ -87,18 +101,16 @@ Rectangle {
             model: root.conversationModel
             currentIndex: -1
 
-            Keys.onReturnPressed: if (currentItem)
-                root.conversationSelected((currentItem as ConversationDelegate).conversationId)
-            Keys.onEnterPressed: if (currentItem)
-                root.conversationSelected((currentItem as ConversationDelegate).conversationId)
+            Keys.onReturnPressed: d.activateCurrent()
+            Keys.onEnterPressed: d.activateCurrent()
 
             ScrollBar.vertical: LogosScrollBar {}
 
             delegate: ConversationDelegate {
                 width: ListView.view.width
                 currentConversationId: root.currentConversationId
-                onActivated: function (conversationId) {
-                    root.conversationSelected(conversationId);
+                onActivated: function (conversationId, displayName, isGroup, description) {
+                    root.conversationSelected(conversationId, displayName, isGroup, description);
                 }
             }
 

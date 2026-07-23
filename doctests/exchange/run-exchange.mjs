@@ -77,8 +77,12 @@ async function loadThread(insp, convId, minCount, { timeout = 90000 } = {}) {
     await evalq(insp, `store.backend.selectConversation(${JSON.stringify(convId)})`);
     const innerStart = Date.now();
     while (Date.now() - innerStart < 8000) {
+      // threadReady as well as the count: the pane hides its rows until the
+      // models report the selected conversation, and the screenshots that
+      // follow must show the thread rather than its loading state.
+      const shown = await evalq(insp, "threadPane.threadReady");
       const c = await evalq(insp, "threadPane.messageCount");
-      if (typeof c === "number" && c >= minCount) return c;
+      if (shown === true && typeof c === "number" && c >= minCount) return c;
       await sleep(1000);
     }
   }
