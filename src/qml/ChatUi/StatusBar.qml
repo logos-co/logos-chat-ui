@@ -14,10 +14,22 @@ Rectangle {
     property bool online: false
     property bool hasError: false
     property string identity: ""
+    // How long a status message stays on the bar. Messages are announcements of
+    // something that happened, so they go quiet again; the connectivity label
+    // and the identity are state and stay.
+    property int messageTimeout: 6000
 
     implicitWidth: 200
     implicitHeight: 28
     color: Theme.palette.backgroundTertiary
+
+    onStatusMessageChanged: messageTimer.restart()
+
+    Timer {
+        id: messageTimer
+        interval: root.messageTimeout
+        running: true
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -26,7 +38,8 @@ Rectangle {
         spacing: Theme.spacing.small
 
         LogosText {
-            text: root.statusMessage
+            objectName: "statusMessageLabel"
+            text: messageTimer.running ? root.statusMessage : ""
             textFormat: Text.PlainText
             color: Theme.palette.textTertiary
             font.pixelSize: Theme.typography.secondaryText

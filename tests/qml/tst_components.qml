@@ -490,6 +490,20 @@ Item {
             compare(composer.text, "", "a refusal from another conversation stays out");
         }
 
+        // A status message is an announcement: it shows, then goes quiet, while
+        // the connectivity label stays.
+        function test_statusBarMessageExpires() {
+            const bar = instantiate(statusBarC);
+            bar.messageTimeout = 200;
+            const label = findField(bar, "statusMessageLabel");
+            verify(label, "the status message label must be reachable");
+
+            bar.statusMessage = "Address ready";
+            compare(label.text, "Address ready", "a fresh message shows");
+            tryCompare(label, "text", "", 3000, "the message goes quiet");
+            compare(bar.statusLabel, "Online", "connectivity is state and stays");
+        }
+
         // Every pane header is a fixed 48px, subtitle or not, so panes stay
         // aligned across the window.
         function test_paneHeaderSubtitle() {
