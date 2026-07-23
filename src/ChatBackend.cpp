@@ -332,6 +332,7 @@ void ChatBackend::sendMessage(QString conversationId, QString content)
         const QString reason = res.getError<QString>();
         setStatusMessage(QStringLiteral("Send failed: ") + reason);
         emit error(QStringLiteral("Failed to send message: ") + reason);
+        emit sendFailed(conversationId, content);
     }
     // On success the module emits a message_sent event, which applyMessageSent
     // appends to the model.

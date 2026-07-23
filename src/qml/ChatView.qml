@@ -41,6 +41,9 @@ Item {
         function onErrorOccurred(message) {
             toast.show(message);
         }
+        function onSendFailed(conversationId, content) {
+            threadPane.restoreFailedSend(conversationId, content);
+        }
         // The backend switched somewhere else (a new conversation opening, the
         // selected one going away), which retires the pending row.
         function onCurrentConversationIdChanged() {

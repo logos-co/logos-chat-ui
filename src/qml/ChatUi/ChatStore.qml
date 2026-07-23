@@ -49,6 +49,7 @@ QtObject {
     // object directly.
     signal addressReady(string address)
     signal errorOccurred(string message)
+    signal sendFailed(string conversationId, string content)
 
     // Actions. Discrete effects, so imperative here is appropriate.
     function selectConversation(conversationId) {
@@ -83,6 +84,9 @@ QtObject {
         }
         function onError(message) {
             root.errorOccurred(message);
+        }
+        function onSendFailed(conversationId, content) {
+            root.sendFailed(conversationId, content);
         }
     }
 }

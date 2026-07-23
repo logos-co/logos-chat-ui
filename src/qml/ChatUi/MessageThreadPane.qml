@@ -52,6 +52,13 @@ Rectangle {
             graceTimer.restart();
     }
 
+    // Put a message the backend refused back in the composer, unless the user
+    // has already started typing the next one.
+    function restoreFailedSend(conversationId, content) {
+        if (conversationId === root.conversationId && composer.text === "")
+            composer.text = content;
+    }
+
     // Exposed for the exchange doc-test's inspector hooks.
     property alias messageCount: threadList.count
 
