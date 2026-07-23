@@ -504,6 +504,21 @@ Item {
             compare(bar.statusLabel, "Online", "connectivity is state and stays");
         }
 
+        // The roster line counts members in plain English and names invitations
+        // that have not landed yet.
+        function test_groupInfoDialogMemberSummary() {
+            const dlg = instantiate(groupInfoDialogC);
+            dlg.memberCount = 1;
+            dlg.pendingMemberCount = 0;
+            compare(dlg.memberSummary, "1 member", "a single member");
+            dlg.memberCount = 3;
+            compare(dlg.memberSummary, "3 members", "several members");
+            dlg.pendingMemberCount = 1;
+            compare(dlg.memberSummary, "3 members, 1 invited", "an outstanding invitation");
+            dlg.pendingMemberCount = 2;
+            compare(dlg.memberSummary, "3 members, 2 invited", "several outstanding invitations");
+        }
+
         // Every pane header is a fixed 48px, subtitle or not, so panes stay
         // aligned across the window.
         function test_paneHeaderSubtitle() {

@@ -358,6 +358,7 @@ void ChatBackend::selectConversation(QString conversationId)
     m_pendingMembers.clear();
     m_memberModel->clear();
     setMemberCount(0);
+    setPendingMemberCount(0);
     refreshMembers();
     if (loaded)
         setLoadedConversationId(conversationId);
@@ -369,6 +370,7 @@ void ChatBackend::refreshMembers()
     if (convoId.isEmpty() || !m_conversationModel->isGroupFor(convoId)) {
         m_memberModel->clear();
         setMemberCount(0);
+        setPendingMemberCount(0);
         return;
     }
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady())
@@ -398,8 +400,10 @@ void ChatBackend::refreshMembers()
         rows.append({ address, false, true });
 
     m_memberModel->setMembers(rows);
-    // Committed roster size only; pending invites appear in the list but aren't counted.
+    // Committed roster size only; pending invites appear in the list and are
+    // counted separately.
     setMemberCount(static_cast<int>(members.size()));
+    setPendingMemberCount(static_cast<int>(m_pendingMembers.size()));
 }
 
 // ── event handlers ────────────────────────────────────────────────────────────
