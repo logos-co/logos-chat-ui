@@ -10,7 +10,8 @@ Item {
 
     required property string content
     required property bool isMe
-    required property var timestamp
+    // Clock time for the bubble, formatted by the model.
+    required property string timeDisplay
     required property string sender
     // Whether the thread is a group; drives the sender label on incoming messages.
     property bool groupContext: false
@@ -98,7 +99,7 @@ Item {
             LogosText {
                 id: timeText
                 width: parent.width
-                text: root.timestamp ? Qt.formatTime(root.timestamp, Locale.ShortFormat) : ""
+                text: root.timeDisplay
                 color: root.isMe ? Theme.colors.getColor(ChatTheme.bubbleOwnText, 0.5) : Theme.palette.textTertiary
                 font.pixelSize: Theme.typography.secondaryText
                 horizontalAlignment: root.isMe ? Text.AlignRight : Text.AlignLeft

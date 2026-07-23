@@ -19,6 +19,8 @@ logos_module(
         src/MessageListModel.cpp
         src/MemberListModel.h
         src/MemberListModel.cpp
+        src/TimeFormat.h
+        src/TimeFormat.cpp
     INCLUDE_DIRS
         src
 )
