@@ -13,7 +13,7 @@ import Logos.Controls
 Rectangle {
     id: root
 
-    // The MemberListModel (roles: address, label, isSelf).
+    // The MemberListModel (roles: address, label, isSelf, pending).
     required property var memberModel
     // Whether the backend is online; gates the add-member controls.
     required property bool online

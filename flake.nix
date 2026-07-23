@@ -5,9 +5,9 @@
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
-    # Pinned to the chat_module rev whose init contract drops the delivery port;
+    # Pinned to the chat_module rev whose roster reports pending invites;
     # release tags predate it.
-    chat_module.url = "github:logos-co/logos-chat-module/4983eb7343057bc12d51f6e7067ffb9cb681403a";
+    chat_module.url = "github:logos-co/logos-chat-module/0678a31f956dc486172c6764fae99e98f6583f27";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";

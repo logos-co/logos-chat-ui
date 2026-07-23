@@ -2,7 +2,6 @@
 #define CHAT_BACKEND_H
 
 #include <QObject>
-#include <QSet>
 #include <QSortFilterProxyModel>
 #include <QString>
 #include <QVariantList>
@@ -90,8 +89,6 @@ private:
     // This installation's own address, cached lazily on first roster refresh to
     // mark the self entry.
     QString m_myAddress;
-    // Addresses invited into the current group but not yet committed to its roster.
-    QSet<QString> m_pendingMembers;
     bool m_moduleInitialised = false;
     // Set once the initial snapshot has loaded; gates the reconnect resync in
     // applyDeliveryState so it doesn't fire during initial setup.

@@ -38,6 +38,8 @@ public:
 
     void setMembers(const QVector<MemberItem>& members);
     void clear();
+    // True when `address` is a committed member. A pending invite does not
+    // count: it cannot take part in the conversation until the group commits it.
     bool contains(const QString& address) const;
 
 private:
