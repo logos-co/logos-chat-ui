@@ -36,21 +36,12 @@ LogosDialog {
     anchors.centerIn: Overlay.overlay
     width: Math.min(480, (Overlay.overlay ? Overlay.overlay.width : 480) - 2 * Theme.spacing.large)
 
-    leftActions: [
+    rightActions: [
         LogosButton {
             implicitWidth: 96
             implicitHeight: 36
             text: qsTr("Close")
             onClicked: root.close()
-        }
-    ]
-    rightActions: [
-        LogosButton {
-            implicitWidth: 120
-            implicitHeight: 36
-            //: Button that copies the group's conversation id to the clipboard
-            text: qsTr("Copy ID")
-            onClicked: root._copy()
         }
     ]
 
@@ -95,20 +86,38 @@ LogosDialog {
             Layout.fillWidth: true
         }
 
-        LogosText {
-            text: root.conversationId
-            textFormat: Text.PlainText
-            color: Theme.palette.text
-            font.family: ChatTheme.monoFont
-            font.pixelSize: Theme.typography.secondaryText
-            elide: Text.ElideMiddle
+        RowLayout {
             Layout.fillWidth: true
+            spacing: Theme.spacing.small
+
+            LogosText {
+                text: root.conversationId
+                textFormat: Text.PlainText
+                color: Theme.palette.text
+                font.family: ChatTheme.monoFont
+                font.pixelSize: Theme.typography.secondaryText
+                elide: Text.ElideMiddle
+                Layout.fillWidth: true
+            }
+
+            LogosIconButton {
+                objectName: "copyGroupIdButton"
+                size: 28
+                iconSize: 14
+                iconSource: Qt.resolvedUrl("icons/copy.png")
+                Accessible.role: Accessible.Button
+                //: Button that copies the group's conversation id to the clipboard
+                Accessible.name: qsTr("Copy conversation ID")
+                onClicked: root._copy()
+                Layout.alignment: Qt.AlignVCenter
+            }
         }
 
         // Copy feedback, kept in the layout at all times (only its opacity
         // toggles) so revealing it never resizes the dialog.
         LogosText {
             id: copiedLabel
+            objectName: "copiedLabel"
             text: qsTr("Copied to clipboard")
             color: Theme.palette.success
             font.pixelSize: Theme.typography.secondaryText

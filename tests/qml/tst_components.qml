@@ -268,6 +268,10 @@ Item {
         id: showAddressSpy
         signalName: "showAddressRequested"
     }
+    SignalSpy {
+        id: copyRequestedSpy
+        signalName: "copyRequested"
+    }
 
     TestCase {
         name: "ChatUiComponents"
@@ -577,6 +581,50 @@ Item {
             showAddressSpy.clear();
             btn.clicked();
             compare(showAddressSpy.count, 1, "clicking asks for the address");
+        }
+
+        // The copy actions sit next to the values they copy, and confirm.
+        function test_addressDialogCopyButton() {
+            const dlg = instantiate(addressDialogC);
+            dlg.addressText = "0xdeadbeef";
+            const btn = findField(dlg, "copyMyAddressButton");
+            const copied = findField(dlg, "copiedLabel");
+            verify(btn && copied, "the copy button and its confirmation must be reachable");
+            compare(dlg.rightActions.length, 1, "only Close is left in the action row");
+
+            compare(copied.opacity, 0, "nothing confirmed yet");
+            btn.clicked();
+            compare(copied.opacity, 1, "the copy is confirmed at the value");
+        }
+
+        function test_groupInfoDialogCopyButton() {
+            const dlg = instantiate(groupInfoDialogC);
+            const btn = findField(dlg, "copyGroupIdButton");
+            const copied = findField(dlg, "copiedLabel");
+            verify(btn && copied, "the copy button and its confirmation must be reachable");
+            compare(dlg.rightActions.length, 1, "only Close is left in the action row");
+
+            btn.clicked();
+            compare(copied.opacity, 1, "the copy is confirmed at the value");
+        }
+
+        // A roster row offers a copy button, hidden until the row is hovered so a
+        // resting roster stays clean; using it flashes the same confirmation a
+        // row click does.
+        function test_memberDelegateCopyButton() {
+            const del = instantiate(memberDelegateC);
+            del.pending = false;
+            const btn = findField(del, "copyMemberAddressButton");
+            verify(btn, "the copy button must be reachable");
+
+            tryCompare(btn, "opacity", 0, 2000, "the copy button is hidden until the row is hovered");
+
+            copyRequestedSpy.target = del;
+            copyRequestedSpy.clear();
+            btn.clicked();
+            compare(copyRequestedSpy.count, 1, "the button requests the copy");
+            compare(copyRequestedSpy.signalArguments[0][0], "0xcarol", "with the row's address");
+            verify(del.copiedFlashing, "and confirms it on the row");
         }
 
         // Every pane header is a fixed 48px, subtitle or not, so panes stay
