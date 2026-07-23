@@ -11,6 +11,10 @@ class ChatBackend
     PROP(QString myIdentity READONLY)
     PROP(QString statusMessage READONLY)
     PROP(QString currentConversationId)
+    // The conversation whose messages and roster the models currently hold.
+    // Empty while a selection is being loaded, so the view can tell a loaded
+    // thread from the rows of the conversation left behind.
+    PROP(QString loadedConversationId READONLY)
     // Derived from the current conversation, kept here (not read off the model)
     // because the models reach QML as QtRO replicas that don't proxy the model's
     // Q_INVOKABLE lookups (isGroupFor/displayNameFor/descriptionFor).

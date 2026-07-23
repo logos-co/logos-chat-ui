@@ -55,7 +55,9 @@ private:
     // as backend properties for the QML view to bind — see the .cpp for why the
     // view can't read them off the model directly.
     void syncCurrentConversationMeta();
-    void showConversationMessages(const QString& convoId);
+    // Loads a conversation's messages into messageModel. False when the module
+    // could not be read, leaving the model as it was.
+    bool showConversationMessages(const QString& convoId);
 
     // Runs `work` on the next event-loop turn. A module read (list_conversations/
     // get_messages) is a synchronous QtRO call; issuing one from inside a module

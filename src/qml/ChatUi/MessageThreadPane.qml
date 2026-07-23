@@ -25,21 +25,53 @@ Rectangle {
     // drives the empty-thread guidance when nothing is selected.
     property bool hasConversations: true
     required property bool online
+    // Whether the message model already holds this conversation's messages. It
+    // does not for as long as a selection is being loaded, and the rows standing
+    // in the model meanwhile are the ones left behind by the previous
+    // conversation.
+    required property bool ready
 
     signal messageSubmitted(string text)
     // Requests the group-details dialog; emitted from the header's Details button.
     signal groupInfoRequested
 
+    // Whether the thread may render its rows.
+    readonly property bool threadReady: root.hasConversation && root.ready
+
     // Per-conversation composer drafts, restored on switch so an unsent message
     // is never carried into (or sent to) a different conversation.
     property var _drafts: ({})
     onConversationIdChanged: composer.text = root._drafts[root.conversationId] || ""
+    // Any wait for the thread gets the grace before a placeholder, and any
+    // arrival gets the settle window, whether it came from a switch or from the
+    // models being refetched under the same conversation.
+    onThreadReadyChanged: {
+        if (root.threadReady)
+            settleTimer.restart();
+        else
+            graceTimer.restart();
+    }
 
     // Exposed for the exchange doc-test's inspector hooks.
     property alias messageCount: threadList.count
 
     implicitWidth: 400
     color: Theme.palette.background
+
+    // A switch that resolves quickly should not flash a placeholder, so the
+    // thread stays blank until this elapses.
+    Timer {
+        id: graceTimer
+        interval: 150
+    }
+
+    // The message model is a separate replica from the properties carrying the
+    // selection, so its rows can land a moment after the conversation counts as
+    // loaded. Wait that out before calling a thread empty.
+    Timer {
+        id: settleTimer
+        interval: 300
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -63,34 +95,47 @@ Rectangle {
             }
         }
 
-        ListView {
-            id: threadList
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            clip: true
-            reuseItems: true
-            model: root.messageModel
-            spacing: Theme.spacing.small
-            verticalLayoutDirection: ListView.BottomToTop
 
-            header: Item {
-                height: Theme.spacing.medium
+            ListView {
+                id: threadList
+                objectName: "threadList"
+                anchors.fill: parent
+                clip: true
+                reuseItems: true
+                model: root.messageModel
+                spacing: Theme.spacing.small
+                verticalLayoutDirection: ListView.BottomToTop
+                visible: root.threadReady
+
+                header: Item {
+                    height: Theme.spacing.medium
+                }
+                footer: Item {
+                    height: Theme.spacing.medium
+                }
+
+                ScrollBar.vertical: LogosScrollBar {}
+
+                delegate: MessageBubble {
+                    width: ListView.view.width
+                    groupContext: root.currentIsGroup
+                }
             }
-            footer: Item {
-                height: Theme.spacing.medium
-            }
 
-            ScrollBar.vertical: LogosScrollBar {}
-
-            delegate: MessageBubble {
-                width: ListView.view.width
-                groupContext: root.currentIsGroup
+            MessageSkeleton {
+                objectName: "threadSkeleton"
+                anchors.fill: parent
+                visible: root.hasConversation && !root.ready && !graceTimer.running
             }
 
             EmptyState {
+                objectName: "threadEmptyState"
                 anchors.centerIn: parent
                 width: parent.width - 2 * Theme.spacing.large
-                visible: threadList.count === 0
+                visible: threadList.count === 0 && (!root.hasConversation || (root.threadReady && !settleTimer.running))
                 text: root.hasConversation ? qsTr("No messages yet") : root.hasConversations ? qsTr("Select a conversation to start chatting") : qsTr("No conversations yet. Start one with New DM or New group in the sidebar.")
             }
         }

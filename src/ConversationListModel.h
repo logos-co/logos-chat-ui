@@ -34,7 +34,8 @@ public:
         // day-tick timer.
         LastActivityDisplayRole,
         // Truncated last-message content for the list preview.
-        PreviewRole
+        PreviewRole,
+        DescriptionRole
     };
 
     explicit ConversationListModel(QObject* parent = nullptr);

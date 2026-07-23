@@ -13,6 +13,21 @@ Item {
     implicitWidth: 900
     implicitHeight: 650
 
+    // The row the user just picked, carrying its own data so the sidebar and the
+    // header move in the same frame as the click instead of waiting for the
+    // backend. It stops applying as soon as the backend reports that
+    // conversation loaded, from when on the store is the truth again.
+    property var pendingSelection: null
+
+    readonly property var optimisticSelection: root.pendingSelection && store.loadedConversationId !== root.pendingSelection.conversationId ? root.pendingSelection : null
+
+    readonly property string selectedConversationId: root.optimisticSelection ? root.optimisticSelection.conversationId : store.currentConversationId
+    readonly property string selectedDisplayName: root.optimisticSelection ? root.optimisticSelection.displayName : store.currentDisplayName
+    readonly property string selectedDescription: root.optimisticSelection ? root.optimisticSelection.description : store.currentDescription
+    readonly property bool selectedIsGroup: root.optimisticSelection ? root.optimisticSelection.isGroup : store.currentIsGroup
+    // Whether the models hold the selected conversation's data.
+    readonly property bool selectionLoaded: store.loadedConversationId === root.selectedConversationId
+
     ChatStore {
         id: store
     }
@@ -25,6 +40,12 @@ Item {
         }
         function onErrorOccurred(message) {
             toast.show(message);
+        }
+        // The backend switched somewhere else (a new conversation opening, the
+        // selected one going away), which retires the pending row.
+        function onCurrentConversationIdChanged() {
+            if (root.pendingSelection && store.currentConversationId !== root.pendingSelection.conversationId)
+                root.pendingSelection = null;
         }
     }
 
@@ -43,9 +64,15 @@ Item {
                 Layout.minimumWidth: 200
                 Layout.fillHeight: true
                 conversationModel: store.conversationModel
-                currentConversationId: store.currentConversationId
+                currentConversationId: root.selectedConversationId
                 online: store.online
-                onConversationSelected: function (conversationId) {
+                onConversationSelected: function (conversationId, displayName, isGroup, description) {
+                    root.pendingSelection = {
+                        conversationId: conversationId,
+                        displayName: displayName,
+                        isGroup: isGroup,
+                        description: description
+                    };
                     store.selectConversation(conversationId);
                 }
                 onNewConversationRequested: newConvDialog.open()
@@ -58,13 +85,14 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 messageModel: store.messageModel
-                currentIsGroup: store.currentIsGroup
-                title: store.currentDisplayName
-                description: store.currentDescription
-                conversationId: store.currentConversationId
-                hasConversation: store.hasCurrentConversation
+                currentIsGroup: root.selectedIsGroup
+                title: root.selectedDisplayName
+                description: root.selectedDescription
+                conversationId: root.selectedConversationId
+                hasConversation: root.selectedConversationId !== ""
                 hasConversations: conversationsPane.count > 0
                 online: store.online
+                ready: root.selectionLoaded
                 onMessageSubmitted: function (text) {
                     store.sendMessage(text);
                 }
@@ -72,11 +100,12 @@ Item {
             }
 
             MembersPane {
-                visible: store.currentIsGroup
+                visible: root.selectedIsGroup
                 Layout.preferredWidth: 220
                 Layout.fillHeight: true
                 memberModel: store.memberModel
                 online: store.online
+                ready: root.selectionLoaded
                 onAddMemberRequested: addMemberDialog.open()
             }
         }

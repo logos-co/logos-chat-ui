@@ -61,8 +61,10 @@ async function main() {
   const convId = await evalq(insp, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
   await evalq(insp, `store.backend.selectConversation(${JSON.stringify(convId)})`);
 
-  // Wait for the thread to populate so the held window shows the round-trip.
-  await waitFor(insp, "threadPane.messageCount", (c) => typeof c === "number" && c >= 1,
+  // Wait for the thread to be rendered, not merely for the model to hold rows:
+  // the pane keeps its rows hidden until the models report the selected
+  // conversation, so the held window would otherwise be captured mid-load.
+  await waitFor(insp, "threadPane.threadReady && threadPane.messageCount >= 1", (v) => v === true,
     { timeout: 60000, what: "conversation thread to load" });
 
   console.log(`selected conversation ${convId}; thread shown`);

@@ -9,6 +9,7 @@ StatusBar 1.0 StatusBar.qml
 MessageComposer 1.0 MessageComposer.qml
 Toast 1.0 Toast.qml
 MessageBubble 1.0 MessageBubble.qml
+MessageSkeleton 1.0 MessageSkeleton.qml
 ConversationDelegate 1.0 ConversationDelegate.qml
 MemberDelegate 1.0 MemberDelegate.qml
 ConversationsPane 1.0 ConversationsPane.qml
