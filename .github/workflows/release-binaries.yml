@@ -1,0 +1,143 @@
+name: Release binaries
+
+# Attaches runnable builds to a published release: an AppImage per Linux
+# architecture and an unsigned .app tarball for Apple silicon. Each asset
+# carries the whole stack (standalone host, chat and delivery modules) and needs
+# neither Nix nor Qt on the machine that runs it.
+#
+# The macOS tarball is unsigned, so Gatekeeper quarantines it on first launch;
+# the release notes tell users to open it from the context menu once.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build and attach the assets to (e.g. v0.3.0)
+        required: true
+
+concurrency:
+  group: release-binaries-${{ github.event.release.tag_name || github.event.inputs.tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+  # Release builds run off a tag, never master, so they use the ci cache.
+  ATTIC_CACHE: ci
+
+jobs:
+  appimage:
+    name: ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    # A cold arm64 build compiles the whole Rust and nim closure on four cores.
+    timeout-minutes: 360
+    env:
+      ATTIC_CONFIGURED: ${{ secrets.ATTIC_ENDPOINT != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-amd64
+            runner: ubuntu-latest
+          - platform: linux-arm64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            extra-substituters = https://cache.nix.logos.co/public https://cache.nix.logos.co/ci
+            extra-trusted-public-keys = public:l4HrXgL4nw246+LBh2SOJyhz64BoGegOYLheT/iIAPU= ci:aVJqjS4NWX5WfqHO0AEhIScjGu/JyK5FoydPrnEbMvc=
+            fallback = true
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: logos-co
+          skipPush: true
+
+      # Push the release closure so a re-run, or the next release, is cheap.
+      # Skipped until this repo is granted Attic credentials.
+      - name: Setup Attic cache
+        if: env.ATTIC_CONFIGURED == 'true'
+        uses: ryanccn/attic-action@v0.4.1
+        with:
+          endpoint: ${{ secrets.ATTIC_ENDPOINT }}
+          cache: ${{ env.ATTIC_CACHE }}
+          token: ${{ secrets.ATTIC_TOKEN_CI }}
+
+      - name: Build the AppImage
+        run: nix build .#bin-appimage -L
+
+      - name: Name the asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp result/*.AppImage "logos-chat-ui-${TAG}-${{ matrix.platform }}.AppImage"
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "logos-chat-ui-${TAG}-${{ matrix.platform }}.AppImage" --clobber
+
+  macos-app:
+    name: darwin-arm64
+    runs-on: macos-latest
+    timeout-minutes: 360
+    env:
+      ATTIC_CONFIGURED: ${{ secrets.ATTIC_ENDPOINT != '' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            extra-substituters = https://cache.nix.logos.co/public https://cache.nix.logos.co/ci
+            extra-trusted-public-keys = public:l4HrXgL4nw246+LBh2SOJyhz64BoGegOYLheT/iIAPU= ci:aVJqjS4NWX5WfqHO0AEhIScjGu/JyK5FoydPrnEbMvc=
+            fallback = true
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: logos-co
+          skipPush: true
+
+      - name: Setup Attic cache
+        if: env.ATTIC_CONFIGURED == 'true'
+        uses: ryanccn/attic-action@v0.4.1
+        with:
+          endpoint: ${{ secrets.ATTIC_ENDPOINT }}
+          cache: ${{ env.ATTIC_CACHE }}
+          token: ${{ secrets.ATTIC_TOKEN_CI }}
+
+      - name: Build the .app bundle
+        run: nix build .#bin-macos-app -L
+
+      - name: Name the asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          apps=(result/*.app)
+          [ ${#apps[@]} -eq 1 ] || { echo "expected one .app in result/, found ${#apps[@]}" >&2; exit 1; }
+          tar -czf "logos-chat-ui-${TAG}-darwin-arm64.app.tar.gz" -C result "$(basename "${apps[0]}")"
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "logos-chat-ui-${TAG}-darwin-arm64.app.tar.gz" --clobber

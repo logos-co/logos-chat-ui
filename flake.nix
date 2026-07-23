@@ -19,6 +19,10 @@
         src = ./.;
         configFile = ./metadata.json;
         flakeInputs = { delivery_module = logos-delivery-module; } // inputs;
+        # Artwork for the release binaries (nix build .#bin-appimage on Linux,
+        # .#bin-macos-app on macOS); the rest of the packaging metadata comes
+        # from metadata.json.
+        appIcons = { png = ./assets/chat-ui.png; icns = ./assets/chat-ui.icns; };
       };
 
       nixpkgs = logos-module-builder.inputs.nixpkgs;

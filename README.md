@@ -37,6 +37,20 @@ Conversations are **ephemeral** — messages and identity exist only while the a
 
 ## How to Run
 
+### From a release binary
+
+Every release carries a runnable build per platform, so a machine needs neither Nix nor Qt to try the chat UI:
+
+| Asset | Platform |
+|---|---|
+| `logos-chat-ui-<version>-linux-amd64.AppImage` | Linux, x86-64 |
+| `logos-chat-ui-<version>-linux-arm64.AppImage` | Linux, ARM64 |
+| `logos-chat-ui-<version>-darwin-arm64.app.tar.gz` | macOS, Apple silicon |
+
+Make the AppImage executable (`chmod +x`) and run it. The macOS bundle is unsigned, so the first launch has to go through the context menu's *Open* rather than a double-click.
+
+Messaging needs the live devnet to be reachable, the same as a development run.
+
 ### Standalone (recommended for development)
 
 ```bash
@@ -112,6 +126,10 @@ nix build .#lgx      # .lgx package for distribution
 nix build .#install  # lgpm-installed output (modules/ + plugins/)
 nix run              # standalone app with chat_module
 nix develop          # enter development shell
+
+nix build .#bin-bundle-dir  # self-contained directory; ./result/bin/chat-ui runs it
+nix build .#bin-appimage    # release AppImage (Linux)
+nix build .#bin-macos-app   # release .app bundle (macOS)
 ```
 
 ## Documentation
