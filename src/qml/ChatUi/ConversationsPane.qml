@@ -7,9 +7,9 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// The conversation sidebar: a header with new-chat and new-group actions plus an
-// online indicator, the keyboard-navigable conversation list, and a
-// show-my-address action. Data in via properties, intent out via signals.
+// The conversation sidebar: a header with a menu of conversations to start, the
+// keyboard-navigable conversation list, and a share-my-address action at the
+// foot. Data in via properties, intent out via signals.
 Rectangle {
     id: root
 
@@ -49,43 +49,37 @@ Rectangle {
             Layout.fillWidth: true
             title: qsTr("Chat")
 
-            Rectangle {
-                width: 8
-                height: 8
-                radius: 4
-                color: root.online ? Theme.palette.success : Theme.palette.textMuted
-                Layout.alignment: Qt.AlignVCenter
-            }
+            // The width is explicit because the design system's button keeps a
+            // fixed implicit size regardless of its label.
+            // TODO(logos-design-system): drop it once buttons size to content.
             LogosButton {
                 id: newButton
+                objectName: "newMenuButton"
                 implicitWidth: 84
                 implicitHeight: 30
-                //: Button that starts a new direct message (1:1) conversation
-                text: qsTr("New DM")
+                //: Button that opens the menu of conversations one can start; the
+                //: plus marks it as a create action
+                text: qsTr("+ New")
                 enabled: root.online
-                onClicked: root.newConversationRequested()
+                onClicked: newMenu.popup(0, newButton.height)
                 Layout.alignment: Qt.AlignVCenter
 
-                LogosToolTip {
-                    text: qsTr("New direct message")
-                    placement: LogosToolTip.Bottom
-                    visible: newButton.hovered
-                }
-            }
-            LogosButton {
-                id: groupButton
-                implicitWidth: 84
-                implicitHeight: 30
-                //: Button that starts a new group conversation
-                text: qsTr("New group")
-                enabled: root.online
-                onClicked: root.newGroupRequested()
-                Layout.alignment: Qt.AlignVCenter
+                LogosMenu {
+                    id: newMenu
+                    objectName: "newMenu"
 
-                LogosToolTip {
-                    text: qsTr("New group conversation")
-                    placement: LogosToolTip.Bottom
-                    visible: groupButton.hovered
+                    LogosMenuItem {
+                        objectName: "newDmMenuItem"
+                        //: Menu entry that starts a new direct message (1:1) conversation
+                        text: qsTr("Direct message")
+                        onTriggered: root.newConversationRequested()
+                    }
+                    LogosMenuItem {
+                        objectName: "newGroupMenuItem"
+                        //: Menu entry that starts a new group conversation
+                        text: qsTr("Group")
+                        onTriggered: root.newGroupRequested()
+                    }
                 }
             }
         }
@@ -118,15 +112,17 @@ Rectangle {
                 anchors.centerIn: parent
                 width: parent.width - 2 * Theme.spacing.large
                 visible: convList.count === 0
-                text: root.online ? qsTr("No conversations yet. Start one with New DM, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
+                text: root.online ? qsTr("No conversations yet. Use New to start one, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
             }
         }
 
         LogosButton {
+            objectName: "showAddressButton"
             Layout.fillWidth: true
             Layout.margins: Theme.spacing.small
             implicitHeight: 40
-            text: qsTr("Show My Address")
+            //: Button that shows this installation's own address for sharing
+            text: qsTr("My address")
             enabled: root.online
             onClicked: root.showAddressRequested()
         }

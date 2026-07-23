@@ -256,6 +256,18 @@ Item {
         id: conversationSelectedSpy
         signalName: "conversationSelected"
     }
+    SignalSpy {
+        id: newConversationSpy
+        signalName: "newConversationRequested"
+    }
+    SignalSpy {
+        id: newGroupSpy
+        signalName: "newGroupRequested"
+    }
+    SignalSpy {
+        id: showAddressSpy
+        signalName: "showAddressRequested"
+    }
 
     TestCase {
         name: "ChatUiComponents"
@@ -267,15 +279,16 @@ Item {
             return obj;
         }
 
-        // Find a named field anywhere under a dialog's content, descending both
-        // the visual children and a Control/ScrollView contentItem, so a field
-        // nested inside a LogosScrollView is still reachable.
+        // Find a named field anywhere under an item, descending the visual
+        // children, a Control/ScrollView contentItem, and the non-visual data, so
+        // a field inside a LogosScrollView or an entry inside a menu popup is
+        // still reachable.
         function findField(obj, objectName) {
             if (!obj)
                 return null;
             if (obj.objectName === objectName)
                 return obj;
-            const pools = [obj.children, obj.contentItem ? [obj.contentItem] : []];
+            const pools = [obj.children, obj.contentItem ? [obj.contentItem] : [], obj.contentData || [], obj.data || []];
             for (let p = 0; p < pools.length; ++p) {
                 const pool = pools[p];
                 for (let i = 0; pool && i < pool.length; ++i) {
@@ -517,6 +530,53 @@ Item {
             compare(dlg.memberSummary, "3 members, 1 invited", "an outstanding invitation");
             dlg.pendingMemberCount = 2;
             compare(dlg.memberSummary, "3 members, 2 invited", "several outstanding invitations");
+        }
+
+        // The header's New menu offers both kinds of conversation, and picking
+        // one requests it.
+        function test_conversationsPaneNewMenu() {
+            const pane = createTemporaryObject(conversationsPaneC, testRoot);
+            verify(pane, "the sidebar must instantiate");
+            pane.width = 260;
+            pane.height = 400;
+
+            const button = findField(pane, "newMenuButton");
+            verify(button, "the New button must be reachable");
+            const menu = findField(pane, "newMenu");
+            verify(menu && !menu.opened, "the menu starts closed");
+            button.clicked();
+            tryVerify(() => menu.opened, 2000, "clicking New opens the menu");
+            menu.close();
+
+            const dm = findField(pane, "newDmMenuItem");
+            const group = findField(pane, "newGroupMenuItem");
+            verify(dm && group, "both menu entries must be reachable");
+
+            newConversationSpy.target = pane;
+            newConversationSpy.clear();
+            newGroupSpy.target = pane;
+            newGroupSpy.clear();
+
+            dm.triggered();
+            compare(newConversationSpy.count, 1, "the DM entry requests a direct message");
+            group.triggered();
+            compare(newGroupSpy.count, 1, "the group entry requests a group");
+        }
+
+        // The address action moved into the header and still asks for it.
+        function test_conversationsPaneShowsAddress() {
+            const pane = createTemporaryObject(conversationsPaneC, testRoot);
+            verify(pane, "the sidebar must instantiate");
+            const btn = findField(pane, "showAddressButton");
+            verify(btn, "the address button must be reachable");
+            verify(btn.enabled, "enabled when online");
+            pane.online = false;
+            verify(!btn.enabled, "disabled when offline");
+
+            showAddressSpy.target = pane;
+            showAddressSpy.clear();
+            btn.clicked();
+            compare(showAddressSpy.count, 1, "clicking asks for the address");
         }
 
         // Every pane header is a fixed 48px, subtitle or not, so panes stay
