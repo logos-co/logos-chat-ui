@@ -32,8 +32,9 @@ Rectangle {
     required property bool ready
 
     signal messageSubmitted(string text)
-    // Requests the group-details dialog; emitted from the header's Details button.
-    signal groupInfoRequested
+    // Requests the conversation's details dialog; emitted from the header's
+    // Details button.
+    signal detailsRequested
 
     // Whether the thread may render its rows.
     readonly property bool threadReady: root.hasConversation && root.ready
@@ -94,10 +95,9 @@ Rectangle {
                 objectName: "detailsButton"
                 implicitWidth: 84
                 implicitHeight: 30
-                //: Button that opens the group's details dialog
+                //: Button that opens the conversation's details dialog
                 text: qsTr("Details")
-                visible: root.currentIsGroup
-                onClicked: root.groupInfoRequested()
+                onClicked: root.detailsRequested()
                 Layout.alignment: Qt.AlignVCenter
             }
         }

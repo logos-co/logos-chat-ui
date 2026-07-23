@@ -353,15 +353,16 @@ void ChatBackend::selectConversation(QString conversationId)
     syncCurrentConversationMeta();
     m_conversationModel->clearUnread(conversationId);
     const bool loaded = showConversationMessages(conversationId);
-    // Reset the roster on every switch: a group whose roster we can't fetch
-    // right now (offline) must show empty, not the previous conversation's
-    // members. refreshMembers then loads the new group's roster when it can, and
-    // keeps the last-known one across a transient offline of the same group.
+    // Reset the roster on every switch: a conversation whose roster we can't
+    // fetch right now (offline) must show empty, not the previous conversation's
+    // members. refreshMembers then loads the new roster when it can, and keeps
+    // the last-known one across a transient offline of the same conversation.
     // User-driven, so its synchronous read is safe here (not in an event callback).
     m_pendingMembers.clear();
     m_memberModel->clear();
     setMemberCount(0);
     setPendingMemberCount(0);
+    setCurrentPeerAddress(QString());
     refreshMembers();
     if (loaded)
         setLoadedConversationId(conversationId);
@@ -370,14 +371,15 @@ void ChatBackend::selectConversation(QString conversationId)
 void ChatBackend::refreshMembers()
 {
     const QString convoId = currentConversationId();
-    if (convoId.isEmpty() || !m_conversationModel->isGroupFor(convoId)) {
+    if (convoId.isEmpty()) {
         m_memberModel->clear();
         setMemberCount(0);
         setPendingMemberCount(0);
+        setCurrentPeerAddress(QString());
         return;
     }
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady())
-        return; // a group, but we can't fetch now; keep the last-known roster
+        return; // can't fetch now; keep the last-known roster
 
     if (m_myAddress.isEmpty())
         m_myAddress = modules().chat_module.get_address();
@@ -407,6 +409,11 @@ void ChatBackend::refreshMembers()
     // counted separately.
     setMemberCount(static_cast<int>(members.size()));
     setPendingMemberCount(static_cast<int>(m_pendingMembers.size()));
+    // With our own address unknown every entry looks like the peer, so leave it
+    // unset rather than guess.
+    setCurrentPeerAddress(m_myAddress.isEmpty()
+                              ? QString()
+                              : peerAddressOf(rows, m_conversationModel->isGroupFor(convoId)));
 }
 
 // ── event handlers ────────────────────────────────────────────────────────────
@@ -583,7 +590,22 @@ void ChatBackend::applyConversationDeleted(const QVariantList& args)
         setLoadedConversationId(QString());
         syncCurrentConversationMeta();
         m_messageModel->clear();
+        // The roster goes with the conversation. Reached with no current
+        // conversation, refreshMembers clears it without a module read.
+        m_pendingMembers.clear();
+        refreshMembers();
     }
+}
+
+QString ChatBackend::peerAddressOf(const QVector<MemberItem>& members, bool isGroup)
+{
+    if (isGroup)
+        return {};
+    for (const MemberItem& member : members) {
+        if (!member.isSelf && !member.address.isEmpty())
+            return member.address;
+    }
+    return {};
 }
 
 QString ChatBackend::fallbackDisplayName(const QString& convoId, const QString& peerLabel,

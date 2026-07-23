@@ -20,4 +20,5 @@ NewGroupDialog 1.0 NewGroupDialog.qml
 AddressDialog 1.0 AddressDialog.qml
 MemberAddInfoDialog 1.0 MemberAddInfoDialog.qml
 GroupInfoDialog 1.0 GroupInfoDialog.qml
+DmInfoDialog 1.0 DmInfoDialog.qml
 AddMemberDialog 1.0 AddMemberDialog.qml

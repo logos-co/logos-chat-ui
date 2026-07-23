@@ -189,6 +189,12 @@ Item {
         AddMemberDialog {}
     }
     Component {
+        id: dmInfoDialogC
+        DmInfoDialog {
+            conversationId: "0xconversationid"
+        }
+    }
+    Component {
         id: conversationDelegateC
         ConversationDelegate {
             conversationId: "c1"
@@ -245,8 +251,8 @@ Item {
         signalName: "groupDetailsEntered"
     }
     SignalSpy {
-        id: groupInfoSpy
-        signalName: "groupInfoRequested"
+        id: detailsSpy
+        signalName: "detailsRequested"
     }
     SignalSpy {
         id: addMemberReqSpy
@@ -331,6 +337,26 @@ Item {
             instantiate(newGroupDialogC);
             instantiate(addressDialogC);
             instantiate(memberAddInfoDialogC);
+            instantiate(dmInfoDialogC);
+        }
+
+        // A direct conversation's details offer the peer's address once it is
+        // known, and the conversation id either way.
+        function test_dmInfoDialogAddressRow() {
+            const dlg = instantiate(dmInfoDialogC);
+            const copyAddress = findField(dlg, "copyPeerAddressButton");
+            const copyId = findField(dlg, "copyDmIdButton");
+            const copied = findField(dlg, "copiedLabel");
+            verify(copyAddress && copyId && copied, "both copies and the confirmation must be reachable");
+
+            dlg.open();
+            verify(!copyAddress.visible, "no address row while the peer is unknown");
+            dlg.peerAddress = "0xpeer";
+            verify(copyAddress.visible, "the address row appears once known");
+
+            copyAddress.clicked();
+            compare(copied.opacity, 1, "copying confirms");
+            dlg.close();
         }
 
         // The group info dialog renders with both an empty description (the "No
@@ -343,9 +369,9 @@ Item {
             dlg.close();
         }
 
-        // The Details button shows only for a group and requests the info dialog.
-        // Parented into the shown root and sized so effective visibility tracks
-        // the currentIsGroup binding.
+        // Details is offered for every conversation, a direct one included, and
+        // requests the matching dialog. Parented into the shown root and sized so
+        // effective visibility is meaningful.
         function test_threadPaneDetailsButton() {
             const pane = createTemporaryObject(messageThreadPaneC, testRoot);
             verify(pane, "the thread pane must instantiate");
@@ -353,15 +379,15 @@ Item {
             pane.height = 300;
             const details = findField(pane, "detailsButton");
             verify(details, "the details button must be reachable");
-            verify(!details.visible, "Details is hidden for a direct conversation");
+            verify(details.visible, "Details shows for a direct conversation");
 
             pane.currentIsGroup = true;
-            verify(details.visible, "Details shows for a group");
+            verify(details.visible, "Details shows for a group too");
 
-            groupInfoSpy.target = pane;
-            groupInfoSpy.clear();
+            detailsSpy.target = pane;
+            detailsSpy.clear();
             details.clicked();
-            compare(groupInfoSpy.count, 1, "clicking Details requests the group info");
+            compare(detailsSpy.count, 1, "clicking Details asks for the details");
         }
 
         // A conversation whose messages have not arrived yet shows neither the

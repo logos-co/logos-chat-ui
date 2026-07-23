@@ -99,7 +99,12 @@ Item {
                 onMessageSubmitted: function (text) {
                     store.sendMessage(text);
                 }
-                onGroupInfoRequested: groupInfoDialog.open()
+                onDetailsRequested: {
+                    if (root.selectedIsGroup)
+                        groupInfoDialog.open();
+                    else
+                        dmInfoDialog.open();
+                }
             }
 
             MembersPane {
@@ -147,6 +152,12 @@ Item {
         description: store.currentDescription
         memberCount: store.memberCount
         pendingMemberCount: store.pendingMemberCount
+        conversationId: store.currentConversationId
+    }
+
+    DmInfoDialog {
+        id: dmInfoDialog
+        peerAddress: store.currentPeerAddress
         conversationId: store.currentConversationId
     }
 
