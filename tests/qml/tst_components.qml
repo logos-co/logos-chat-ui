@@ -42,7 +42,7 @@ Item {
         ListElement {
             sender: "Alice"
             content: "Hi there"
-            timestamp: 0
+            timeDisplay: "12:34"
             isMe: false
             sameSenderAsPrevious: false
             showDaySeparator: true
@@ -175,7 +175,7 @@ Item {
         MessageBubble {
             content: "<b>not bold</b>"
             isMe: false
-            timestamp: 0
+            timeDisplay: "12:34"
             sender: "Alice"
             groupContext: true
             sameSenderAsPrevious: false

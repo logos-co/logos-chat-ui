@@ -1,5 +1,7 @@
 #include "ConversationListModel.h"
 
+#include "TimeFormat.h"
+
 #include <QDate>
 #include <QLocale>
 
@@ -170,7 +172,7 @@ QString ConversationListModel::formatLastActivity(const QDateTime& lastActivity)
     const QDate today = QDate::currentDate();
     const QDate date = lastActivity.date();
     if (date == today)
-        return locale.toString(lastActivity.time(), QLocale::ShortFormat);
+        return TimeFormat::shortTime(lastActivity);
     if (date == today.addDays(-1))
         return tr("Yesterday");
     return locale.toString(date, QLocale::ShortFormat);

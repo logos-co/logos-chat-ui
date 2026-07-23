@@ -28,7 +28,10 @@ public:
         // messages and to break the run with a day heading.
         SameSenderAsPreviousRole,
         ShowDaySeparatorRole,
-        DayLabelRole
+        DayLabelRole,
+        // Clock time for the bubble, formatted here so every timestamp in the UI
+        // shares one locale and shape.
+        TimeDisplayRole
     };
 
     explicit MessageListModel(QObject* parent = nullptr);

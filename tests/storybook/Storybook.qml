@@ -46,7 +46,7 @@ Rectangle {
         ListElement {
             sender: "Alice"
             content: "Hey, did you see the new theme?"
-            timestamp: 0
+            timeDisplay: "12:34"
             isMe: false
             sameSenderAsPrevious: false
             showDaySeparator: true
@@ -55,7 +55,7 @@ Rectangle {
         ListElement {
             sender: "Me"
             content: "Yes, it looks great"
-            timestamp: 0
+            timeDisplay: "12:34"
             isMe: true
             sameSenderAsPrevious: false
             showDaySeparator: false
