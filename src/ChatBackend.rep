@@ -25,6 +25,8 @@ class ChatBackend
     // memberModel) because the model reaches QML as a QtRO replica whose
     // rowCount() a non-view caller can't rely on.
     PROP(int memberCount READONLY)
+    // Members invited into the current group but not yet on its roster.
+    PROP(int pendingMemberCount READONLY)
 
     SLOT(void createConversation(QString peerAddress))
     SLOT(void createGroupConversation(QString name, QString description))

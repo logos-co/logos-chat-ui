@@ -146,6 +146,7 @@ Item {
         groupName: store.currentDisplayName
         description: store.currentDescription
         memberCount: store.memberCount
+        pendingMemberCount: store.pendingMemberCount
         conversationId: store.currentConversationId
     }
 

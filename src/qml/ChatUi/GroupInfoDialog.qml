@@ -7,15 +7,27 @@ import Logos.Controls
 
 // Modal dialog showing a group's shared details: its name (the title), full
 // description, member count, and conversation id with a one-tap copy. Set the
-// four properties, then open(). Standalone.
+// properties, then open(). Standalone.
 LogosDialog {
     id: root
 
     property string groupName: ""
     property string description: ""
     property int memberCount: 0
+    // Members invited but not yet on the roster.
+    property int pendingMemberCount: 0
     // The group's conversation id, shown in full and copyable.
     property string conversationId: ""
+
+    // Roster size, with outstanding invitations named separately: an invited
+    // member does not count towards the group until they join.
+    readonly property string memberSummary: {
+        const members = root.memberCount === 1 ? qsTr("1 member") : qsTr("%1 members").arg(root.memberCount);
+        if (root.pendingMemberCount === 0)
+            return members;
+        const invited = root.pendingMemberCount === 1 ? qsTr("1 invited") : qsTr("%1 invited").arg(root.pendingMemberCount);
+        return qsTr("%1, %2").arg(members).arg(invited);
+    }
 
     title: root.groupName
     modal: true
@@ -69,8 +81,7 @@ LogosDialog {
         }
 
         LogosText {
-            //: Group member count; %n is the number of members
-            text: qsTr("%n member(s)", "", root.memberCount)
+            text: root.memberSummary
             color: Theme.palette.textSecondary
             font.pixelSize: Theme.typography.secondaryText
             Layout.fillWidth: true
