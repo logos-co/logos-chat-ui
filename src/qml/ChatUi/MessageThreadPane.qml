@@ -142,9 +142,12 @@ Rectangle {
 
         MessageComposer {
             id: composer
+            objectName: "composer"
             Layout.fillWidth: true
             placeholder: qsTr("Type a message...")
-            disabledPlaceholder: qsTr("Chat not connected")
+            // Name the reason the composer is closed: being connected with
+            // nothing selected is not the same as having no connection.
+            disabledPlaceholder: root.online ? qsTr("Select a conversation to start chatting") : qsTr("Chat not connected")
             buttonText: qsTr("Send")
             submitEnabled: root.online && root.hasConversation
             onSubmitted: function (text) {

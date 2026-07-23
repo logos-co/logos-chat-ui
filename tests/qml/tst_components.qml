@@ -455,6 +455,21 @@ Item {
             compare(args[3], "Shipping the new theme", "and its description");
         }
 
+        // A closed composer names why it is closed, so a connected app with
+        // nothing selected does not claim to be offline.
+        function test_threadPaneDisabledPlaceholder() {
+            const pane = createTemporaryObject(messageThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            const composer = findField(pane, "composer");
+            verify(composer, "the composer must be reachable");
+
+            pane.hasConversation = false;
+            compare(composer.disabledPlaceholder, "Select a conversation to start chatting", "online with nothing selected");
+
+            pane.online = false;
+            compare(composer.disabledPlaceholder, "Chat not connected", "offline");
+        }
+
         // Every pane header is a fixed 48px, subtitle or not, so panes stay
         // aligned across the window.
         function test_paneHeaderSubtitle() {
