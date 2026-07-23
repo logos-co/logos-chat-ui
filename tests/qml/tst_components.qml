@@ -697,6 +697,18 @@ Item {
             entry.triggered();
         }
 
+        // A conversation nobody has written in yet says so, rather than leaving
+        // the row's second line blank.
+        function test_conversationDelegatePreviewPlaceholder() {
+            const del = instantiate(conversationDelegateC);
+            const preview = findField(del, "previewLabel");
+            verify(preview, "the preview line must be reachable");
+            compare(preview.text, "See you tomorrow", "a conversation with messages previews the last one");
+
+            del.preview = "";
+            compare(preview.text, "No messages yet", "an untouched conversation says so");
+        }
+
         // Every pane header is a fixed 48px, subtitle or not, so panes stay
         // aligned across the window.
         function test_paneHeaderSubtitle() {
