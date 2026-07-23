@@ -72,7 +72,7 @@ LogosItemDelegate {
             //: Badge marking the current user in the member list
             text: qsTr("you")
             color: Theme.palette.primary
-            font.pixelSize: Theme.typography.badgeText
+            font.pixelSize: Theme.typography.secondaryText
             Layout.alignment: Qt.AlignVCenter
         }
 
