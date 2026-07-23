@@ -35,5 +35,7 @@ class ChatBackend
     SLOT(void refreshMembers())
 
     SIGNAL(addressReady(QString address))
+    // A message the module refused, so the composer can offer the text back.
+    SIGNAL(sendFailed(QString conversationId, QString content))
     SIGNAL(error(QString message))
 }

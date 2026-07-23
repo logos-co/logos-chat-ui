@@ -470,6 +470,26 @@ Item {
             compare(composer.disabledPlaceholder, "Chat not connected", "offline");
         }
 
+        // A refused message comes back to the composer, and a composer the user
+        // has already typed into is left alone.
+        function test_threadPaneRestoresFailedSend() {
+            const pane = createTemporaryObject(messageThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            const composer = findField(pane, "composer");
+            verify(composer, "the composer must be reachable");
+
+            pane.restoreFailedSend("c1", "lost message");
+            compare(composer.text, "lost message", "the refused text comes back");
+
+            composer.text = "already typing";
+            pane.restoreFailedSend("c1", "lost message");
+            compare(composer.text, "already typing", "a composer in use is left alone");
+
+            composer.text = "";
+            pane.restoreFailedSend("other", "not mine");
+            compare(composer.text, "", "a refusal from another conversation stays out");
+        }
+
         // Every pane header is a fixed 48px, subtitle or not, so panes stay
         // aligned across the window.
         function test_paneHeaderSubtitle() {
