@@ -107,7 +107,7 @@ LogosDialog {
                 Accessible.role: Accessible.Button
                 //: Button that copies the group's conversation id to the clipboard
                 Accessible.name: qsTr("Copy conversation ID")
-                onClicked: root._copy()
+                onClicked: d.copy()
                 Layout.alignment: Qt.AlignVCenter
             }
         }
@@ -137,9 +137,12 @@ LogosDialog {
     // A reopened dialog starts without a stale confirmation.
     onOpened: copiedTimer.stop()
 
-    // Copy the conversation id; the confirmation follows from the timer.
-    function _copy() {
-        clipboard.copy(root.conversationId);
-        copiedTimer.restart();
+    QtObject {
+        id: d
+
+        function copy() {
+            clipboard.copy(root.conversationId);
+            copiedTimer.restart();
+        }
     }
 }

@@ -65,7 +65,7 @@ LogosDialog {
                 iconSource: Qt.resolvedUrl("icons/copy.png")
                 Accessible.role: Accessible.Button
                 Accessible.name: qsTr("Copy address")
-                onClicked: root._copy()
+                onClicked: d.copy()
                 Layout.alignment: Qt.AlignVCenter
             }
         }
@@ -95,8 +95,12 @@ LogosDialog {
     // A reopened dialog starts without a stale confirmation.
     onOpened: copiedTimer.stop()
 
-    function _copy() {
-        clipboard.copy(root.addressText);
-        copiedTimer.restart();
+    QtObject {
+        id: d
+
+        function copy() {
+            clipboard.copy(root.addressText);
+            copiedTimer.restart();
+        }
     }
 }

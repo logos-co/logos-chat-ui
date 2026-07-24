@@ -799,22 +799,24 @@ Item {
         // in the field's key handlers and not key-simulated here.
         function test_messageComposerSubmits() {
             const composer = instantiate(messageComposerC);
+            const send = findField(composer, "sendButton");
+            verify(send, "the send button must be reachable");
             submitSpy.target = composer;
             submitSpy.clear();
 
             composer.text = "   ";
-            composer._submit();
+            send.clicked();
             compare(submitSpy.count, 0, "a blank message must not submit");
 
             composer.text = "  hello  ";
-            composer._submit();
+            send.clicked();
             compare(submitSpy.count, 1, "a non-blank message submits once");
             compare(submitSpy.signalArguments[0][0], "hello", "the submitted text is trimmed");
             compare(composer.text, "", "the field clears after submit");
 
             composer.submitEnabled = false;
             composer.text = "blocked";
-            composer._submit();
+            send.clicked();
             compare(submitSpy.count, 1, "a gated-off composer does not submit");
         }
 
@@ -826,7 +828,7 @@ Item {
             addressSpy.target = dlg;
             addressSpy.clear();
             dlg.open();
-            dlg._accept();
+            dlg.rightActions[0].clicked();
             compare(addressSpy.count, 0, "an empty address must not be accepted");
             dlg.close();
         }
@@ -841,7 +843,7 @@ Item {
             groupDetailsSpy.clear();
             dlg.open();
 
-            dlg._accept();
+            dlg.rightActions[0].clicked();
             compare(groupDetailsSpy.count, 0, "an empty name must not be accepted");
 
             let nameField = null;
@@ -854,15 +856,15 @@ Item {
             }
             verify(nameField, "the group name field must be reachable");
             nameField.text = "  Book Club  ";
-            dlg._accept();
+            dlg.rightActions[0].clicked();
             compare(groupDetailsSpy.count, 1, "a non-blank name must be accepted once");
             compare(groupDetailsSpy.signalArguments[0][0], "Book Club", "the name must be trimmed");
             compare(groupDetailsSpy.signalArguments[0][1], "", "an unentered description is empty");
         }
 
         // A dismissed group dialog keeps its draft; only a successful accept
-        // clears it. Create is gated on both length limits, and Enter cannot
-        // bypass them.
+        // clears it. Create is gated on both length limits, and the accept
+        // guard refuses over-limit input regardless.
         function test_newGroupDialogDraftAndLimits() {
             const dlg = createTemporaryObject(newGroupDialogC, this);
             verify(dlg);
@@ -884,15 +886,15 @@ Item {
             dlg.open();
             nameField.text = "x".repeat(dlg.nameLimit + 1);
             verify(!create.enabled, "Create is disabled over the name limit");
-            dlg._accept();
-            compare(groupDetailsSpy.count, 0, "Enter must not accept over the name limit");
+            create.clicked();
+            compare(groupDetailsSpy.count, 0, "an over-limit name must not be accepted");
 
             nameField.text = "Valid";
             descField.text = "y".repeat(dlg.descriptionLimit + 1);
             verify(!create.enabled, "Create is disabled over the description limit");
 
             descField.text = "ok";
-            dlg._accept();
+            create.clicked();
             compare(groupDetailsSpy.count, 1, "valid input accepts once");
             compare(nameField.text, "", "accept clears the name");
             compare(descField.text, "", "accept clears the description");
@@ -914,7 +916,7 @@ Item {
             compare(field.text, "0xdraft", "closing keeps the address draft");
 
             dlg.open();
-            dlg._accept();
+            dlg.rightActions[0].clicked();
             compare(addressSpy.count, 1, "a non-blank draft accepts");
             compare(field.text, "", "accept clears the address");
         }
@@ -930,7 +932,7 @@ Item {
             verify(field, "the address field must be reachable");
 
             dlg.open();
-            dlg._accept();
+            dlg.rightActions[0].clicked();
             compare(addressSpy.count, 0, "an empty address must not be accepted");
 
             field.text = "0xpeer";
@@ -938,7 +940,7 @@ Item {
             compare(field.text, "0xpeer", "closing keeps the address draft");
 
             dlg.open();
-            dlg._accept();
+            dlg.rightActions[0].clicked();
             compare(addressSpy.count, 1, "a non-blank draft accepts");
             compare(addressSpy.signalArguments[0][0], "0xpeer", "the address is emitted");
             compare(field.text, "", "accept clears the address");
