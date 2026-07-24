@@ -29,14 +29,18 @@ Rectangle {
     implicitHeight: layout.implicitHeight + 2 * Theme.spacing.small
     color: Theme.palette.backgroundTertiary
 
-    // Emit the trimmed text and clear. No-op when gated off or empty, so neither
-    // Enter nor the button can submit blank input.
-    function _submit() {
-        const value = field.text.trim();
-        if (value === "" || !root.submitEnabled)
-            return;
-        root.submitted(value);
-        field.text = "";
+    QtObject {
+        id: d
+
+        // Emit the trimmed text and clear. No-op when gated off or empty, so
+        // neither Enter nor the button can submit blank input.
+        function submit() {
+            const value = field.text.trim();
+            if (value === "" || !root.submitEnabled)
+                return;
+            root.submitted(value);
+            field.text = "";
+        }
     }
 
     FontMetrics {
@@ -68,7 +72,7 @@ Rectangle {
                     if (event.modifiers & Qt.ShiftModifier) {
                         event.accepted = false;
                     } else {
-                        root._submit();
+                        d.submit();
                         event.accepted = true;
                     }
                 }
@@ -76,7 +80,7 @@ Rectangle {
                     if (event.modifiers & Qt.ShiftModifier) {
                         event.accepted = false;
                     } else {
-                        root._submit();
+                        d.submit();
                         event.accepted = true;
                     }
                 }
@@ -84,12 +88,13 @@ Rectangle {
         }
 
         LogosButton {
+            objectName: "sendButton"
             Layout.preferredWidth: 84
             Layout.preferredHeight: 36
             Layout.alignment: Qt.AlignBottom
             text: root.buttonText
             enabled: root.submitEnabled && field.text.trim() !== ""
-            onClicked: root._submit()
+            onClicked: d.submit()
         }
     }
 }

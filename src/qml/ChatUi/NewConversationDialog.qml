@@ -38,7 +38,7 @@ LogosDialog {
             //: Button that confirms creating the new conversation
             text: qsTr("Create")
             enabled: addressField.text.trim() !== ""
-            onClicked: root._accept()
+            onClicked: d.accept()
         }
     ]
 
@@ -67,25 +67,29 @@ LogosDialog {
                 // Return submits rather than inserting a newline: the address is
                 // one logical value, not multi-line prose.
                 Keys.onReturnPressed: function (event) {
-                    root._accept();
+                    d.accept();
                     event.accepted = true;
                 }
                 Keys.onEnterPressed: function (event) {
-                    root._accept();
+                    d.accept();
                     event.accepted = true;
                 }
             }
         }
     }
 
-    // Emit the trimmed address, clear the field, and close. No-op on empty input,
-    // so neither Return nor Create can submit a blank address.
-    function _accept() {
-        const address = addressField.text.trim();
-        if (address === "")
-            return;
-        root.addressEntered(address);
-        addressField.clear();
-        root.close();
+    QtObject {
+        id: d
+
+        // Emit the trimmed address, clear the field, and close. No-op on empty
+        // input, so neither Return nor Create can submit a blank address.
+        function accept() {
+            const address = addressField.text.trim();
+            if (address === "")
+                return;
+            root.addressEntered(address);
+            addressField.clear();
+            root.close();
+        }
     }
 }

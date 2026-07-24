@@ -39,14 +39,18 @@ Rectangle {
     implicitWidth: 220
     color: Theme.palette.backgroundInset
 
-    // Copy the focused member's address and flash the confirmation on its row, so
-    // a keyboard copy gets the same feedback as a click.
-    function _copyCurrent() {
-        const member = memberList.currentItem as MemberDelegate;
-        if (!member)
-            return;
-        clipboard.copy(member.address);
-        member.flashCopied();
+    QtObject {
+        id: d
+
+        // Copy the focused member's address and flash the confirmation on its
+        // row, so a keyboard copy gets the same feedback as a click.
+        function copyCurrent() {
+            const member = memberList.currentItem as MemberDelegate;
+            if (!member)
+                return;
+            clipboard.copy(member.address);
+            member.flashCopied();
+        }
     }
 
     ClipboardProxy {
@@ -76,8 +80,8 @@ Rectangle {
                 model: root.memberModel
                 visible: root.ready
 
-                Keys.onReturnPressed: root._copyCurrent()
-                Keys.onEnterPressed: root._copyCurrent()
+                Keys.onReturnPressed: d.copyCurrent()
+                Keys.onEnterPressed: d.copyCurrent()
 
                 ScrollBar.vertical: LogosScrollBar {}
 
