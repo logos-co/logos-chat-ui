@@ -11,6 +11,11 @@
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
+    # The design-system polish this branch pairs with
+    # (logos-co/logos-design-system#39), routed into the builder's input so a
+    # plain build renders with it.
+    logos-design-system.url = "github:logos-co/logos-design-system/fix/controls-polish";
+    chat_module.inputs.logos-module-builder.inputs.logos-design-system.follows = "logos-design-system";
   };
 
   outputs = inputs@{ logos-module-builder, logos-delivery-module, ... }:
