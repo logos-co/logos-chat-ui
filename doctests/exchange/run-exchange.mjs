@@ -42,7 +42,7 @@ class Inspector {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Evaluate a QML expression in ChatView's root scope (the ids store,
-// conversationsPane, threadPane, addressDialog are all in scope there).
+// conversationsPane and threadPane are all in scope there).
 async function evalq(insp, expr) {
   const r = await insp.send("evaluate", { expression: expr });
   if (r.error) throw new Error(`eval(${expr}): ${r.error}`);
@@ -89,15 +89,12 @@ async function loadThread(insp, convId, minCount, { timeout = 90000 } = {}) {
   throw new Error(`conversation thread did not reach ${minCount} message(s)`);
 }
 
-// Ask for the instance's address and wait for it to surface. requestMyAddress
-// triggers a synchronous get_address RPC (20s IPC ceiling); the address arrives
-// in addressDialog.addressText via the addressReady signal.
+// Wait for the instance's own address. The backend reads it once the module
+// comes online, so it surfaces on store.myAddress shortly after store.online.
 async function getAddress(insp) {
-  await evalq(insp, `addressDialog.addressText = ""`);
-  await evalq(insp, "store.backend.requestMyAddress()");
   const start = Date.now();
   while (Date.now() - start < 25000) {
-    const t = await evalq(insp, "addressDialog.addressText");
+    const t = await evalq(insp, "store.myAddress");
     if (typeof t === "string" && t.length > 0) return t;
     await sleep(1000);
   }
@@ -127,7 +124,6 @@ async function main() {
   const address = await getAddress(alice);
   console.log(`alice address: ${address.length} chars`);
   await shoot(alice, outDir, "01-alice-address.png");
-  await evalq(alice, "addressDialog.close()");
 
   console.log("bob: open a conversation with alice's address...");
   await evalq(bob, `store.backend.createConversation(${JSON.stringify(address)})`);

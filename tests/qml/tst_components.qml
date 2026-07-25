@@ -122,7 +122,15 @@ Item {
             statusMessage: "Ready"
             statusLabel: "Online"
             online: true
-            identity: "0xdeadbeef"
+        }
+    }
+    Component {
+        id: accountCardC
+        AccountCard {
+            address: "0xdeadbeef0123456789abcdef"
+            label: "0xdeadbe"
+            online: true
+            statusLabel: "Online"
         }
     }
     Component {
@@ -167,10 +175,6 @@ Item {
     Component {
         id: newGroupDialogC
         NewGroupDialog {}
-    }
-    Component {
-        id: addressDialogC
-        AddressDialog {}
     }
     Component {
         id: memberAddInfoDialogC
@@ -271,10 +275,6 @@ Item {
         signalName: "newGroupRequested"
     }
     SignalSpy {
-        id: showAddressSpy
-        signalName: "showAddressRequested"
-    }
-    SignalSpy {
         id: copyRequestedSpy
         signalName: "copyRequested"
     }
@@ -319,6 +319,7 @@ Item {
             instantiate(messageThreadPaneC);
             instantiate(membersPaneC);
             instantiate(statusBarC);
+            instantiate(accountCardC);
         }
 
         function test_leafComponentsInstantiate() {
@@ -339,7 +340,6 @@ Item {
         function test_dialogsInstantiate() {
             instantiate(newConvDialogC);
             instantiate(newGroupDialogC);
-            instantiate(addressDialogC);
             instantiate(memberAddInfoDialogC);
             instantiate(dmInfoDialogC);
         }
@@ -551,6 +551,38 @@ Item {
             compare(bar.statusLabel, "Online", "connectivity is state and stays");
         }
 
+        // The address is what a peer needs, so the card shows it in full and
+        // confirms the copy where the value is.
+        function test_accountCardCopiesTheAddress() {
+            const card = instantiate(accountCardC);
+            const btn = findField(card, "copyMyAddressButton");
+            verify(btn, "the copy button must be reachable");
+
+            const address = findField(card, "myAddressText");
+            verify(address, "the address must be reachable");
+            compare(address.text, card.address, "the field carries the address");
+
+            btn.clicked();
+            verify(card.copiedFlashing, "the copy is confirmed");
+            compare(address.text, "Copied to clipboard", "and the confirmation lands on the value");
+        }
+
+        // Before the network is up there is no address to show, and a card
+        // showing an empty field would read as a failure rather than a wait.
+        function test_accountCardHidesAnUnknownAddress() {
+            const card = createTemporaryObject(accountCardC, testRoot);
+            verify(card, "the card must instantiate");
+            const label = findField(card, "myLabelText");
+            const address = findField(card, "myAddressText");
+            verify(label && address, "the identity and the address must be reachable");
+            verify(label.visible && address.visible, "a known account shows both");
+
+            card.address = "";
+            card.label = "";
+            verify(!label.visible, "an unknown identity leaves no empty line");
+            tryVerify(() => !address.visible, 2000, "and no empty address field");
+        }
+
         // The roster line counts members in plain English and names invitations
         // that have not landed yet.
         function test_groupInfoDialogMemberSummary() {
@@ -595,36 +627,6 @@ Item {
             compare(newConversationSpy.count, 1, "the DM entry requests a direct message");
             group.triggered();
             compare(newGroupSpy.count, 1, "the group entry requests a group");
-        }
-
-        // The address action moved into the header and still asks for it.
-        function test_conversationsPaneShowsAddress() {
-            const pane = createTemporaryObject(conversationsPaneC, testRoot);
-            verify(pane, "the sidebar must instantiate");
-            const btn = findField(pane, "showAddressButton");
-            verify(btn, "the address button must be reachable");
-            verify(btn.enabled, "enabled when online");
-            pane.online = false;
-            verify(!btn.enabled, "disabled when offline");
-
-            showAddressSpy.target = pane;
-            showAddressSpy.clear();
-            btn.clicked();
-            compare(showAddressSpy.count, 1, "clicking asks for the address");
-        }
-
-        // The copy actions sit next to the values they copy, and confirm.
-        function test_addressDialogCopyButton() {
-            const dlg = instantiate(addressDialogC);
-            dlg.addressText = "0xdeadbeef";
-            const btn = findField(dlg, "copyMyAddressButton");
-            const copied = findField(dlg, "copiedLabel");
-            verify(btn && copied, "the copy button and its confirmation must be reachable");
-            compare(dlg.rightActions.length, 1, "only Close is left in the action row");
-
-            compare(copied.opacity, 0, "nothing confirmed yet");
-            btn.clicked();
-            compare(copied.opacity, 1, "the copy is confirmed at the value");
         }
 
         function test_groupInfoDialogCopyButton() {
@@ -707,23 +709,6 @@ Item {
 
             del.preview = "";
             compare(preview.text, "No messages yet", "an untouched conversation says so");
-        }
-
-        // A dialog's display area is as tall as what it shows, up to a cap, so a
-        // one-line value gets neither dead space nor a scrollbar.
-        function test_dialogDisplayAreasFitContent() {
-            const dlg = createTemporaryObject(addressDialogC, testRoot);
-            verify(dlg, "the dialog must instantiate");
-            dlg.open();
-            const view = findField(dlg, "addressScroll");
-            verify(view, "the address display must be reachable");
-
-            dlg.addressText = "0xshort";
-            tryVerify(() => view.height > 0 && view.height < 120, 2000, "a short address takes only the room it needs");
-
-            dlg.addressText = "0xdeadbeef".repeat(40);
-            tryCompare(view, "height", 120, 2000, "a long one stops at the cap and scrolls");
-            dlg.close();
         }
 
         // Every pane header is a fixed 48px, subtitle or not, so panes stay

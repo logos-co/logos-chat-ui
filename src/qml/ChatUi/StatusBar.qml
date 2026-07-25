@@ -4,8 +4,8 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// Bottom status strip: a free-form status message, a short connectivity label,
-// and this installation's identity. All inputs are properties; standalone.
+// Bottom status strip: a free-form status message and a short connectivity
+// label. All inputs are properties; standalone.
 Rectangle {
     id: root
 
@@ -13,10 +13,9 @@ Rectangle {
     property string statusLabel: ""
     property bool online: false
     property bool hasError: false
-    property string identity: ""
     // How long a status message stays on the bar. Messages are announcements of
     // something that happened, so they go quiet again; the connectivity label
-    // and the identity are state and stay.
+    // is state and stays.
     property int messageTimeout: 6000
 
     implicitWidth: 200
@@ -51,17 +50,6 @@ Rectangle {
             text: root.statusLabel
             color: root.online ? Theme.palette.success : root.hasError ? Theme.palette.error : Theme.palette.textTertiary
             font.pixelSize: Theme.typography.secondaryText
-        }
-
-        LogosText {
-            visible: root.identity !== ""
-            text: qsTr("ID: %1").arg(root.identity)
-            textFormat: Text.PlainText
-            color: Theme.palette.textTertiary
-            font.pixelSize: Theme.typography.secondaryText
-            font.family: ChatTheme.monoFont
-            elide: Text.ElideMiddle
-            Layout.maximumWidth: 260
         }
     }
 }

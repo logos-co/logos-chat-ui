@@ -7,9 +7,9 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// The conversation sidebar: a header with a menu of conversations to start, the
-// keyboard-navigable conversation list, and a share-my-address action at the
-// foot. Data in via properties, intent out via signals.
+// The conversation sidebar: a header with a menu of conversations to start, and
+// the keyboard-navigable conversation list. Data in via properties, intent out
+// via signals.
 Rectangle {
     id: root
 
@@ -22,7 +22,6 @@ Rectangle {
     signal conversationSelected(string conversationId, string displayName, bool isGroup, string description)
     signal newConversationRequested
     signal newGroupRequested
-    signal showAddressRequested
 
     // Exposed for the exchange doc-test's inspector hooks.
     property alias count: convList.count
@@ -114,17 +113,6 @@ Rectangle {
                 visible: convList.count === 0
                 text: root.online ? qsTr("No conversations yet. Use New to start one, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
             }
-        }
-
-        LogosButton {
-            objectName: "showAddressButton"
-            Layout.fillWidth: true
-            Layout.margins: Theme.spacing.small
-            implicitHeight: 40
-            //: Button that shows this installation's own address for sharing
-            text: qsTr("My address")
-            enabled: root.online
-            onClicked: root.showAddressRequested()
         }
     }
 }

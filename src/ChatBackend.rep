@@ -8,7 +8,11 @@ class ChatBackend
     }
 
     PROP(ChatStatus chatStatus READONLY)
-    PROP(QString myIdentity READONLY)
+    // This account's own address, the string a peer needs to reach it. Fetched
+    // once the module comes online, so the view can show it from first paint.
+    PROP(QString myAddress READONLY)
+    // Short form of myAddress, on the same rule as a roster row's label.
+    PROP(QString myLabel READONLY)
     PROP(QString statusMessage READONLY)
     PROP(QString currentConversationId)
     // The conversation whose messages and roster the models currently hold.
@@ -34,12 +38,10 @@ class ChatBackend
     SLOT(void createConversation(QString peerAddress))
     SLOT(void createGroupConversation(QString name, QString description))
     SLOT(void addGroupMember(QString conversationId, QString peerAddress))
-    SLOT(void requestMyAddress())
     SLOT(void sendMessage(QString conversationId, QString content))
     SLOT(void selectConversation(QString conversationId))
     SLOT(void refreshMembers())
 
-    SIGNAL(addressReady(QString address))
     // A message the module refused, so the composer can offer the text back.
     SIGNAL(sendFailed(QString conversationId, QString content))
     SIGNAL(error(QString message))
