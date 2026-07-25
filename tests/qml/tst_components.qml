@@ -270,8 +270,8 @@ Item {
         signalName: "newGroupRequested"
     }
     SignalSpy {
-        id: copyRequestedSpy
-        signalName: "copyRequested"
+        id: contextMenuRequestedSpy
+        signalName: "contextMenuRequested"
     }
     SignalSpy {
         id: contextMenuSpy
@@ -625,20 +625,29 @@ Item {
         // A roster row offers a copy button, hidden until the row is hovered so a
         // resting roster stays clean; using it flashes the same confirmation a
         // row click does.
-        function test_memberDelegateCopyButton() {
-            const del = instantiate(memberDelegateC);
-            del.pending = false;
-            const btn = findField(del, "copyMemberAddressButton");
-            verify(btn, "the copy button must be reachable");
+        // The roster rests clean: a row is nothing but identity, and its actions
+        // come from a right-click that carries the address they act on.
+        function test_memberDelegateOffersItsActions() {
+            const pane = createTemporaryObject(membersPaneC, testRoot);
+            verify(pane, "the members pane must instantiate");
+            pane.width = 280;
+            pane.height = 300;
+            const menu = findField(pane, "memberMenu");
+            const copy = findField(pane, "copyMemberAddressMenuItem");
+            verify(menu && copy, "the roster menu and its copy entry must be reachable");
 
-            tryCompare(btn, "opacity", 0, 2000, "the copy button is hidden until the row is hovered");
+            const list = findField(pane, "memberList");
+            tryVerify(() => list.itemAtIndex(0) !== null, 2000, "the first row must be realised");
+            const row = list.itemAtIndex(0);
+            contextMenuRequestedSpy.target = row;
+            contextMenuRequestedSpy.clear();
+            row.contextMenuRequested(row.address);
+            compare(contextMenuRequestedSpy.count, 1, "a row asks for its actions");
+            compare(contextMenuRequestedSpy.signalArguments[0][0], "0xabc", "carrying its own address");
 
-            copyRequestedSpy.target = del;
-            copyRequestedSpy.clear();
-            btn.clicked();
-            compare(copyRequestedSpy.count, 1, "the button requests the copy");
-            compare(copyRequestedSpy.signalArguments[0][0], "0xcarol", "with the row's address");
-            verify(del.copiedFlashing, "and confirms it on the row");
+            menu.row = row;
+            copy.triggered();
+            verify(row.copiedFlashing, "the copy confirms on the row it came from");
         }
 
         // A right-click asks for the message actions, offering the selection
