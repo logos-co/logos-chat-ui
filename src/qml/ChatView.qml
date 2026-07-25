@@ -90,6 +90,7 @@ Item {
                     Layout.margins: Theme.spacing.small
                     address: store.myAddress
                     label: store.myLabel
+                    initials: store.myInitials
                     online: store.online
                     statusLabel: store.statusLabel
                 }

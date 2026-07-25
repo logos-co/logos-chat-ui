@@ -3,6 +3,7 @@ singleton ChatTheme 1.0 ChatTheme.qml
 ChatStore 1.0 ChatStore.qml
 PaneHeader 1.0 PaneHeader.qml
 ChatIconButton 1.0 ChatIconButton.qml
+Avatar 1.0 Avatar.qml
 AccountCard 1.0 AccountCard.qml
 EmptyState 1.0 EmptyState.qml
 SelectableText 1.0 SelectableText.qml

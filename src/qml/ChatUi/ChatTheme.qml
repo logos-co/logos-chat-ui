@@ -31,4 +31,78 @@ QtObject {
     readonly property color bubblePeerSelectedText: "#000000"
     readonly property color bubbleOwnSelection: "#000000"
     readonly property color bubbleOwnSelectedText: Theme.palette.primary
+
+    // Avatar gradients, indexed by a model's avatarRamp role. There are exactly
+    // as many as Identity::kAvatarRampCount in the backend, which is what
+    // spreads identities across them.
+    readonly property list<Gradient> avatarRamps: [
+        Gradient {
+            GradientStop {
+                position: 0
+                color: Theme.palette.accentYellowSoft
+            }
+            GradientStop {
+                position: 1
+                color: Theme.palette.accentOrangeMid
+            }
+        },
+        Gradient {
+            GradientStop {
+                position: 0
+                color: Theme.palette.info
+            }
+            GradientStop {
+                position: 1
+                color: Theme.palette.accentOrangeDeep
+            }
+        },
+        Gradient {
+            GradientStop {
+                position: 0
+                color: Theme.palette.successHover
+            }
+            GradientStop {
+                position: 1
+                color: Theme.palette.info
+            }
+        },
+        Gradient {
+            GradientStop {
+                position: 0
+                color: Theme.palette.warning
+            }
+            GradientStop {
+                position: 1
+                color: Theme.palette.accentBurntOrange
+            }
+        },
+        Gradient {
+            GradientStop {
+                position: 0
+                color: Theme.palette.primarySoft
+            }
+            GradientStop {
+                position: 1
+                color: Theme.palette.warning
+            }
+        }
+    ]
+
+    // This account's own avatar, on the brand ramp rather than a hashed one, so
+    // your own entry is recognisable in any list.
+    readonly property Gradient selfAvatarRamp: Gradient {
+        GradientStop {
+            position: 0
+            color: Theme.palette.primarySoft
+        }
+        GradientStop {
+            position: 1
+            color: Theme.palette.primary
+        }
+    }
+
+    // Ink for what sits on an avatar's light gradient, where the theme's text
+    // colours have no contrast.
+    // TODO(upstream: logos-design-system): an on-accent text token.
+    readonly property color avatarInk: Qt.rgba(0, 0, 0, 0.74)
 }

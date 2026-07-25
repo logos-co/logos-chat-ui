@@ -56,6 +56,7 @@ ChatBackend::ChatBackend(QObject* parent)
     setChatStatus(ChatBackendSimpleSource::Stopped);
     setMyAddress(QString());
     setMyLabel(QString());
+    setMyInitials(QString());
     setStatusMessage(QStringLiteral("Ready"));
     setCurrentConversationId(QString());
     setLoadedConversationId(QString());
@@ -192,6 +193,7 @@ void ChatBackend::refreshMyAddress()
     }
     setMyAddress(address);
     setMyLabel(Identity::shortLabel(address));
+    setMyInitials(Identity::initials(address));
 }
 
 // Push the current conversation's derived view state (group flag, display name)

@@ -31,6 +31,7 @@ QtObject {
     // short form.
     readonly property string myAddress: backend ? backend.myAddress : ""
     readonly property string myLabel: backend ? backend.myLabel : ""
+    readonly property string myInitials: backend ? backend.myInitials : ""
 
     // Short connectivity label for the status bar.
     readonly property string statusLabel: {

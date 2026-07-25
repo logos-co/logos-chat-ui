@@ -20,6 +20,8 @@ Rectangle {
             conversationId: "c1"
             displayName: "Alice"
             isGroup: false
+            avatarInitials: "c1"
+            avatarRamp: 0
             unreadCount: 0
             lastActivityDisplay: "12:34"
             preview: "Sounds good, talk soon"
@@ -29,6 +31,8 @@ Rectangle {
             conversationId: "c2"
             displayName: "Design Team"
             isGroup: true
+            avatarInitials: "c2"
+            avatarRamp: 3
             unreadCount: 128
             lastActivityDisplay: "Yesterday"
             preview: "Bob: pushed the fix, please review"
@@ -38,6 +42,8 @@ Rectangle {
             conversationId: "c3"
             displayName: "Bob"
             isGroup: false
+            avatarInitials: "c3"
+            avatarRamp: 1
             unreadCount: 3
             lastActivityDisplay: "Mon"
             preview: "Did you get a chance to look?"
@@ -70,18 +76,24 @@ Rectangle {
         ListElement {
             address: "0xalice"
             label: "Alice"
+            avatarInitials: "al"
+            avatarRamp: 0
             isSelf: true
             pending: false
         }
         ListElement {
             address: "0xbob"
             label: "Bob"
+            avatarInitials: "bo"
+            avatarRamp: 2
             isSelf: false
             pending: false
         }
         ListElement {
             address: "0xcarol"
             label: "Carol"
+            avatarInitials: "ca"
+            avatarRamp: 4
             isSelf: false
             pending: true
         }
@@ -113,6 +125,7 @@ Rectangle {
                     Layout.margins: Theme.spacing.small
                     address: "0xdeadbeefcafe0123456789abcdef0123456789abcdef0123456789abcdef"
                     label: "0xdeadbe"
+                    initials: "0x"
                     online: true
                     statusLabel: "Online"
                 }

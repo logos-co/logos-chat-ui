@@ -1,5 +1,6 @@
 #include "ConversationListModel.h"
 
+#include "Identity.h"
 #include "TimeFormat.h"
 
 #include <QDate>
@@ -31,6 +32,8 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     case IsGroupRole:             return item.isGroup;
     case PreviewRole:             return item.preview;
     case DescriptionRole:         return item.description;
+    case AvatarInitialsRole:      return Identity::initials(item.conversationId);
+    case AvatarRampRole:          return Identity::avatarRamp(Identity::shortLabel(item.conversationId));
     default:                      return {};
     }
 }
@@ -45,7 +48,9 @@ QHash<int, QByteArray> ConversationListModel::roleNames() const
         { UnreadCountRole,         "unreadCount" },
         { IsGroupRole,             "isGroup" },
         { PreviewRole,             "preview" },
-        { DescriptionRole,         "description" }
+        { DescriptionRole,         "description" },
+        { AvatarInitialsRole,      "avatarInitials" },
+        { AvatarRampRole,          "avatarRamp" }
     };
 }
 

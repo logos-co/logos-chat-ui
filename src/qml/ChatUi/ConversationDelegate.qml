@@ -4,15 +4,19 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// A conversation row: name (with a group marker), a relative last-activity label
-// and an unread-count badge. Delegate roles bind by name; set currentConversationId
-// and connect activated(). Focus ring when keyboard-focused, highlight when current.
+// A conversation row: an avatar, the name, a preview, a relative last-activity
+// label and an unread-count badge. Delegate roles bind by name; set
+// currentConversationId and connect activated(). Focus ring when
+// keyboard-focused, highlight when current.
 LogosItemDelegate {
     id: root
 
     required property string conversationId
     required property string displayName
     required property bool isGroup
+    // Avatar identity, computed by the model from the conversation id.
+    required property string avatarInitials
+    required property int avatarRamp
     required property int unreadCount
     // Relative last-activity label, formatted by the model.
     required property string lastActivityDisplay
@@ -30,7 +34,7 @@ LogosItemDelegate {
     readonly property bool keyboardFocused: ListView.isCurrentItem && ListView.view && ListView.view.activeFocus
 
     width: 200
-    implicitHeight: 56
+    implicitHeight: 68
     radius: 0
     highlighted: conversationId === currentConversationId
     // A selection tint that stands apart from the hover tint, so the open
@@ -49,12 +53,19 @@ LogosItemDelegate {
     contentItem: RowLayout {
         spacing: Theme.spacing.small
 
+        Avatar {
+            initials: root.avatarInitials
+            ramp: root.avatarRamp
+            isGroup: root.isGroup
+            Layout.alignment: Qt.AlignVCenter
+        }
+
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 2
 
             LogosText {
-                text: (root.isGroup ? "# " : "") + root.displayName
+                text: root.displayName
                 textFormat: Text.PlainText
                 color: Theme.palette.text
                 font.pixelSize: Theme.typography.primaryText

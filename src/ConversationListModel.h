@@ -36,7 +36,12 @@ public:
         LastActivityDisplayRole,
         // Truncated last-message content for the list preview.
         PreviewRole,
-        DescriptionRole
+        DescriptionRole,
+        // Avatar identity, derived from the conversation id rather than the
+        // display name: a direct conversation's name is generated from that id
+        // too, and a group's avatar carries a glyph instead of initials.
+        AvatarInitialsRole,
+        AvatarRampRole
     };
 
     explicit ConversationListModel(QObject* parent = nullptr);
