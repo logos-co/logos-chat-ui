@@ -142,19 +142,6 @@ Item {
         }
     }
     Component {
-        id: paneHeaderC
-        PaneHeader {
-            title: "Header"
-        }
-    }
-    Component {
-        id: paneHeaderSubtitleC
-        PaneHeader {
-            title: "Header"
-            subtitle: "A subtitle line"
-        }
-    }
-    Component {
         id: emptyStateC
         EmptyState {
             text: "Nothing here"
@@ -188,21 +175,16 @@ Item {
         MemberAddInfoDialog {}
     }
     Component {
-        id: groupInfoDialogC
-        GroupInfoDialog {
-            groupName: "Book Club"
-            memberCount: 3
-            conversationId: "0xconversationid"
-        }
-    }
-    Component {
         id: addMemberDialogC
         AddMemberDialog {}
     }
     Component {
-        id: dmInfoDialogC
-        DmInfoDialog {
+        id: detailsPanelC
+        DetailsPanel {
+            isGroup: true
+            description: "Design reviews and theme work"
             conversationId: "0xconversationid"
+            memberCount: 3
         }
     }
     Component {
@@ -335,8 +317,8 @@ Item {
         }
 
         function test_leafComponentsInstantiate() {
-            instantiate(paneHeaderC);
             instantiate(avatarC);
+            instantiate(detailsPanelC);
             instantiate(messageSkeletonC);
             instantiate(emptyStateC);
             instantiate(toastC);
@@ -354,40 +336,27 @@ Item {
             instantiate(newConvDialogC);
             instantiate(newGroupDialogC);
             instantiate(memberAddInfoDialogC);
-            instantiate(dmInfoDialogC);
         }
 
-        // A direct conversation's details offer the peer's address once it is
-        // known, and the conversation id either way.
-        function test_dmInfoDialogAddressRow() {
-            const dlg = instantiate(dmInfoDialogC);
-            const copyAddress = findField(dlg, "copyPeerAddressButton");
-            const copyId = findField(dlg, "copyDmIdButton");
-            const copied = findField(dlg, "copiedLabel");
-            verify(copyAddress && copyId && copied, "both copies and the confirmation must be reachable");
+        // A direct conversation's details name the peer once their address is
+        // known, and carry the conversation id either way.
+        function test_detailsPanelAddressRow() {
+            const panel = createTemporaryObject(detailsPanelC, testRoot);
+            verify(panel, "the details panel must instantiate");
+            const addressRow = findField(panel, "peerAddressRow");
+            const idRow = findField(panel, "conversationIdRow");
+            verify(addressRow && idRow, "both rows must be reachable");
+            verify(idRow.visible, "the conversation id shows for a group");
+            verify(!addressRow.visible, "a group has no single peer to name");
 
-            dlg.open();
-            verify(!copyAddress.visible, "no address row while the peer is unknown");
-            dlg.peerAddress = "0xpeer";
-            verify(copyAddress.visible, "the address row appears once known");
-
-            copyAddress.clicked();
-            compare(copied.opacity, 1, "copying confirms");
-            dlg.close();
-        }
-
-        // The group info dialog renders with both an empty description (the "No
-        // description" fallback) and a long one.
-        function test_groupInfoDialog() {
-            const dlg = instantiate(groupInfoDialogC);
-            compare(dlg.description, "", "starts with no description");
-            dlg.open();
-            dlg.description = "A fairly long group description ".repeat(10);
-            dlg.close();
+            panel.isGroup = false;
+            verify(!addressRow.visible, "no address row while the peer is unknown");
+            panel.peerAddress = "0xpeer";
+            verify(addressRow.visible, "the address row appears once known");
         }
 
         // Details is offered for every conversation, a direct one included, and
-        // requests the matching dialog. Parented into the shown root and sized so
+        // requests the panel. Parented into the shown root and sized so
         // effective visibility is meaningful.
         function test_threadPaneDetailsButton() {
             const pane = createTemporaryObject(messageThreadPaneC, testRoot);
@@ -607,19 +576,19 @@ Item {
             tryVerify(() => !address.visible, 2000, "and no empty address field");
         }
 
-        // The roster line counts members in plain English and names invitations
-        // that have not landed yet.
-        function test_groupInfoDialogMemberSummary() {
-            const dlg = instantiate(groupInfoDialogC);
-            dlg.memberCount = 1;
-            dlg.pendingMemberCount = 0;
-            compare(dlg.memberSummary, "1 member", "a single member");
-            dlg.memberCount = 3;
-            compare(dlg.memberSummary, "3 members", "several members");
-            dlg.pendingMemberCount = 1;
-            compare(dlg.memberSummary, "3 members, 1 invited", "an outstanding invitation");
-            dlg.pendingMemberCount = 2;
-            compare(dlg.memberSummary, "3 members, 2 invited", "several outstanding invitations");
+        // The roster line counts who is in and names invitations that have not
+        // landed yet, since an invited member is not one until they join.
+        function test_detailsPanelMemberSummary() {
+            const panel = instantiate(detailsPanelC);
+            panel.memberCount = 1;
+            panel.pendingMemberCount = 0;
+            compare(panel.memberSummary, "1 joined", "a single member");
+            panel.memberCount = 3;
+            compare(panel.memberSummary, "3 joined", "several members");
+            panel.pendingMemberCount = 1;
+            compare(panel.memberSummary, "3 joined, 1 invited", "an outstanding invitation");
+            panel.pendingMemberCount = 2;
+            compare(panel.memberSummary, "3 joined, 2 invited", "several outstanding invitations");
         }
 
         // The header's New menu offers both kinds of conversation, and picking
@@ -651,17 +620,6 @@ Item {
             compare(newConversationSpy.count, 1, "the DM entry requests a direct message");
             group.triggered();
             compare(newGroupSpy.count, 1, "the group entry requests a group");
-        }
-
-        function test_groupInfoDialogCopyButton() {
-            const dlg = instantiate(groupInfoDialogC);
-            const btn = findField(dlg, "copyGroupIdButton");
-            const copied = findField(dlg, "copiedLabel");
-            verify(btn && copied, "the copy button and its confirmation must be reachable");
-            compare(dlg.rightActions.length, 1, "only Close is left in the action row");
-
-            btn.clicked();
-            compare(copied.opacity, 1, "the copy is confirmed at the value");
         }
 
         // A roster row offers a copy button, hidden until the row is hovered so a
@@ -733,15 +691,6 @@ Item {
 
             del.preview = "";
             compare(preview.text, "No messages yet", "an untouched conversation says so");
-        }
-
-        // Every pane header is a fixed 48px, subtitle or not, so panes stay
-        // aligned across the window.
-        function test_paneHeaderSubtitle() {
-            const plain = instantiate(paneHeaderC);
-            compare(plain.implicitHeight, 48, "a title-only header is 48px");
-            const withSubtitle = instantiate(paneHeaderSubtitleC);
-            compare(withSubtitle.implicitHeight, 48, "a subtitled header is 48px too");
         }
 
         function test_delegatesInstantiate() {

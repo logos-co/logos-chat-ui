@@ -145,12 +145,27 @@ Rectangle {
             online: true
             ready: true
         }
-        MembersPane {
-            Layout.preferredWidth: 220
+        ColumnLayout {
+            Layout.preferredWidth: 280
             Layout.fillHeight: true
-            memberModel: membersMock
-            online: true
-            ready: true
+            spacing: Theme.spacing.medium
+
+            DetailsPanel {
+                Layout.fillWidth: true
+                isGroup: true
+                description: "Design reviews and theme work, with a description long enough to prove the panel wraps it"
+                conversationId: "8f21c4d9a0b7e63f5c1284da7a90e3b1"
+                memberCount: 3
+                pendingMemberCount: 1
+            }
+            MembersPane {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                memberModel: membersMock
+                memberCount: 3
+                online: true
+                ready: true
+            }
         }
     }
 }
