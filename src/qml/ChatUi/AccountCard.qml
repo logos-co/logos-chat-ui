@@ -70,7 +70,7 @@ Rectangle {
                     text: root.label
                     textFormat: Text.PlainText
                     color: Theme.palette.text
-                    font.family: ChatTheme.monoFont
+                    font.family: Theme.typography.mono
                     font.pixelSize: Theme.typography.subtitleText
                     font.weight: Theme.typography.weightBold
                     elide: Text.ElideRight
@@ -113,7 +113,7 @@ Rectangle {
                     text: root.copiedFlashing ? qsTr("Copied to clipboard") : root.address
                     textFormat: Text.PlainText
                     color: root.copiedFlashing ? Theme.palette.success : Theme.palette.textTertiary
-                    font.family: root.copiedFlashing ? Theme.typography.publicSans : ChatTheme.monoFont
+                    font.family: root.copiedFlashing ? Theme.typography.publicSans : Theme.typography.mono
                     font.pixelSize: Theme.typography.secondaryText
                     elide: Text.ElideMiddle
                     Layout.fillWidth: true

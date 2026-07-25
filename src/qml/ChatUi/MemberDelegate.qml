@@ -74,7 +74,7 @@ LogosItemDelegate {
                 text: root.copiedFlashing ? qsTr("Copied to clipboard") : root.label
                 textFormat: Text.PlainText
                 color: root.copiedFlashing ? Theme.palette.success : root.pending ? Theme.palette.textTertiary : Theme.palette.text
-                font.family: root.copiedFlashing ? Theme.typography.publicSans : ChatTheme.monoFont
+                font.family: root.copiedFlashing ? Theme.typography.publicSans : Theme.typography.mono
                 font.pixelSize: Theme.typography.secondaryText
                 font.weight: Theme.typography.weightMedium
                 elide: Text.ElideRight

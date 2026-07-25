@@ -72,7 +72,7 @@ Item {
         // The sender's own colour, taken from the ramp their avatar is drawn in,
         // so a name and a face read as the same person.
         color: ChatTheme.avatarRamps[root.avatarRamp].stops[0].color
-        font.family: ChatTheme.monoFont
+        font.family: Theme.typography.mono
         font.pixelSize: Theme.typography.secondaryText
         font.weight: Theme.typography.weightMedium
     }
@@ -141,7 +141,7 @@ Item {
                 width: parent.width
                 text: root.timeDisplay
                 color: root.isMe ? Theme.colors.getColor(ChatTheme.bubbleOwnText, 0.5) : Theme.palette.textTertiary
-                font.family: ChatTheme.monoFont
+                font.family: Theme.typography.mono
                 font.pixelSize: Theme.typography.secondaryText
                 horizontalAlignment: root.isMe ? Text.AlignRight : Text.AlignLeft
             }

@@ -63,7 +63,7 @@ LogosDialog {
                 id: addressField
                 objectName: "addMemberField"
                 placeholderText: qsTr("peer address (hex)...")
-                font.family: ChatTheme.monoFont
+                font.family: Theme.typography.mono
                 // Return submits rather than inserting a newline: the address is
                 // one logical value, not multi-line prose.
                 Keys.onReturnPressed: function (event) {
