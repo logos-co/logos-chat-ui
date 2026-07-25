@@ -10,9 +10,9 @@ import ChatUi
 // Load it with the design system on the import path, e.g.
 //   qml -I src/qml -I <app>/lib tests/storybook/Storybook.qml
 Rectangle {
-    width: 900
-    height: 650
-    color: Theme.palette.background
+    width: 1000
+    height: 700
+    color: Theme.palette.backgroundInset
 
     ListModel {
         id: conversationsMock
@@ -99,62 +99,49 @@ Rectangle {
         }
     }
 
-    ColumnLayout {
+    RowLayout {
         anchors.fill: parent
-        spacing: 0
+        anchors.margins: Theme.spacing.medium
+        spacing: Theme.spacing.medium
 
-        RowLayout {
-            Layout.fillWidth: true
+        ColumnLayout {
+            Layout.preferredWidth: 320
             Layout.fillHeight: true
-            spacing: 0
+            spacing: Theme.spacing.medium
 
-            ColumnLayout {
-                Layout.preferredWidth: 260
-                Layout.fillHeight: true
-                spacing: 0
-
-                ConversationsPane {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    conversationModel: conversationsMock
-                    currentConversationId: "c2"
-                    online: true
-                }
-                AccountCard {
-                    Layout.fillWidth: true
-                    Layout.margins: Theme.spacing.small
-                    address: "0xdeadbeefcafe0123456789abcdef0123456789abcdef0123456789abcdef"
-                    label: "0xdeadbe"
-                    initials: "0x"
-                    online: true
-                    statusLabel: "Online"
-                }
-            }
-            MessageThreadPane {
+            ConversationsPane {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                messageModel: messagesMock
-                currentIsGroup: true
-                title: "Design Team"
-                conversationId: "c2"
-                hasConversation: true
+                conversationModel: conversationsMock
+                currentConversationId: "c2"
                 online: true
-                ready: true
             }
-            MembersPane {
-                Layout.preferredWidth: 220
-                Layout.fillHeight: true
-                memberModel: membersMock
+            AccountCard {
+                Layout.fillWidth: true
+                address: "0xdeadbeefcafe0123456789abcdef0123456789abcdef0123456789abcdef"
+                label: "0xdeadbe"
+                initials: "0x"
                 online: true
-                ready: true
+                statusLabel: "Online"
             }
         }
-
-        StatusBar {
+        MessageThreadPane {
             Layout.fillWidth: true
-            statusMessage: "Connected to network"
-            statusLabel: "Online"
+            Layout.fillHeight: true
+            messageModel: messagesMock
+            currentIsGroup: true
+            title: "Design Team"
+            conversationId: "c2"
+            hasConversation: true
             online: true
+            ready: true
+        }
+        MembersPane {
+            Layout.preferredWidth: 220
+            Layout.fillHeight: true
+            memberModel: membersMock
+            online: true
+            ready: true
         }
     }
 }

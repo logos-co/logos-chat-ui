@@ -63,14 +63,13 @@ sections:
     text: |
       The window is a two-pane messenger:
 
-      - **Left:** your conversations, under a `Chat` header carrying a **New**
-        menu (start a direct message from someone's address, or a group), with
-        your own account card at the foot: its short form, its connection state,
-        and your address with a copy button beside it.
+      - **Left:** your conversations, under a **New chat** button (start a
+        direct message from someone's address, or a group), with your own
+        account card at the foot: its short form, the delivery state
+        (`Stopped` → `Initialising...` → `Online`), and your address with a
+        copy button beside it.
       - **Right:** the message thread for the selected conversation and a
         composer (the **Send** button).
-      - **Status bar:** a human-readable status and the delivery state
-        (`Stopped` → `Initialising...` → `Online`).
 
       Under the hood the backend calls `modules().chat_module` — typed methods
       (`init`, `get_address`, `create_conversation`, `send_message`, …)
@@ -96,9 +95,9 @@ sections:
           tests:
             - name: "Window opens"
               action: wait_for
-              texts: ["Chat"]
+              texts: ["New chat"]
               timeout: 30000
-              text: "The chat window opens; the status bar starts at **Stopped** while delivery boots."
+              text: "The chat window opens; the account card starts at **Stopped** while delivery boots."
             - name: "Network connects"
               action: wait_for
               texts: ["Online"]
@@ -106,7 +105,7 @@ sections:
               text: |
                 `init` returned right away and the delivery node bootstrapped in
                 the background. When it connects, the `delivery_state_changed`
-                event lands and the status flips to **Online** — the **New** menu
+                event lands and the state flips to **Online** — **New chat**
                 enables and the backend reads `get_address()` onto the account
                 card. That address is what a peer needs to open a conversation
                 with you; your key package was published to the registry during
