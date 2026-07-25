@@ -3,8 +3,9 @@ import QtQuick
 import Logos.Theme
 import Logos.Controls
 
-// A single chat message: a bubble anchored right for own messages, left for
-// peers, with the sender's name above incoming group messages. Roles bind by name.
+// One message in a thread: a bubble on the right for this account, on the left
+// for everyone else, headed by the sender's avatar and name where a run of
+// theirs begins, and by the date where the day changes. Roles bind by name.
 Item {
     id: root
 
@@ -13,6 +14,9 @@ Item {
     // Clock time for the bubble, formatted by the model.
     required property string timeDisplay
     required property string sender
+    // Avatar identity for the sender, computed by the model.
+    required property string avatarInitials
+    required property int avatarRamp
     // Whether the thread is a group; drives the sender label on incoming messages.
     property bool groupContext: false
     // Neighbour-derived roles: suppress a repeated sender label within a run of
@@ -21,10 +25,17 @@ Item {
     required property bool showDaySeparator
     required property string dayLabel
 
-    readonly property bool showSender: groupContext && !isMe && !sameSenderAsPrevious
+    // Where a run of someone else's messages begins: the one row in it that
+    // carries their face and name.
+    readonly property bool startsRun: !root.isMe && !root.sameSenderAsPrevious
+    readonly property bool showSender: root.groupContext && root.startsRun
     // What a copy of this message takes: the selection when the user made one,
     // else the whole message.
     readonly property string copyText: contentText.selectedText !== "" ? contentText.selectedText : root.content
+
+    // The gutter an incoming bubble is inset by, whether or not this row is the
+    // one carrying the avatar.
+    readonly property int gutter: 28 + Theme.spacing.small
 
     // Emitted on a right-click, so the thread can offer its message actions.
     signal contextMenuRequested(string text)
@@ -41,15 +52,12 @@ Item {
         y: 0
         width: root.width
         visible: root.showDaySeparator
-        height: root.showDaySeparator ? dayLabelText.implicitHeight + 2 * Theme.spacing.small : 0
+        height: root.showDaySeparator ? dayChip.implicitHeight + 2 * Theme.spacing.small : 0
 
-        LogosText {
-            id: dayLabelText
+        DayChip {
+            id: dayChip
             anchors.centerIn: parent
             text: root.dayLabel
-            textFormat: Text.PlainText
-            color: Theme.palette.textTertiary
-            font.pixelSize: Theme.typography.secondaryText
         }
     }
 
@@ -58,11 +66,26 @@ Item {
         y: daySeparator.height
         visible: root.showSender
         anchors.left: parent.left
-        anchors.leftMargin: Theme.spacing.large
+        anchors.leftMargin: Theme.spacing.xlarge + root.gutter
         text: root.sender
         textFormat: Text.PlainText
-        color: Theme.palette.textSecondary
+        // The sender's own colour, taken from the ramp their avatar is drawn in,
+        // so a name and a face read as the same person.
+        color: ChatTheme.avatarRamps[root.avatarRamp].stops[0].color
+        font.family: ChatTheme.monoFont
         font.pixelSize: Theme.typography.secondaryText
+        font.weight: Theme.typography.weightMedium
+    }
+
+    Avatar {
+        // Bottom-aligned with the bubble, so a run reads as hanging off one face.
+        y: bubble.y + bubble.height - height
+        anchors.left: parent.left
+        anchors.leftMargin: Theme.spacing.xlarge
+        visible: root.startsRun
+        size: 28
+        initials: root.avatarInitials
+        ramp: root.avatarRamp
     }
 
     Rectangle {
@@ -71,14 +94,20 @@ Item {
         y: root.showSender ? senderLabel.y + senderLabel.height + Theme.spacing.tiny : daySeparator.height
         anchors.left: root.isMe ? undefined : parent.left
         anchors.right: root.isMe ? parent.right : undefined
-        anchors.leftMargin: Theme.spacing.large
-        anchors.rightMargin: Theme.spacing.large
+        anchors.leftMargin: Theme.spacing.xlarge + root.gutter
+        anchors.rightMargin: Theme.spacing.xlarge
 
         // Grow to the wider of the content and the timestamp (a short message
         // must not leave the time outside the bubble), capped at 70% of the row.
         width: Math.min(Math.max(contentText.implicitWidth, timeText.implicitWidth) + 2 * Theme.spacing.medium, root.width * 0.7)
         height: contentText.implicitHeight + timeText.implicitHeight + 2 * Theme.spacing.small + Theme.spacing.tiny
-        radius: Theme.spacing.radiusLarge
+        radius: Theme.spacing.radiusXlarge
+        // The corner nearest its sender is squared off, so a bubble points at
+        // the side it came from, and a run's later bubbles square off at the top
+        // to read as one block.
+        bottomLeftRadius: root.isMe ? radius : Theme.spacing.radiusSmall
+        bottomRightRadius: root.isMe ? Theme.spacing.radiusSmall : radius
+        topLeftRadius: !root.isMe && !root.startsRun ? Theme.spacing.radiusSmall : radius
         color: root.isMe ? ChatTheme.bubbleOwn : ChatTheme.bubblePeer
         border.width: root.isMe ? 0 : 1
         border.color: Theme.palette.borderSubtle
@@ -112,6 +141,7 @@ Item {
                 width: parent.width
                 text: root.timeDisplay
                 color: root.isMe ? Theme.colors.getColor(ChatTheme.bubbleOwnText, 0.5) : Theme.palette.textTertiary
+                font.family: ChatTheme.monoFont
                 font.pixelSize: Theme.typography.secondaryText
                 horizontalAlignment: root.isMe ? Text.AlignRight : Text.AlignLeft
             }

@@ -58,7 +58,10 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/ChatMenuItem.qml
             src/qml/ChatUi/MessageComposer.qml
             src/qml/ChatUi/Toast.qml
-            src/qml/ChatUi/MessageBubble.qml
+            src/qml/ChatUi/MessageDelegate.qml
+            src/qml/ChatUi/DayChip.qml
+            src/qml/ChatUi/Facepile.qml
+            src/qml/ChatUi/ThreadHeader.qml
             src/qml/ChatUi/MessageSkeleton.qml
             src/qml/ChatUi/ConversationDelegate.qml
             src/qml/ChatUi/MemberDelegate.qml

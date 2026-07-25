@@ -68,8 +68,9 @@ sections:
         account card at the foot: its short form, the delivery state
         (`Stopped` → `Initialising...` → `Online`), and your address with a
         copy button beside it.
-      - **Right:** the message thread for the selected conversation and a
-        composer (the **Send** button).
+      - **Right:** the message thread for the selected conversation, under a
+        header carrying its avatar, its description and who is in it, and a
+        composer with the send action at its end.
 
       Under the hood the backend calls `modules().chat_module` — typed methods
       (`init`, `get_address`, `create_conversation`, `send_message`, …)

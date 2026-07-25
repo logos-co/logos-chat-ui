@@ -11,7 +11,10 @@ ClipboardProxy 1.0 ClipboardProxy.qml
 ChatMenuItem 1.0 ChatMenuItem.qml
 MessageComposer 1.0 MessageComposer.qml
 Toast 1.0 Toast.qml
-MessageBubble 1.0 MessageBubble.qml
+MessageDelegate 1.0 MessageDelegate.qml
+DayChip 1.0 DayChip.qml
+Facepile 1.0 Facepile.qml
+ThreadHeader 1.0 ThreadHeader.qml
 MessageSkeleton 1.0 MessageSkeleton.qml
 ConversationDelegate 1.0 ConversationDelegate.qml
 MemberDelegate 1.0 MemberDelegate.qml

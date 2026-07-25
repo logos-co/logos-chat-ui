@@ -47,6 +47,8 @@ Item {
         id: messagesMock
         ListElement {
             sender: "Alice"
+            avatarInitials: "al"
+            avatarRamp: 0
             content: "Hi there"
             timeDisplay: "12:34"
             isMe: false
@@ -162,7 +164,6 @@ Item {
         id: messageComposerC
         MessageComposer {
             placeholder: "Type a message..."
-            buttonText: "Send"
             submitEnabled: true
         }
     }
@@ -220,12 +221,14 @@ Item {
         }
     }
     Component {
-        id: messageBubbleC
-        MessageBubble {
+        id: messageDelegateC
+        MessageDelegate {
             content: "<b>not bold</b>"
             isMe: false
             timeDisplay: "12:34"
             sender: "Alice"
+            avatarInitials: "al"
+            avatarRamp: 2
             groupContext: true
             sameSenderAsPrevious: false
             showDaySeparator: true
@@ -505,11 +508,13 @@ Item {
             list.itemAtIndex(1).clicked();
 
             compare(conversationSelectedSpy.count, 1, "clicking a row selects it once");
-            const args = conversationSelectedSpy.signalArguments[0];
-            compare(args[0], "c2", "the conversation id");
-            compare(args[1], "Team", "its display name");
-            compare(args[2], true, "whether it is a group");
-            compare(args[3], "Shipping the new theme", "and its description");
+            const conversation = conversationSelectedSpy.signalArguments[0][0];
+            compare(conversation.conversationId, "c2", "the conversation id");
+            compare(conversation.displayName, "Team", "its display name");
+            compare(conversation.isGroup, true, "whether it is a group");
+            compare(conversation.description, "Shipping the new theme", "its description");
+            compare(conversation.avatarInitials, "c2", "and the avatar identity the header needs");
+            compare(conversation.avatarRamp, 3, "with its colour");
         }
 
         // A closed composer names why it is closed, so a connected app with
@@ -680,8 +685,8 @@ Item {
 
         // A right-click asks for the message actions, offering the selection
         // when the user made one and the whole message otherwise.
-        function test_messageBubbleContextMenu() {
-            const bubble = createTemporaryObject(messageBubbleC, testRoot);
+        function test_messageDelegateContextMenu() {
+            const bubble = createTemporaryObject(messageDelegateC, testRoot);
             verify(bubble, "the bubble must instantiate");
             bubble.width = 300;
             const body = findField(bubble, "messageText");
@@ -741,14 +746,14 @@ Item {
 
         function test_delegatesInstantiate() {
             instantiate(conversationDelegateC);
-            instantiate(messageBubbleC);
+            instantiate(messageDelegateC);
             instantiate(memberDelegateC);
         }
 
         // The sender label shows on the first message of a run in a group, is
         // suppressed on continuations, and never shows on own messages.
-        function test_messageBubbleGrouping() {
-            const bubble = instantiate(messageBubbleC);
+        function test_messageDelegateGrouping() {
+            const bubble = instantiate(messageDelegateC);
             verify(bubble.showSender, "first message of a run in a group shows the sender");
             bubble.sameSenderAsPrevious = true;
             verify(!bubble.showSender, "a continuation hides the sender label");
@@ -759,8 +764,8 @@ Item {
 
         // The body is read-only selectable text, and a selection yields the raw
         // string, so markup in a message stays literal.
-        function test_messageBubbleTextSelectable() {
-            const bubble = instantiate(messageBubbleC);
+        function test_messageDelegateTextSelectable() {
+            const bubble = instantiate(messageDelegateC);
             const body = findField(bubble, "messageText");
             verify(body, "the message text must be reachable");
             verify(body.readOnly, "the body must not be editable");
@@ -772,9 +777,9 @@ Item {
 
         // The bubble hugs a short message and caps a long one at 70% of the row.
         // Guards the sizing formula, which reads the body's implicit size.
-        function test_messageBubbleSizing() {
-            const shortBubble = createTemporaryObject(messageBubbleC, testRoot);
-            const longBubble = createTemporaryObject(messageBubbleC, testRoot);
+        function test_messageDelegateSizing() {
+            const shortBubble = createTemporaryObject(messageDelegateC, testRoot);
+            const longBubble = createTemporaryObject(messageDelegateC, testRoot);
             verify(shortBubble && longBubble, "both bubbles must instantiate");
             shortBubble.width = 400;
             shortBubble.content = "Hi";

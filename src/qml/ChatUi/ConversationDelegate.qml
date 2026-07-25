@@ -28,7 +28,20 @@ LogosItemDelegate {
     // The open conversation, so this row highlights when it is the current one.
     property string currentConversationId: ""
 
-    signal activated(string conversationId, string displayName, bool isGroup, string description)
+    // Carries the row's own data, so a view can render the selection before the
+    // backend has switched to it.
+    signal activated(var conversation)
+
+    // What this row is, as one value: everything a view needs to draw it as the
+    // open conversation.
+    readonly property var conversation: ({
+            conversationId: root.conversationId,
+            displayName: root.displayName,
+            description: root.description,
+            isGroup: root.isGroup,
+            avatarInitials: root.avatarInitials,
+            avatarRamp: root.avatarRamp
+        })
 
     readonly property bool unread: root.unreadCount > 0
 
@@ -52,7 +65,7 @@ LogosItemDelegate {
     }
     Accessible.selected: highlighted
 
-    onClicked: root.activated(root.conversationId, root.displayName, root.isGroup, root.description)
+    onClicked: root.activated(root.conversation)
 
     contentItem: RowLayout {
         spacing: Theme.spacing.small
