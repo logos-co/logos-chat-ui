@@ -26,14 +26,13 @@ QtObject {
     readonly property int memberCount: backend ? backend.memberCount : 0
     readonly property int pendingMemberCount: backend ? backend.pendingMemberCount : 0
     readonly property string currentPeerAddress: backend ? backend.currentPeerAddress : ""
-    readonly property string statusMessage: backend ? backend.statusMessage : qsTr("No backend")
     // This account's own address, empty until the backend is online, and its
     // short form.
     readonly property string myAddress: backend ? backend.myAddress : ""
     readonly property string myLabel: backend ? backend.myLabel : ""
     readonly property string myInitials: backend ? backend.myInitials : ""
 
-    // Short connectivity label for the status bar.
+    // Short connectivity label for the account card.
     readonly property string statusLabel: {
         if (!backend)
             return qsTr("No backend");

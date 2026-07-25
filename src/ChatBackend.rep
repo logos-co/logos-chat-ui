@@ -15,7 +15,6 @@ class ChatBackend
     // the two-letter form its avatar carries.
     PROP(QString myLabel READONLY)
     PROP(QString myInitials READONLY)
-    PROP(QString statusMessage READONLY)
     PROP(QString currentConversationId)
     // The conversation whose messages and roster the models currently hold.
     // Empty while a selection is being loaded, so the view can tell a loaded

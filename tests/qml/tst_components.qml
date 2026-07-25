@@ -123,14 +123,6 @@ Item {
         }
     }
     Component {
-        id: statusBarC
-        StatusBar {
-            statusMessage: "Ready"
-            statusLabel: "Online"
-            online: true
-        }
-    }
-    Component {
         id: accountCardC
         AccountCard {
             address: "0xdeadbeef0123456789abcdef"
@@ -336,7 +328,6 @@ Item {
             instantiate(conversationsPaneC);
             instantiate(messageThreadPaneC);
             instantiate(membersPaneC);
-            instantiate(statusBarC);
             instantiate(accountCardC);
         }
 
@@ -554,20 +545,6 @@ Item {
             composer.text = "";
             pane.restoreFailedSend("other", "not mine");
             compare(composer.text, "", "a refusal from another conversation stays out");
-        }
-
-        // A status message is an announcement: it shows, then goes quiet, while
-        // the connectivity label stays.
-        function test_statusBarMessageExpires() {
-            const bar = instantiate(statusBarC);
-            bar.messageTimeout = 200;
-            const label = findField(bar, "statusMessageLabel");
-            verify(label, "the status message label must be reachable");
-
-            bar.statusMessage = "Address ready";
-            compare(label.text, "Address ready", "a fresh message shows");
-            tryCompare(label, "text", "", 3000, "the message goes quiet");
-            compare(bar.statusLabel, "Online", "connectivity is state and stays");
         }
 
         // One identity, one colour: the ramp a model hands out has to land

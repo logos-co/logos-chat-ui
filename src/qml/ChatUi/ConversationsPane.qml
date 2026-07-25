@@ -7,9 +7,9 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// The conversation sidebar: a header with a menu of conversations to start, and
-// the keyboard-navigable conversation list. Data in via properties, intent out
-// via signals.
+// The conversations card: the one action that starts a conversation, over the
+// keyboard-navigable list of the ones already open. Data in via properties,
+// intent out via signals.
 Rectangle {
     id: root
 
@@ -26,8 +26,12 @@ Rectangle {
     // Exposed for the exchange doc-test's inspector hooks.
     property alias count: convList.count
 
-    implicitWidth: 260
-    color: Theme.palette.backgroundInset
+    implicitWidth: 320
+    implicitHeight: 400
+    radius: Theme.spacing.radiusXlarge
+    color: Theme.palette.backgroundTertiary
+    border.width: 1
+    border.color: Theme.palette.borderSubtle
 
     QtObject {
         id: d
@@ -42,43 +46,57 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
+        anchors.margins: Theme.spacing.medium
+        spacing: Theme.spacing.small
 
-        PaneHeader {
+        LogosButton {
+            id: newButton
+            objectName: "newMenuButton"
+            //: Button that opens the menu of conversations one can start
+            text: qsTr("New chat")
+            variant: LogosButton.Variant.Primary
+            radius: Theme.spacing.radiusLarge
+            font.pixelSize: Theme.typography.primaryText
+            leadingIcon.source: Qt.resolvedUrl("icons/plus.png")
+            leadingIcon.size: 18
+            leadingIcon.color: Theme.palette.backgroundBlack
+            trailingIcon.source: Qt.resolvedUrl("icons/caret-down.png")
+            trailingIcon.size: 14
+            trailingIcon.color: Theme.palette.backgroundBlack
+            enabled: root.online
+            onClicked: newMenu.popup(0, newButton.height + Theme.spacing.tiny)
             Layout.fillWidth: true
-            title: qsTr("Chat")
+            Layout.preferredHeight: 40
 
-            // The width is explicit because the design system's button keeps a
-            // fixed implicit size regardless of its label.
-            // TODO(logos-design-system): drop it once buttons size to content.
-            LogosButton {
-                id: newButton
-                objectName: "newMenuButton"
-                implicitWidth: 84
-                implicitHeight: 30
-                //: Button that opens the menu of conversations one can start; the
-                //: plus marks it as a create action
-                text: qsTr("+ New")
-                enabled: root.online
-                onClicked: newMenu.popup(0, newButton.height)
-                Layout.alignment: Qt.AlignVCenter
+            // The design system's label is white whatever the fill; on the
+            // primary accent that is the pair with the least contrast.
+            Binding {
+                target: newButton.labelItem
+                property: "color"
+                value: newButton.enabled ? Theme.palette.backgroundBlack : Theme.palette.textMuted
+            }
 
-                LogosMenu {
-                    id: newMenu
-                    objectName: "newMenu"
+            LogosMenu {
+                id: newMenu
+                objectName: "newMenu"
 
-                    LogosMenuItem {
-                        objectName: "newDmMenuItem"
-                        //: Menu entry that starts a new direct message (1:1) conversation
-                        text: qsTr("Direct message")
-                        onTriggered: root.newConversationRequested()
-                    }
-                    LogosMenuItem {
-                        objectName: "newGroupMenuItem"
-                        //: Menu entry that starts a new group conversation
-                        text: qsTr("Group")
-                        onTriggered: root.newGroupRequested()
-                    }
+                ChatMenuItem {
+                    objectName: "newDmMenuItem"
+                    //: Menu entry that starts a new direct message (1:1) conversation
+                    text: qsTr("Direct message")
+                    //: Says what a direct message is, under its menu entry
+                    description: qsTr("One person, by address")
+                    iconSource: Qt.resolvedUrl("icons/person.png")
+                    onTriggered: root.newConversationRequested()
+                }
+                ChatMenuItem {
+                    objectName: "newGroupMenuItem"
+                    //: Menu entry that starts a new group conversation
+                    text: qsTr("Group")
+                    //: Says what a group is, under its menu entry
+                    description: qsTr("Named, with members")
+                    iconSource: Qt.resolvedUrl("icons/group.png")
+                    onTriggered: root.newGroupRequested()
                 }
             }
         }
@@ -91,6 +109,7 @@ Rectangle {
             clip: true
             focus: true
             reuseItems: true
+            spacing: Theme.spacing.tiny
             model: root.conversationModel
             currentIndex: -1
 
@@ -109,9 +128,9 @@ Rectangle {
 
             EmptyState {
                 anchors.centerIn: parent
-                width: parent.width - 2 * Theme.spacing.large
+                width: parent.width - 2 * Theme.spacing.medium
                 visible: convList.count === 0
-                text: root.online ? qsTr("No conversations yet. Use New to start one, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
+                text: root.online ? qsTr("No conversations yet. Use New chat to start one, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
             }
         }
     }

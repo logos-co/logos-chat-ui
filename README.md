@@ -20,16 +20,16 @@ Core functionality:
 
 - **Identity** — on startup, initializes a chat identity; the account card at the foot of the sidebar shows the account's short form and its connection state
 - **Addresses** — your own address sits on the account card with a copy button beside it; share it with others to let them start a conversation with you
-- **Direct messages** — paste another user's address into **New > Direct message** to open a private (1:1) conversation
-- **Group conversations** — start a group with **New > Group**, then invite peers by address from the members panel (see below)
+- **Direct messages** — paste another user's address into **New chat > Direct message** to open a private (1:1) conversation
+- **Group conversations** — start a group with **New chat > Group**, then invite peers by address from the members panel (see below)
 - **Messaging** — send and receive messages in real-time over the Logos network
-- **Chat lifecycle** — auto-initializes and starts on launch; status shown in the bottom bar
+- **Chat lifecycle** — auto-initializes and starts on launch; the connection state shows on the account card
 
 Conversations are **ephemeral** — messages and identity exist only while the app is running.
 
 ### Group conversations
 
-- **New > Group** creates a group with you as its only member (no dialog; the group opens immediately).
+- **New chat > Group** creates a group with you as its only member (no dialog; the group opens immediately).
 - Collect peers' addresses (each copies theirs from their account card), paste one into the members panel's add-member field, and press **Add** to invite.
 - Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. The roster refreshes on selection, a message from a new member, the reload-roster button, or your own add.
 - Any member can add another; the invite routes from whoever proposed it.
@@ -79,7 +79,7 @@ state apart; it defaults to the platform application data location.
 Each node joins the `logos.test` Waku fleet and publishes its key package during
 init, so this needs internet and ~5-20s per window to reach **Online**. Then
 copy one window's address from its account card and paste it into another
-(**New > Direct message** for a 1:1, or **New > Group** then the members
+(**New chat > Direct message** for a 1:1, or **New chat > Group** then the members
 panel for a group). For
 the full walkthrough with screenshots, and the scripted drivers that automate it
 (`doctests/exchange/run-exchange.sh` for a two-party exchange,

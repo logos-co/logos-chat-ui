@@ -10,10 +10,11 @@ import ChatUi
 // reader of the host `logos` context property, and composes the panes, wiring
 // their signals to the store's actions. All UI lives in the ChatUi module; this
 // file is composition only.
-Item {
+Rectangle {
     id: root
-    implicitWidth: 900
-    implicitHeight: 650
+    implicitWidth: 1000
+    implicitHeight: 700
+    color: Theme.palette.backgroundInset
 
     // The row the user just picked, carrying its own data so the sidebar and the
     // header move in the same frame as the click instead of waiting for the
@@ -50,93 +51,79 @@ Item {
         }
     }
 
-    ColumnLayout {
+    RowLayout {
         anchors.fill: parent
-        spacing: 0
+        anchors.margins: Theme.spacing.medium
+        spacing: Theme.spacing.medium
 
-        RowLayout {
-            Layout.fillWidth: true
+        ColumnLayout {
+            Layout.preferredWidth: 320
+            Layout.minimumWidth: 260
             Layout.fillHeight: true
-            spacing: 0
+            spacing: Theme.spacing.medium
 
-            ColumnLayout {
-                Layout.preferredWidth: 260
-                Layout.minimumWidth: 200
-                Layout.fillHeight: true
-                spacing: 0
-
-                ConversationsPane {
-                    id: conversationsPane
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    conversationModel: store.conversationModel
-                    currentConversationId: root.selectedConversationId
-                    online: store.online
-                    onConversationSelected: function (conversationId, displayName, isGroup, description) {
-                        root.pendingSelection = {
-                            conversationId: conversationId,
-                            displayName: displayName,
-                            isGroup: isGroup,
-                            description: description
-                        };
-                        store.selectConversation(conversationId);
-                    }
-                    onNewConversationRequested: newConvDialog.open()
-                    onNewGroupRequested: newGroupDialog.open()
-                }
-
-                AccountCard {
-                    Layout.fillWidth: true
-                    Layout.margins: Theme.spacing.small
-                    address: store.myAddress
-                    label: store.myLabel
-                    initials: store.myInitials
-                    online: store.online
-                    statusLabel: store.statusLabel
-                }
-            }
-
-            MessageThreadPane {
-                id: threadPane
+            ConversationsPane {
+                id: conversationsPane
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                messageModel: store.messageModel
-                currentIsGroup: root.selectedIsGroup
-                title: root.selectedDisplayName
-                description: root.selectedDescription
-                conversationId: root.selectedConversationId
-                hasConversation: root.selectedConversationId !== ""
-                hasConversations: conversationsPane.count > 0
+                conversationModel: store.conversationModel
+                currentConversationId: root.selectedConversationId
                 online: store.online
-                ready: root.selectionLoaded
-                onMessageSubmitted: function (text) {
-                    store.sendMessage(text);
+                onConversationSelected: function (conversationId, displayName, isGroup, description) {
+                    root.pendingSelection = {
+                        conversationId: conversationId,
+                        displayName: displayName,
+                        isGroup: isGroup,
+                        description: description
+                    };
+                    store.selectConversation(conversationId);
                 }
-                onDetailsRequested: {
-                    if (root.selectedIsGroup)
-                        groupInfoDialog.open();
-                    else
-                        dmInfoDialog.open();
-                }
+                onNewConversationRequested: newConvDialog.open()
+                onNewGroupRequested: newGroupDialog.open()
             }
 
-            MembersPane {
-                visible: root.selectedIsGroup
-                Layout.preferredWidth: 220
-                Layout.fillHeight: true
-                memberModel: store.memberModel
+            AccountCard {
+                Layout.fillWidth: true
+                address: store.myAddress
+                label: store.myLabel
+                initials: store.myInitials
                 online: store.online
-                ready: root.selectionLoaded
-                onAddMemberRequested: addMemberDialog.open()
+                statusLabel: store.statusLabel
             }
         }
 
-        StatusBar {
+        MessageThreadPane {
+            id: threadPane
             Layout.fillWidth: true
-            statusMessage: store.statusMessage
-            statusLabel: store.statusLabel
+            Layout.fillHeight: true
+            messageModel: store.messageModel
+            currentIsGroup: root.selectedIsGroup
+            title: root.selectedDisplayName
+            description: root.selectedDescription
+            conversationId: root.selectedConversationId
+            hasConversation: root.selectedConversationId !== ""
+            hasConversations: conversationsPane.count > 0
             online: store.online
-            hasError: store.hasError
+            ready: root.selectionLoaded
+            onMessageSubmitted: function (text) {
+                store.sendMessage(text);
+            }
+            onDetailsRequested: {
+                if (root.selectedIsGroup)
+                    groupInfoDialog.open();
+                else
+                    dmInfoDialog.open();
+            }
+        }
+
+        MembersPane {
+            visible: root.selectedIsGroup
+            Layout.preferredWidth: 220
+            Layout.fillHeight: true
+            memberModel: store.memberModel
+            online: store.online
+            ready: root.selectionLoaded
+            onAddMemberRequested: addMemberDialog.open()
         }
     }
 

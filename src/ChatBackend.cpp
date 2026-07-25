@@ -57,7 +57,6 @@ ChatBackend::ChatBackend(QObject* parent)
     setMyAddress(QString());
     setMyLabel(QString());
     setMyInitials(QString());
-    setStatusMessage(QStringLiteral("Ready"));
     setCurrentConversationId(QString());
     setLoadedConversationId(QString());
     syncCurrentConversationMeta();
@@ -97,13 +96,11 @@ MemberListModel* ChatBackend::memberModel() const
 void ChatBackend::initialiseModule()
 {
     setChatStatus(ChatBackendSimpleSource::Initialising);
-    setStatusMessage(QStringLiteral("Initialising chat..."));
 
     const LogosResult res = modules().chat_module.init(QString::fromLatin1(kDefaultDeliveryPreset));
     if (!res.success) {
         const QString reason = res.getError<QString>();
         setChatStatus(ChatBackendSimpleSource::Error);
-        setStatusMessage(QStringLiteral("init failed: ") + reason);
         emit error(QStringLiteral("Failed to initialise chat: ") + reason);
         return;
     }
@@ -187,7 +184,6 @@ void ChatBackend::refreshMyAddress()
 
     const QString address = modules().chat_module.get_address();
     if (address.isEmpty()) {
-        setStatusMessage(QStringLiteral("Failed to get address"));
         emit error(QStringLiteral("Failed to get your address"));
         return;
     }
@@ -225,7 +221,6 @@ bool ChatBackend::showConversationMessages(const QString& convoId)
     const QVariantList msgs = modules().chat_module.get_messages(convoId, &err);
     if (!err.ok()) {
         const QString reason = QString::fromStdString(err.message);
-        setStatusMessage(QStringLiteral("Could not load messages: ") + reason);
         emit error(QStringLiteral("Could not load messages: ") + reason);
         return false;
     }
@@ -263,11 +258,9 @@ void ChatBackend::createConversation(QString peerAddress)
         return;
     }
 
-    setStatusMessage(QStringLiteral("Creating DM..."));
     const LogosResult res = modules().chat_module.create_conversation(peerAddress);
     if (!res.success) {
         const QString reason = res.getError<QString>();
-        setStatusMessage(QStringLiteral("Failed to create DM: ") + reason);
         emit error(QStringLiteral("Failed to create DM: ") + reason);
     }
     // The conversation_created event surfaces via the push subscription — the
@@ -281,11 +274,9 @@ void ChatBackend::createGroupConversation(QString name, QString description)
         return;
     }
 
-    setStatusMessage(QStringLiteral("Creating group..."));
     const LogosResult res = modules().chat_module.create_group_conversation(name, description);
     if (!res.success) {
         const QString reason = res.getError<QString>();
-        setStatusMessage(QStringLiteral("Failed to create group: ") + reason);
         emit error(QStringLiteral("Failed to create group: ") + reason);
     }
     // The group starts with only this member; conversation_created selects it.
@@ -306,7 +297,6 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
     const LogosResult res = modules().chat_module.add_group_member(conversationId, peerAddress);
     if (!res.success) {
         const QString reason = res.getError<QString>();
-        setStatusMessage(QStringLiteral("Failed to add member: ") + reason);
         emit error(QStringLiteral("Failed to add member: ") + reason);
         return;
     }
@@ -316,7 +306,6 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
         m_pendingMembers.insert(peerAddress);
         refreshMembers();
     }
-    setStatusMessage(QStringLiteral("Invitation sent. They'll appear once the group updates (usually under a minute)."));
 }
 
 void ChatBackend::sendMessage(QString conversationId, QString content)
@@ -330,7 +319,6 @@ void ChatBackend::sendMessage(QString conversationId, QString content)
     const LogosResult res = modules().chat_module.send_message(conversationId, content);
     if (!res.success) {
         const QString reason = res.getError<QString>();
-        setStatusMessage(QStringLiteral("Send failed: ") + reason);
         emit error(QStringLiteral("Failed to send message: ") + reason);
         emit sendFailed(conversationId, content);
     }
@@ -420,28 +408,29 @@ void ChatBackend::refreshMembers()
 void ChatBackend::applyDeliveryState(const QString& state, const QString& detail)
 {
     ChatBackendSimpleSource::ChatStatus next = ChatBackendSimpleSource::Stopped;
-    QString msg;
     if (state == QStringLiteral("online")) {
         next = ChatBackendSimpleSource::Online;
-        msg = QStringLiteral("Connected to network");
     } else if (state == QStringLiteral("initialising")) {
         next = ChatBackendSimpleSource::Initialising;
-        msg = QStringLiteral("Initialising chat...");
     } else if (state == QStringLiteral("error")) {
         next = ChatBackendSimpleSource::Error;
-        msg = detail.isEmpty() ? QStringLiteral("Delivery error") : detail;
     } else if (state == QStringLiteral("stopped")) {
         next = ChatBackendSimpleSource::Stopped;
-        msg = QStringLiteral("Chat stopped");
     } else {
         return;
     }
 
     const bool becameOnline =
         next == ChatBackendSimpleSource::Online && chatStatus() != ChatBackendSimpleSource::Online;
+    const bool becameError =
+        next == ChatBackendSimpleSource::Error && chatStatus() != ChatBackendSimpleSource::Error;
 
     setChatStatus(next);
-    setStatusMessage(msg);
+
+    // The connectivity label says only that delivery is in error; what went
+    // wrong reaches the user here or not at all.
+    if (becameError)
+        emit error(detail.isEmpty() ? QStringLiteral("Delivery error") : detail);
 
     // Events are push-only, so a fresh online transition (reconnect) is our
     // cue to refetch the lists and recover anything missed while offline.
@@ -495,8 +484,6 @@ void ChatBackend::applyMessageReceived(const QVariantList& args)
     } else {
         m_conversationModel->incrementUnread(convoId);
     }
-
-    setStatusMessage(QStringLiteral("New message"));
 }
 
 void ChatBackend::applyMessageSent(const QVariantList& args)
@@ -517,8 +504,6 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
 
     if (convoId == currentConversationId())
         m_messageModel->addMessage(QStringLiteral("Me"), content, when, true);
-
-    setStatusMessage(QStringLiteral("Message sent"));
 }
 
 void ChatBackend::applyConversationCreated(const QVariantList& args)
