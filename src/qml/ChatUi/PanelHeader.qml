@@ -37,6 +37,7 @@ Item {
         }
 
         Rectangle {
+            objectName: "panelCount"
             visible: root.count >= 0
             implicitWidth: Math.max(20, countLabel.implicitWidth + 2 * Theme.spacing.small)
             implicitHeight: 18
