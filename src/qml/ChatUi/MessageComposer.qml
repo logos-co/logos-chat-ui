@@ -21,6 +21,12 @@ Rectangle {
 
     signal submitted(string text)
 
+    // Put the caret in the field, for a caller that has just given the user a
+    // conversation to type into.
+    function takeFocus() {
+        field.forceActiveFocus();
+    }
+
     // The field grows from one line up to this many, then scrolls.
     readonly property int maxLines: 4
 

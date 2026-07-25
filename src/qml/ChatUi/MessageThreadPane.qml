@@ -49,7 +49,12 @@ Rectangle {
     // Per-conversation composer drafts, restored on switch so an unsent message
     // is never carried into (or sent to) a different conversation.
     property var _drafts: ({})
-    onConversationIdChanged: composer.text = root._drafts[root.conversationId] || ""
+    onConversationIdChanged: {
+        composer.text = root._drafts[root.conversationId] || "";
+        // Opening a conversation is asking to write in it.
+        if (root.conversationId !== "")
+            composer.takeFocus();
+    }
     // Any wait for the thread gets the grace before a placeholder, and any
     // arrival gets the settle window, whether it came from a switch or from the
     // models being refetched under the same conversation.

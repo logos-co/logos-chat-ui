@@ -63,6 +63,9 @@ Rectangle {
         spacing: Theme.spacing.medium
 
         ColumnLayout {
+            // A layout nested in a layout fills by default, which would hand
+            // the sidebar the slack meant for the thread.
+            Layout.fillWidth: false
             Layout.preferredWidth: 320
             Layout.minimumWidth: 260
             Layout.fillHeight: true
@@ -96,6 +99,9 @@ Rectangle {
         MessageThreadPane {
             id: threadPane
             Layout.fillWidth: true
+            // The thread is what the window is for, so a window too narrow for
+            // all three columns clips the right one rather than the thread.
+            Layout.minimumWidth: 360
             Layout.fillHeight: true
             messageModel: store.messageModel
             currentIsGroup: root.selectedIsGroup
@@ -119,6 +125,7 @@ Rectangle {
 
         ColumnLayout {
             visible: root.selectedConversationId !== "" && (root.selectedIsGroup || root.detailsShown)
+            Layout.fillWidth: false
             Layout.preferredWidth: 280
             Layout.fillHeight: true
             spacing: Theme.spacing.medium

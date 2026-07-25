@@ -109,6 +109,7 @@ Rectangle {
         spacing: Theme.spacing.medium
 
         ColumnLayout {
+            Layout.fillWidth: false
             Layout.preferredWidth: 320
             Layout.fillHeight: true
             spacing: Theme.spacing.medium
@@ -146,6 +147,7 @@ Rectangle {
             ready: true
         }
         ColumnLayout {
+            Layout.fillWidth: false
             Layout.preferredWidth: 280
             Layout.fillHeight: true
             spacing: Theme.spacing.medium
