@@ -50,19 +50,42 @@ Rectangle {
     QtObject {
         id: d
 
-        // Copy the focused member's address and flash the confirmation on its
-        // row, so a keyboard copy gets the same feedback as a click.
+        // Copy an address and confirm it on the row that offered it.
+        function copy(row, address) {
+            clipboard.copy(address);
+            if (row)
+                row.flashCopied();
+        }
+
+        // Copy the focused member's address, so a keyboard copy gets the same
+        // feedback as the menu.
         function copyCurrent() {
             const member = memberList.currentItem as MemberDelegate;
-            if (!member)
-                return;
-            clipboard.copy(member.address);
-            member.flashCopied();
+            if (member)
+                d.copy(member, member.address);
         }
     }
 
     ClipboardProxy {
         id: clipboard
+    }
+
+    // One menu serves every row: a roster holds far more members than the menu
+    // has entries.
+    LogosMenu {
+        id: memberMenu
+        objectName: "memberMenu"
+
+        // The row that asked for the menu, so its copy confirms where it was
+        // asked for.
+        property MemberDelegate row: null
+
+        LogosMenuItem {
+            objectName: "copyMemberAddressMenuItem"
+            //: Menu entry that copies a member's address
+            text: qsTr("Copy address")
+            onTriggered: d.copy(memberMenu.row, memberMenu.row ? memberMenu.row.address : "")
+        }
     }
 
     ColumnLayout {
@@ -103,9 +126,11 @@ Rectangle {
                 ScrollBar.vertical: LogosScrollBar {}
 
                 delegate: MemberDelegate {
+                    id: memberRow
                     width: ListView.view.width
-                    onCopyRequested: function (address) {
-                        clipboard.copy(address);
+                    onContextMenuRequested: {
+                        memberMenu.row = memberRow;
+                        memberMenu.popup();
                     }
                 }
             }

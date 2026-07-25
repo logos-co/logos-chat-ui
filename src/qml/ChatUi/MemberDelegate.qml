@@ -4,10 +4,10 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// A group-roster row: an avatar, the member label with a self marker and a copy
-// action, revealing the full address on hover and requesting a copy on click or
-// from the copy button. A pending member (invited but not yet committed to the
-// roster) dims and shows a busy spinner. Delegate roles bind by name.
+// A roster row: the member's avatar and identity, marked as this account where
+// it is, and told as waiting where the invitation has not committed yet. A
+// right-click asks for the row's actions; Return copies from the keyboard.
+// Delegate roles bind by name.
 LogosItemDelegate {
     id: root
 
@@ -20,24 +20,23 @@ LogosItemDelegate {
     // Invited but not yet committed into the group's roster.
     required property bool pending
 
-    signal copyRequested(string address)
+    // Asks for the row's actions, carrying the address they act on.
+    signal contextMenuRequested(string address)
 
-    // True briefly after a copy, so the tooltip can confirm it.
+    // True briefly after a copy, so the row can confirm it.
     readonly property bool copiedFlashing: copiedTimer.running
 
     width: 200
     implicitHeight: 56
-    radius: 0
+    radius: Theme.spacing.radiusMedium
+    leftPadding: Theme.spacing.small
+    rightPadding: Theme.spacing.small
+    hoverColor: Theme.palette.overlayLight
 
     Accessible.role: Accessible.ListItem
     Accessible.name: label
 
-    onClicked: {
-        root.copyRequested(root.address);
-        root.flashCopied();
-    }
-
-    // Flash a brief "Copied" confirmation in the tooltip.
+    // Flash a brief confirmation that the address was copied.
     function flashCopied() {
         copiedTimer.restart();
     }
@@ -45,6 +44,12 @@ LogosItemDelegate {
     Timer {
         id: copiedTimer
         interval: 1500
+    }
+
+    TapHandler {
+        acceptedButtons: Qt.RightButton
+        onTapped: if (root.address !== "")
+            root.contextMenuRequested(root.address)
     }
 
     contentItem: RowLayout {
@@ -55,66 +60,67 @@ LogosItemDelegate {
             ramp: root.avatarRamp
             isSelf: root.isSelf
             size: 32
+            // A member who has not joined yet is drawn back, so the roster reads
+            // as the people actually in the group.
             opacity: root.pending ? 0.5 : 1
             Layout.alignment: Qt.AlignVCenter
         }
 
-        LogosText {
-            text: root.label
-            textFormat: Text.PlainText
-            color: root.pending ? Theme.palette.textSecondary : Theme.palette.text
-            font.pixelSize: Theme.typography.secondaryText
-            elide: Text.ElideRight
+        ColumnLayout {
             Layout.fillWidth: true
+            spacing: 1
+
+            LogosText {
+                text: root.copiedFlashing ? qsTr("Copied to clipboard") : root.label
+                textFormat: Text.PlainText
+                color: root.copiedFlashing ? Theme.palette.success : root.pending ? Theme.palette.textTertiary : Theme.palette.text
+                font.family: root.copiedFlashing ? Theme.typography.publicSans : ChatTheme.monoFont
+                font.pixelSize: Theme.typography.secondaryText
+                font.weight: Theme.typography.weightMedium
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
+
+            RowLayout {
+                visible: root.pending
+                spacing: Theme.spacing.tiny
+
+                LogosSpinner {
+                    running: root.pending
+                    ringColor: Theme.palette.border
+                    thickness: 2
+                    dotSize: 4
+                    Layout.preferredWidth: 10
+                    Layout.preferredHeight: 10
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                LogosText {
+                    //: Said of a member who has been invited but has not joined yet
+                    text: qsTr("Waiting to join")
+                    color: Theme.palette.warning
+                    font.pixelSize: Theme.typography.secondaryText
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                }
+            }
         }
 
-        LogosSpinner {
-            visible: root.pending
-            running: root.pending
-            ringColor: Theme.palette.border
-            thickness: 2
-            dotSize: 5
-            Layout.preferredWidth: 14
-            Layout.preferredHeight: 14
-            Layout.alignment: Qt.AlignVCenter
-        }
-
-        LogosText {
+        LogosBadge {
             visible: root.isSelf
             //: Badge marking the current user in the member list
             text: qsTr("you")
-            color: Theme.palette.primary
-            font.pixelSize: Theme.typography.secondaryText
+            color: Theme.palette.backgroundBlack
+            backgroundColor: Theme.palette.primary
+            borderColor: Theme.palette.primary
+            radius: Theme.spacing.radiusPill
             Layout.alignment: Qt.AlignVCenter
-        }
-
-        // Copying by clicking the row alone is invisible, so the row carries the
-        // affordance too, revealed on hover so a resting roster stays clean. It
-        // keeps its slot when hidden, so the row does not reflow. The icon is a
-        // raster: the hosts' Qt carries no SVG image plugin.
-        LogosIconButton {
-            objectName: "copyMemberAddressButton"
-            visible: root.address !== ""
-            opacity: root.hovered ? 1 : 0
-            size: 24
-            iconSize: 12
-            iconSource: Qt.resolvedUrl("icons/copy.png")
-            Accessible.role: Accessible.Button
-            Accessible.name: qsTr("Copy address")
-            onClicked: {
-                root.copyRequested(root.address);
-                root.flashCopied();
-            }
-            Layout.alignment: Qt.AlignVCenter
-
-            Behavior on opacity { NumberAnimation { duration: 100 } }
         }
     }
 
     LogosToolTip {
-        //: Tooltip on a member who has been invited but has not joined yet
-        text: root.pending ? qsTr("waiting to join") : (root.copiedFlashing ? qsTr("Copied") : root.address)
+        text: root.address
         placement: LogosToolTip.Left
-        visible: (root.hovered || root.copiedFlashing) && (root.pending || root.address !== "")
+        visible: root.hovered && !root.pending && root.address !== ""
     }
 }
