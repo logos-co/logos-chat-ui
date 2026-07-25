@@ -96,12 +96,26 @@ Rectangle {
             Layout.fillHeight: true
             spacing: 0
 
-            ConversationsPane {
+            ColumnLayout {
                 Layout.preferredWidth: 260
                 Layout.fillHeight: true
-                conversationModel: conversationsMock
-                currentConversationId: "c2"
-                online: true
+                spacing: 0
+
+                ConversationsPane {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    conversationModel: conversationsMock
+                    currentConversationId: "c2"
+                    online: true
+                }
+                AccountCard {
+                    Layout.fillWidth: true
+                    Layout.margins: Theme.spacing.small
+                    address: "0xdeadbeefcafe0123456789abcdef0123456789abcdef0123456789abcdef"
+                    label: "0xdeadbe"
+                    online: true
+                    statusLabel: "Online"
+                }
             }
             MessageThreadPane {
                 Layout.fillWidth: true
@@ -128,7 +142,6 @@ Rectangle {
             statusMessage: "Connected to network"
             statusLabel: "Online"
             online: true
-            identity: "0xdeadbeefcafe0123"
         }
     }
 }

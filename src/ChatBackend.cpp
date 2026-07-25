@@ -2,6 +2,7 @@
 #include "ConversationListModel.h"
 #include "MessageListModel.h"
 #include "MemberListModel.h"
+#include "Identity.h"
 
 // Generated umbrella: LogosModules (behind modules()) from
 // metadata.json#dependencies — the Qt-typed chat_module wrapper.
@@ -53,7 +54,8 @@ ChatBackend::ChatBackend(QObject* parent)
     m_conversationProxy->sort(0, Qt::DescendingOrder);
 
     setChatStatus(ChatBackendSimpleSource::Stopped);
-    setMyIdentity(QString());
+    setMyAddress(QString());
+    setMyLabel(QString());
     setStatusMessage(QStringLiteral("Ready"));
     setCurrentConversationId(QString());
     setLoadedConversationId(QString());
@@ -106,10 +108,6 @@ void ChatBackend::initialiseModule()
     }
 
     m_moduleInitialised = true;
-
-    const QString identity = modules().chat_module.get_installation_name();
-    if (!identity.isEmpty())
-        setMyIdentity(identity);
 
     // Subscribe before the initial snapshot so no event fires in the gap
     // between snapshotting and registering the listeners.
@@ -179,6 +177,21 @@ void ChatBackend::rehydrateConversations()
     m_conversationModel->restoreUnreadCounts(unread);
     // The rebuilt list may now know the current conversation's kind/name.
     syncCurrentConversationMeta();
+}
+
+void ChatBackend::refreshMyAddress()
+{
+    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady())
+        return;
+
+    const QString address = modules().chat_module.get_address();
+    if (address.isEmpty()) {
+        setStatusMessage(QStringLiteral("Failed to get address"));
+        emit error(QStringLiteral("Failed to get your address"));
+        return;
+    }
+    setMyAddress(address);
+    setMyLabel(Identity::shortLabel(address));
 }
 
 // Push the current conversation's derived view state (group flag, display name)
@@ -304,24 +317,6 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
     setStatusMessage(QStringLiteral("Invitation sent. They'll appear once the group updates (usually under a minute)."));
 }
 
-void ChatBackend::requestMyAddress()
-{
-    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
-        emit error(QStringLiteral("Chat not online"));
-        return;
-    }
-
-    setStatusMessage(QStringLiteral("Requesting address..."));
-    const QString address = modules().chat_module.get_address();
-    if (address.isEmpty()) {
-        setStatusMessage(QStringLiteral("Failed to get address"));
-        emit error(QStringLiteral("Failed to get address"));
-        return;
-    }
-    setStatusMessage(QStringLiteral("Address ready"));
-    emit addressReady(address);
-}
-
 void ChatBackend::sendMessage(QString conversationId, QString content)
 {
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
@@ -381,8 +376,10 @@ void ChatBackend::refreshMembers()
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady())
         return; // can't fetch now; keep the last-known roster
 
-    if (m_myAddress.isEmpty())
-        m_myAddress = modules().chat_module.get_address();
+    // Telling our own entry from the others needs our address; recover it here
+    // if the online transition could not.
+    if (myAddress().isEmpty())
+        refreshMyAddress();
 
     // list_group_members returns [GroupMember], so the typed wrapper is a
     // QVariantList (each element a QVariantMap), like the other record lists.
@@ -395,7 +392,7 @@ void ChatBackend::refreshMembers()
         // An empty address is the roster's "no confirmed account" signal; keep
         // it — the model renders it as "unknown_account". Only a real account
         // address can be self.
-        rows.append({ address, !address.isEmpty() && address == m_myAddress, false });
+        rows.append({ address, !address.isEmpty() && address == myAddress(), false });
         if (!address.isEmpty())
             committed.insert(address);
     }
@@ -411,7 +408,7 @@ void ChatBackend::refreshMembers()
     setPendingMemberCount(static_cast<int>(m_pendingMembers.size()));
     // With our own address unknown every entry looks like the peer, so leave it
     // unset rather than guess.
-    setCurrentPeerAddress(m_myAddress.isEmpty()
+    setCurrentPeerAddress(myAddress().isEmpty()
                               ? QString()
                               : peerAddressOf(rows, m_conversationModel->isGroupFor(convoId)));
 }
@@ -450,6 +447,7 @@ void ChatBackend::applyDeliveryState(const QString& state, const QString& detail
     // synchronous module reads (see deferToEventLoop).
     if (becameOnline && m_initialSnapshotDone) {
         deferToEventLoop([this] {
+            refreshMyAddress();
             rehydrateConversations();
             const QString convoId = currentConversationId();
             if (convoId.isEmpty())
@@ -611,11 +609,11 @@ QString ChatBackend::peerAddressOf(const QVector<MemberItem>& members, bool isGr
 QString ChatBackend::fallbackDisplayName(const QString& convoId, const QString& peerLabel,
                                          bool isGroup)
 {
-    const QString label = peerLabel.isEmpty() ? convoId.left(8) : peerLabel;
+    const QString label = peerLabel.isEmpty() ? Identity::shortLabel(convoId) : peerLabel;
     return (isGroup ? QStringLiteral("Group ") : QStringLiteral("DM ")) + label;
 }
 
 QString ChatBackend::shortSenderLabel(const QString& sender)
 {
-    return sender.isEmpty() ? QStringLiteral("Peer") : sender.left(8);
+    return sender.isEmpty() ? QStringLiteral("Peer") : Identity::shortLabel(sender);
 }

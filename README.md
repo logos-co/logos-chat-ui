@@ -18,8 +18,8 @@ only for group conversations:
 
 Core functionality:
 
-- **Identity** — on startup, initializes a chat identity and displays the user's ID in the status bar
-- **Addresses** — show your address (the **My address** button at the foot of the sidebar) and share it with others to let them start a conversation with you
+- **Identity** — on startup, initializes a chat identity; the account card at the foot of the sidebar shows the account's short form and its connection state
+- **Addresses** — your own address sits on the account card with a copy button beside it; share it with others to let them start a conversation with you
 - **Direct messages** — paste another user's address into **New > Direct message** to open a private (1:1) conversation
 - **Group conversations** — start a group with **New > Group**, then invite peers by address from the members panel (see below)
 - **Messaging** — send and receive messages in real-time over the Logos network
@@ -30,7 +30,7 @@ Conversations are **ephemeral** — messages and identity exist only while the a
 ### Group conversations
 
 - **New > Group** creates a group with you as its only member (no dialog; the group opens immediately).
-- Collect peers' addresses (each shares theirs via **My address**), paste one into the members panel's add-member field, and press **Add** to invite.
+- Collect peers' addresses (each copies theirs from their account card), paste one into the members panel's add-member field, and press **Add** to invite.
 - Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. The roster refreshes on selection, a message from a new member, the reload-roster button, or your own add.
 - Any member can add another; the invite routes from whoever proposed it.
 - During the brief windows while the group is finalizing a membership change, de-mls rejects sends; these surface as an error toast, so retry after a moment.
@@ -78,7 +78,7 @@ state apart; it defaults to the platform application data location.
 
 Each node joins the `logos.test` Waku fleet and publishes its key package during
 init, so this needs internet and ~5-20s per window to reach **Online**. Then
-share one window's address (**My address**) and paste it into another
+copy one window's address from its account card and paste it into another
 (**New > Direct message** for a 1:1, or **New > Group** then the members
 panel for a group). For
 the full walkthrough with screenshots, and the scripted drivers that automate it

@@ -21,6 +21,8 @@ logos_module(
         src/MemberListModel.cpp
         src/TimeFormat.h
         src/TimeFormat.cpp
+        src/Identity.h
+        src/Identity.cpp
     INCLUDE_DIRS
         src
 )
@@ -48,6 +50,8 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/ChatTheme.qml
             src/qml/ChatUi/ChatStore.qml
             src/qml/ChatUi/PaneHeader.qml
+            src/qml/ChatUi/ChatIconButton.qml
+            src/qml/ChatUi/AccountCard.qml
             src/qml/ChatUi/EmptyState.qml
             src/qml/ChatUi/ClipboardProxy.qml
             src/qml/ChatUi/StatusBar.qml
@@ -61,6 +65,11 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/MessageThreadPane.qml
             src/qml/ChatUi/MembersPane.qml
             src/qml/ChatUi/NewConversationDialog.qml
-            src/qml/ChatUi/AddressDialog.qml
+            src/qml/ChatUi/NewGroupDialog.qml
+            src/qml/ChatUi/MemberAddInfoDialog.qml
+            src/qml/ChatUi/GroupInfoDialog.qml
+            src/qml/ChatUi/DmInfoDialog.qml
+            src/qml/ChatUi/AddMemberDialog.qml
+            src/qml/ChatUi/SelectableText.qml
     )
 endif()

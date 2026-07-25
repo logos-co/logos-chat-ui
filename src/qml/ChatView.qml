@@ -2,6 +2,8 @@ import QtQuick
 import QtCore
 import QtQuick.Layouts
 
+import Logos.Theme
+
 import ChatUi
 
 // Entry view (metadata.json "view"). Instantiates the store, which is the sole
@@ -34,10 +36,6 @@ Item {
 
     Connections {
         target: store
-        function onAddressReady(address) {
-            addressDialog.addressText = address;
-            addressDialog.open();
-        }
         function onErrorOccurred(message) {
             toast.show(message);
         }
@@ -61,26 +59,40 @@ Item {
             Layout.fillHeight: true
             spacing: 0
 
-            ConversationsPane {
-                id: conversationsPane
+            ColumnLayout {
                 Layout.preferredWidth: 260
                 Layout.minimumWidth: 200
                 Layout.fillHeight: true
-                conversationModel: store.conversationModel
-                currentConversationId: root.selectedConversationId
-                online: store.online
-                onConversationSelected: function (conversationId, displayName, isGroup, description) {
-                    root.pendingSelection = {
-                        conversationId: conversationId,
-                        displayName: displayName,
-                        isGroup: isGroup,
-                        description: description
-                    };
-                    store.selectConversation(conversationId);
+                spacing: 0
+
+                ConversationsPane {
+                    id: conversationsPane
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    conversationModel: store.conversationModel
+                    currentConversationId: root.selectedConversationId
+                    online: store.online
+                    onConversationSelected: function (conversationId, displayName, isGroup, description) {
+                        root.pendingSelection = {
+                            conversationId: conversationId,
+                            displayName: displayName,
+                            isGroup: isGroup,
+                            description: description
+                        };
+                        store.selectConversation(conversationId);
+                    }
+                    onNewConversationRequested: newConvDialog.open()
+                    onNewGroupRequested: newGroupDialog.open()
                 }
-                onNewConversationRequested: newConvDialog.open()
-                onNewGroupRequested: newGroupDialog.open()
-                onShowAddressRequested: store.requestMyAddress()
+
+                AccountCard {
+                    Layout.fillWidth: true
+                    Layout.margins: Theme.spacing.small
+                    address: store.myAddress
+                    label: store.myLabel
+                    online: store.online
+                    statusLabel: store.statusLabel
+                }
             }
 
             MessageThreadPane {
@@ -124,7 +136,6 @@ Item {
             statusLabel: store.statusLabel
             online: store.online
             hasError: store.hasError
-            identity: store.myIdentity
         }
     }
 
@@ -140,10 +151,6 @@ Item {
         onGroupDetailsEntered: function (name, description) {
             store.createGroup(name, description);
         }
-    }
-
-    AddressDialog {
-        id: addressDialog
     }
 
     GroupInfoDialog {

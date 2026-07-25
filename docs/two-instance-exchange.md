@@ -36,7 +36,7 @@ nix run . -- --user-dir ~/.local/share/chat_b
 
 Both nodes join the `logos.test` Waku fleet (and publish their key packages to
 the key-package registry during `init`), so this needs internet and ~5-20s to
-reach **Online**. Then, in window A tap **My address** and copy it; in window B
+reach **Online**. Then, in window A copy the address off the account card; in window B
 pick **New > Direct message** and paste A's address — the conversation opens on B's
 side and the invite goes out. Once it appears in A's list (she has joined),
 send the first message from B; reply from either side.
@@ -56,12 +56,12 @@ end-to-end integration check.
 
 ### 1. Alice shares her address
 
-Alice waits for the network to come up (**Online**), then taps **My address**.
-The backend calls `get_address()` — her installation's address; her
-key package was published to the registry during `init`, so the address alone
-lets a peer open a conversation with her.
+Alice waits for the network to come up (**Online**), at which point the backend
+has called `get_address()` and her account card carries her address. Her key
+package was published to the registry during `init`, so the address alone lets a
+peer open a conversation with her.
 
-![Alice's address dialog](images/exchange/01-alice-address.png)
+![Alice's account card](images/exchange/01-alice-address.png)
 
 ### 2. Bob opens a conversation and sends the first message
 

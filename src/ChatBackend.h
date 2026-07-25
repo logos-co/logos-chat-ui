@@ -39,7 +39,6 @@ public slots:
     void createConversation(QString peerAddress) override;
     void createGroupConversation(QString name, QString description) override;
     void addGroupMember(QString conversationId, QString peerAddress) override;
-    void requestMyAddress() override;
     void sendMessage(QString conversationId, QString content) override;
     void selectConversation(QString conversationId) override;
     // Reloads the current conversation's roster into memberModel. A synchronous
@@ -51,6 +50,10 @@ private:
     void initialiseModule();
     void subscribeToEvents();
     void rehydrateConversations();
+    // Reads this account's own address into the myAddress property. A
+    // synchronous module read, so never call it from inside a module event
+    // callback without deferToEventLoop.
+    void refreshMyAddress();
     // Pushes the current conversation's group flag, display name, and description
     // as backend properties for the QML view to bind — see the .cpp for why the
     // view can't read them off the model directly.
@@ -93,9 +96,6 @@ private:
     MessageListModel* m_messageModel;
     MemberListModel* m_memberModel;
 
-    // This installation's own address, cached lazily on first roster refresh to
-    // mark the self entry.
-    QString m_myAddress;
     // Addresses invited into the current group but not yet committed to its roster.
     QSet<QString> m_pendingMembers;
     bool m_moduleInitialised = false;

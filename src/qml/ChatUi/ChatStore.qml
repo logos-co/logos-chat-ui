@@ -27,7 +27,10 @@ QtObject {
     readonly property int pendingMemberCount: backend ? backend.pendingMemberCount : 0
     readonly property string currentPeerAddress: backend ? backend.currentPeerAddress : ""
     readonly property string statusMessage: backend ? backend.statusMessage : qsTr("No backend")
-    readonly property string myIdentity: backend ? backend.myIdentity : ""
+    // This account's own address, empty until the backend is online, and its
+    // short form.
+    readonly property string myAddress: backend ? backend.myAddress : ""
+    readonly property string myLabel: backend ? backend.myLabel : ""
 
     // Short connectivity label for the status bar.
     readonly property string statusLabel: {
@@ -49,7 +52,6 @@ QtObject {
 
     // Backend one-shot signals, relayed so the view never touches the backend
     // object directly.
-    signal addressReady(string address)
     signal errorOccurred(string message)
     signal sendFailed(string conversationId, string content)
 
@@ -70,10 +72,6 @@ QtObject {
         if (backend)
             backend.createGroupConversation(name, description);
     }
-    function requestMyAddress() {
-        if (backend)
-            backend.requestMyAddress();
-    }
     function addMember(address) {
         if (backend && currentConversationId !== "")
             backend.addGroupMember(currentConversationId, address);
@@ -81,9 +79,6 @@ QtObject {
 
     property Connections _backendSignals: Connections {
         target: root.backend
-        function onAddressReady(address) {
-            root.addressReady(address);
-        }
         function onError(message) {
             root.errorOccurred(message);
         }

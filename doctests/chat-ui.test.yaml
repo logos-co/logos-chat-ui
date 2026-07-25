@@ -65,11 +65,12 @@ sections:
 
       - **Left:** your conversations, under a `Chat` header carrying a **New**
         menu (start a direct message from someone's address, or a group), with
-        a **My address** button (share your own) at the foot.
+        your own account card at the foot: its short form, its connection state,
+        and your address with a copy button beside it.
       - **Right:** the message thread for the selected conversation and a
         composer (the **Send** button).
-      - **Status bar:** a human-readable status, the delivery state
-        (`Stopped` → `Initialising...` → `Online`), and your installation `ID`.
+      - **Status bar:** a human-readable status and the delivery state
+        (`Stopped` → `Initialising...` → `Online`).
 
       Under the hood the backend calls `modules().chat_module` — typed methods
       (`init`, `get_address`, `create_conversation`, `send_message`, …)
@@ -83,8 +84,8 @@ sections:
     step: true
     text: |
       Run the app headless (offscreen Qt) and drive it: wait for the network to
-      come up, then open and copy your address — the everything-a-single-
-      window-shows half of the tour.
+      come up, then copy your address — the everything-a-single-window-shows
+      half of the tour.
     steps:
       - title: "Drive the app"
         ui_test:
@@ -105,22 +106,13 @@ sections:
               text: |
                 `init` returned right away and the delivery node bootstrapped in
                 the background. When it connects, the `delivery_state_changed`
-                event lands and the status flips to **Online** — the **New**
-                menu and the **My address** button enable.
+                event lands and the status flips to **Online** — the **New** menu
+                enables and the backend reads `get_address()` onto the account
+                card. That address is what a peer needs to open a conversation
+                with you; your key package was published to the registry during
+                `init`, so the address alone is enough.
               screenshot: "connected.png"
-            - name: "Open your address"
-              action: click
-              target: "My address"
-            - name: "Address dialog shows"
-              action: wait_for
-              texts: ["My Address", "Share this address with others to start a conversation:"]
-              timeout: 15000
-              text: |
-                **My address** calls `get_address()` — this installation's
-                address, what a peer needs to open a conversation with you (your
-                key package was published to the registry during `init`, so the
-                address alone is enough). It is shown in a dialog, ready to share.
-            - name: "Copy to clipboard"
+            - name: "Copy your address"
               action: click_object
               find_by: "objectName"
               find_value: "copyMyAddressButton"
