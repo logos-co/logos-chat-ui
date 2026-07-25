@@ -50,7 +50,7 @@ Rectangle {
             text: root.value
             textFormat: Text.PlainText
             color: Theme.palette.textSecondary
-            font.family: root.mono ? ChatTheme.monoFont : Theme.typography.publicSans
+            font.family: root.mono ? Theme.typography.mono : Theme.typography.publicSans
             font.pixelSize: Theme.typography.secondaryText
             horizontalAlignment: Text.AlignRight
             elide: Text.ElideMiddle

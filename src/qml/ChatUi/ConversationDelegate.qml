@@ -115,7 +115,7 @@ LogosItemDelegate {
             LogosText {
                 text: root.lastActivityDisplay
                 color: root.unread ? Theme.palette.primary : Theme.palette.textTertiary
-                font.family: ChatTheme.monoFont
+                font.family: Theme.typography.mono
                 font.pixelSize: Theme.typography.secondaryText
                 Layout.alignment: Qt.AlignRight
             }

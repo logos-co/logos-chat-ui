@@ -37,7 +37,7 @@ Rectangle {
         text: root.initials
         textFormat: Text.PlainText
         color: ChatTheme.avatarInk
-        font.family: ChatTheme.monoFont
+        font.family: Theme.typography.mono
         // The label scales with the tile: the design's 40px avatar carries the
         // body step and the smaller ones step down with it.
         font.pixelSize: Math.max(9, Math.round(root.size * 0.36))
