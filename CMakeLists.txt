@@ -51,6 +51,7 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/ChatStore.qml
             src/qml/ChatUi/PaneHeader.qml
             src/qml/ChatUi/ChatIconButton.qml
+            src/qml/ChatUi/Avatar.qml
             src/qml/ChatUi/AccountCard.qml
             src/qml/ChatUi/EmptyState.qml
             src/qml/ChatUi/ClipboardProxy.qml

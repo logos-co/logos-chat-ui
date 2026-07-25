@@ -15,6 +15,8 @@ Rectangle {
     required property string address
     // Short form of the address, the card's headline identity.
     required property string label
+    // Two-letter form of the address, for the avatar.
+    required property string initials
     required property bool online
     // Short connectivity label ("Online", "Initialising...").
     required property string statusLabel
@@ -44,32 +46,35 @@ Rectangle {
         anchors.margins: Theme.spacing.medium
         spacing: Theme.spacing.small
 
-        ColumnLayout {
+        RowLayout {
             Layout.fillWidth: true
-            spacing: 2
+            spacing: Theme.spacing.small
 
-            LogosText {
-                objectName: "myLabelText"
-                visible: root.label !== ""
-                text: root.label
-                textFormat: Text.PlainText
-                color: Theme.palette.text
-                font.family: ChatTheme.monoFont
-                font.pixelSize: Theme.typography.subtitleText
-                font.weight: Theme.typography.weightBold
-                elide: Text.ElideRight
-                Layout.fillWidth: true
+            Avatar {
+                // The ramp is unused for this account, which takes the brand one.
+                ramp: 0
+                isSelf: true
+                initials: root.initials
+                showPresence: true
+                online: root.online
+                Layout.alignment: Qt.AlignVCenter
             }
 
-            RowLayout {
-                spacing: Theme.spacing.tiny
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
 
-                Rectangle {
-                    implicitWidth: 6
-                    implicitHeight: 6
-                    radius: width / 2
-                    color: root.online ? Theme.palette.success : Theme.palette.textTertiary
-                    Layout.alignment: Qt.AlignVCenter
+                LogosText {
+                    objectName: "myLabelText"
+                    visible: root.label !== ""
+                    text: root.label
+                    textFormat: Text.PlainText
+                    color: Theme.palette.text
+                    font.family: ChatTheme.monoFont
+                    font.pixelSize: Theme.typography.subtitleText
+                    font.weight: Theme.typography.weightBold
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
                 }
 
                 LogosText {

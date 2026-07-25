@@ -27,7 +27,11 @@ public:
         AddressRole = Qt::UserRole + 1,
         LabelRole,
         IsSelfRole,
-        PendingRole
+        PendingRole,
+        // Avatar identity, derived from the address so one account keeps one
+        // pair of initials and one colour wherever it is drawn.
+        AvatarInitialsRole,
+        AvatarRampRole
     };
 
     explicit MemberListModel(QObject* parent = nullptr);

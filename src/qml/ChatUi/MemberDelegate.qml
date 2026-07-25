@@ -4,15 +4,18 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// A group-roster row: the member label with a self marker and a copy action,
-// revealing the full address on hover and requesting a copy on click or from the
-// copy button. A pending member (invited but not yet committed to the roster)
-// dims and shows a busy spinner. Delegate roles bind by name.
+// A group-roster row: an avatar, the member label with a self marker and a copy
+// action, revealing the full address on hover and requesting a copy on click or
+// from the copy button. A pending member (invited but not yet committed to the
+// roster) dims and shows a busy spinner. Delegate roles bind by name.
 LogosItemDelegate {
     id: root
 
     required property string label
     required property string address
+    // Avatar identity, computed by the model from the address.
+    required property string avatarInitials
+    required property int avatarRamp
     required property bool isSelf
     // Invited but not yet committed into the group's roster.
     required property bool pending
@@ -23,7 +26,7 @@ LogosItemDelegate {
     readonly property bool copiedFlashing: copiedTimer.running
 
     width: 200
-    implicitHeight: 40
+    implicitHeight: 56
     radius: 0
 
     Accessible.role: Accessible.ListItem
@@ -46,6 +49,15 @@ LogosItemDelegate {
 
     contentItem: RowLayout {
         spacing: Theme.spacing.small
+
+        Avatar {
+            initials: root.avatarInitials
+            ramp: root.avatarRamp
+            isSelf: root.isSelf
+            size: 32
+            opacity: root.pending ? 0.5 : 1
+            Layout.alignment: Qt.AlignVCenter
+        }
 
         LogosText {
             text: root.label

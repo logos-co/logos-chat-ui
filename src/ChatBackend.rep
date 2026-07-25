@@ -11,8 +11,10 @@ class ChatBackend
     // This account's own address, the string a peer needs to reach it. Fetched
     // once the module comes online, so the view can show it from first paint.
     PROP(QString myAddress READONLY)
-    // Short form of myAddress, on the same rule as a roster row's label.
+    // Short form of myAddress, on the same rule as a roster row's label, and
+    // the two-letter form its avatar carries.
     PROP(QString myLabel READONLY)
+    PROP(QString myInitials READONLY)
     PROP(QString statusMessage READONLY)
     PROP(QString currentConversationId)
     // The conversation whose messages and roster the models currently hold.

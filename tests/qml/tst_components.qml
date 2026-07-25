@@ -24,6 +24,8 @@ Item {
             conversationId: "c1"
             displayName: "Alice"
             isGroup: false
+            avatarInitials: "c1"
+            avatarRamp: 0
             unreadCount: 0
             lastActivityDisplay: "12:34"
             preview: "See you tomorrow"
@@ -33,6 +35,8 @@ Item {
             conversationId: "c2"
             displayName: "Team"
             isGroup: true
+            avatarInitials: "c2"
+            avatarRamp: 3
             unreadCount: 42
             lastActivityDisplay: "12:34"
             preview: "Alice: shipping the new theme"
@@ -62,6 +66,8 @@ Item {
         ListElement {
             address: "0xabc"
             label: "Alice"
+            avatarInitials: "0x"
+            avatarRamp: 1
             isSelf: false
             pending: false
         }
@@ -129,8 +135,16 @@ Item {
         AccountCard {
             address: "0xdeadbeef0123456789abcdef"
             label: "0xdeadbe"
+            initials: "0x"
             online: true
             statusLabel: "Online"
+        }
+    }
+    Component {
+        id: avatarC
+        Avatar {
+            initials: "0x"
+            ramp: 1
         }
     }
     Component {
@@ -204,6 +218,8 @@ Item {
             conversationId: "c1"
             displayName: "Alice"
             isGroup: true
+            avatarInitials: "c1"
+            avatarRamp: 2
             unreadCount: 3
             lastActivityDisplay: "12:34"
             preview: "See you tomorrow"
@@ -233,6 +249,8 @@ Item {
         MemberDelegate {
             label: "Carol"
             address: "0xcarol"
+            avatarInitials: "0x"
+            avatarRamp: 4
             isSelf: false
             pending: true
         }
@@ -324,6 +342,7 @@ Item {
 
         function test_leafComponentsInstantiate() {
             instantiate(paneHeaderC);
+            instantiate(avatarC);
             instantiate(messageSkeletonC);
             instantiate(emptyStateC);
             instantiate(toastC);
@@ -549,6 +568,29 @@ Item {
             compare(label.text, "Address ready", "a fresh message shows");
             tryCompare(label, "text", "", 3000, "the message goes quiet");
             compare(bar.statusLabel, "Online", "connectivity is state and stays");
+        }
+
+        // One identity, one colour: the ramp a model hands out has to land
+        // inside the table the avatar draws from.
+        function test_avatarRampsCoverEveryIndex() {
+            compare(ChatTheme.avatarRamps.length, 5, "the ramp table matches Identity::kAvatarRampCount");
+            const avatar = createTemporaryObject(avatarC, testRoot);
+            verify(avatar, "the avatar must instantiate");
+            for (let ramp = 0; ramp < ChatTheme.avatarRamps.length; ++ramp) {
+                avatar.ramp = ramp;
+                verify(avatar.gradient, "ramp %1 must resolve to a gradient".arg(ramp));
+            }
+        }
+
+        // A group is a place, not a person, so it carries a glyph and the
+        // squarer tile rather than someone's initials.
+        function test_avatarMarksAGroup() {
+            const avatar = createTemporaryObject(avatarC, testRoot);
+            verify(avatar, "the avatar must instantiate");
+            compare(avatar.radius, avatar.size / 2, "a person is round");
+
+            avatar.isGroup = true;
+            compare(avatar.radius, Math.round(avatar.size * 0.34), "a group is squared off");
         }
 
         // The address is what a peer needs, so the card shows it in full and
