@@ -20,6 +20,14 @@ Rectangle {
     // and unnamed groups.
     property string description: ""
     required property string conversationId
+    // The conversation's avatar identity, from the store.
+    property string avatarInitials: ""
+    property int avatarRamp: 0
+    // The roster behind the header's facepile.
+    property var memberModel: null
+    property int memberCount: 0
+    // Whether the details panel the header's toggle opens is showing.
+    property bool detailsShown: false
     required property bool hasConversation
     // Whether any conversation exists at all. Optional so the pane stands alone;
     // drives the empty-thread guidance when nothing is selected.
@@ -32,8 +40,7 @@ Rectangle {
     required property bool ready
 
     signal messageSubmitted(string text)
-    // Requests the conversation's details dialog; emitted from the header's
-    // Details button.
+    // Requests the conversation's details; emitted from the header's toggle.
     signal detailsRequested
 
     // Whether the thread may render its rows.
@@ -64,7 +71,11 @@ Rectangle {
     property alias messageCount: threadList.count
 
     implicitWidth: 400
+    radius: Theme.spacing.radiusXlarge
     color: Theme.palette.background
+    border.width: 1
+    border.color: Theme.palette.borderSubtle
+    clip: true
 
     // A switch that resolves quickly should not flash a placeholder, so the
     // thread stays blank until this elapses.
@@ -107,21 +118,18 @@ Rectangle {
         anchors.fill: parent
         spacing: 0
 
-        PaneHeader {
+        ThreadHeader {
             Layout.fillWidth: true
             visible: root.hasConversation
             title: root.title
-            subtitle: root.description
-
-            LogosButton {
-                objectName: "detailsButton"
-                implicitWidth: 84
-                implicitHeight: 30
-                //: Button that opens the conversation's details dialog
-                text: qsTr("Details")
-                onClicked: root.detailsRequested()
-                Layout.alignment: Qt.AlignVCenter
-            }
+            description: root.description
+            isGroup: root.currentIsGroup
+            avatarInitials: root.avatarInitials
+            avatarRamp: root.avatarRamp
+            memberModel: root.memberModel
+            memberCount: root.memberCount
+            detailsShown: root.detailsShown
+            onDetailsToggled: root.detailsRequested()
         }
 
         Item {
@@ -135,7 +143,7 @@ Rectangle {
                 clip: true
                 reuseItems: true
                 model: root.messageModel
-                spacing: Theme.spacing.small
+                spacing: Theme.spacing.tiny
                 verticalLayoutDirection: ListView.BottomToTop
                 visible: root.threadReady
 
@@ -148,7 +156,7 @@ Rectangle {
 
                 ScrollBar.vertical: LogosScrollBar {}
 
-                delegate: MessageBubble {
+                delegate: MessageDelegate {
                     width: ListView.view.width
                     groupContext: root.currentIsGroup
                     onContextMenuRequested: function (text) {
@@ -177,11 +185,15 @@ Rectangle {
             id: composer
             objectName: "composer"
             Layout.fillWidth: true
-            placeholder: qsTr("Type a message...")
+            Layout.leftMargin: Theme.spacing.xlarge
+            Layout.rightMargin: Theme.spacing.xlarge
+            Layout.topMargin: Theme.spacing.medium
+            Layout.bottomMargin: Theme.spacing.large
+            //: Placeholder in the composer, naming the conversation it sends to
+            placeholder: root.title !== "" ? qsTr("Message %1").arg(root.title) : qsTr("Type a message...")
             // Name the reason the composer is closed: being connected with
             // nothing selected is not the same as having no connection.
             disabledPlaceholder: root.online ? qsTr("Select a conversation to start chatting") : qsTr("Chat not connected")
-            buttonText: qsTr("Send")
             submitEnabled: root.online && root.hasConversation
             onSubmitted: function (text) {
                 root.messageSubmitted(text);

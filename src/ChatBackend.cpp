@@ -202,6 +202,8 @@ void ChatBackend::syncCurrentConversationMeta()
     setCurrentIsGroup(m_conversationModel->isGroupFor(id));
     setCurrentDisplayName(m_conversationModel->displayNameFor(id));
     setCurrentDescription(m_conversationModel->descriptionFor(id));
+    setCurrentAvatarInitials(Identity::initials(id));
+    setCurrentAvatarRamp(Identity::avatarRamp(Identity::shortLabel(id)));
 }
 
 bool ChatBackend::showConversationMessages(const QString& convoId)

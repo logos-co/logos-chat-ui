@@ -26,6 +26,10 @@ class ChatBackend
     PROP(bool currentIsGroup READONLY)
     PROP(QString currentDisplayName READONLY)
     PROP(QString currentDescription READONLY)
+    // The current conversation's avatar identity, on the same rule as the
+    // conversation model's rows.
+    PROP(QString currentAvatarInitials READONLY)
+    PROP(int currentAvatarRamp READONLY)
     // The current group's roster size. Exposed as a property (not read off
     // memberModel) because the model reaches QML as a QtRO replica whose
     // rowCount() a non-view caller can't rely on.

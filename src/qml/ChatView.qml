@@ -28,6 +28,8 @@ Rectangle {
     readonly property string selectedDisplayName: root.optimisticSelection ? root.optimisticSelection.displayName : store.currentDisplayName
     readonly property string selectedDescription: root.optimisticSelection ? root.optimisticSelection.description : store.currentDescription
     readonly property bool selectedIsGroup: root.optimisticSelection ? root.optimisticSelection.isGroup : store.currentIsGroup
+    readonly property string selectedAvatarInitials: root.optimisticSelection ? root.optimisticSelection.avatarInitials : store.currentAvatarInitials
+    readonly property int selectedAvatarRamp: root.optimisticSelection ? root.optimisticSelection.avatarRamp : store.currentAvatarRamp
     // Whether the models hold the selected conversation's data.
     readonly property bool selectionLoaded: store.loadedConversationId === root.selectedConversationId
 
@@ -69,14 +71,9 @@ Rectangle {
                 conversationModel: store.conversationModel
                 currentConversationId: root.selectedConversationId
                 online: store.online
-                onConversationSelected: function (conversationId, displayName, isGroup, description) {
-                    root.pendingSelection = {
-                        conversationId: conversationId,
-                        displayName: displayName,
-                        isGroup: isGroup,
-                        description: description
-                    };
-                    store.selectConversation(conversationId);
+                onConversationSelected: function (conversation) {
+                    root.pendingSelection = conversation;
+                    store.selectConversation(conversation.conversationId);
                 }
                 onNewConversationRequested: newConvDialog.open()
                 onNewGroupRequested: newGroupDialog.open()
@@ -100,7 +97,11 @@ Rectangle {
             currentIsGroup: root.selectedIsGroup
             title: root.selectedDisplayName
             description: root.selectedDescription
+            avatarInitials: root.selectedAvatarInitials
+            avatarRamp: root.selectedAvatarRamp
             conversationId: root.selectedConversationId
+            memberModel: store.memberModel
+            memberCount: store.memberCount
             hasConversation: root.selectedConversationId !== ""
             hasConversations: conversationsPane.count > 0
             online: store.online

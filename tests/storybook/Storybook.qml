@@ -54,6 +54,8 @@ Rectangle {
         id: messagesMock
         ListElement {
             sender: "Alice"
+            avatarInitials: "al"
+            avatarRamp: 0
             content: "Hey, did you see the new theme?"
             timeDisplay: "12:34"
             isMe: false
@@ -63,6 +65,8 @@ Rectangle {
         }
         ListElement {
             sender: "Me"
+            avatarInitials: "me"
+            avatarRamp: 2
             content: "Yes, it looks great"
             timeDisplay: "12:34"
             isMe: true
@@ -131,6 +135,11 @@ Rectangle {
             messageModel: messagesMock
             currentIsGroup: true
             title: "Design Team"
+            description: "Design reviews and theme work, with a description long enough to prove the header clamps it to one line and elides the rest"
+            avatarInitials: "c2"
+            avatarRamp: 3
+            memberModel: membersMock
+            memberCount: 3
             conversationId: "c2"
             hasConversation: true
             online: true
