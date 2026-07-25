@@ -33,6 +33,10 @@ Rectangle {
     // Whether the models hold the selected conversation's data.
     readonly property bool selectionLoaded: store.loadedConversationId === root.selectedConversationId
 
+    // Whether the conversation's details panel is showing, toggled from the
+    // thread header and left as the user last set it.
+    property bool detailsShown: false
+
     ChatStore {
         id: store
     }
@@ -102,6 +106,7 @@ Rectangle {
             conversationId: root.selectedConversationId
             memberModel: store.memberModel
             memberCount: store.memberCount
+            detailsShown: root.detailsShown
             hasConversation: root.selectedConversationId !== ""
             hasConversations: conversationsPane.count > 0
             online: store.online
@@ -109,22 +114,38 @@ Rectangle {
             onMessageSubmitted: function (text) {
                 store.sendMessage(text);
             }
-            onDetailsRequested: {
-                if (root.selectedIsGroup)
-                    groupInfoDialog.open();
-                else
-                    dmInfoDialog.open();
-            }
+            onDetailsRequested: root.detailsShown = !root.detailsShown
         }
 
-        MembersPane {
-            visible: root.selectedIsGroup
-            Layout.preferredWidth: 220
+        ColumnLayout {
+            visible: root.selectedConversationId !== "" && (root.selectedIsGroup || root.detailsShown)
+            Layout.preferredWidth: 280
             Layout.fillHeight: true
-            memberModel: store.memberModel
-            online: store.online
-            ready: root.selectionLoaded
-            onAddMemberRequested: addMemberDialog.open()
+            spacing: Theme.spacing.medium
+
+            DetailsPanel {
+                id: detailsPanel
+                visible: root.detailsShown
+                Layout.fillWidth: true
+                isGroup: root.selectedIsGroup
+                description: root.selectedDescription
+                conversationId: root.selectedConversationId
+                peerAddress: store.currentPeerAddress
+                memberCount: store.memberCount
+                pendingMemberCount: store.pendingMemberCount
+                onCloseRequested: root.detailsShown = false
+            }
+
+            MembersPane {
+                visible: root.selectedIsGroup
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                memberModel: store.memberModel
+                memberCount: store.memberCount
+                online: store.online
+                ready: root.selectionLoaded
+                onAddMemberRequested: addMemberDialog.open()
+            }
         }
     }
 
@@ -140,21 +161,6 @@ Rectangle {
         onGroupDetailsEntered: function (name, description) {
             store.createGroup(name, description);
         }
-    }
-
-    GroupInfoDialog {
-        id: groupInfoDialog
-        groupName: store.currentDisplayName
-        description: store.currentDescription
-        memberCount: store.memberCount
-        pendingMemberCount: store.pendingMemberCount
-        conversationId: store.currentConversationId
-    }
-
-    DmInfoDialog {
-        id: dmInfoDialog
-        peerAddress: store.currentPeerAddress
-        conversationId: store.currentConversationId
     }
 
     AddMemberDialog {

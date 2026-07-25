@@ -8,13 +8,14 @@ Built with [`logos-module-builder`](https://github.com/logos-co/logos-module-bui
 
 ## What It Does
 
-The application provides a dark-themed chat interface with a conversation
-list (left), a message thread (center), and a members panel (right) that appears
-only for group conversations:
+The application provides a dark-themed chat interface laid out as cards on an
+inset background: a conversations card over your account card (left), the
+message thread (center), and a right column that appears for a group or when
+the conversation's details are open:
 
-- **Conversation list** (left panel) — active conversations with timestamps and unread indicators; group rows are prefixed with `#`
-- **Message thread** (center panel) — messages and a text input for the selected conversation; group messages show a short sender label above incoming bubbles
-- **Members panel** (right panel, groups only) — the group's roster, with an add-member field
+- **Conversations** (left) — active conversations with an avatar, a preview, a timestamp and an unread badge, under the **New chat** button, with your own account card beneath them
+- **Message thread** (center) — a header naming the conversation and who is in it, the messages, and the composer; an incoming message carries its sender's avatar and name where a run of theirs begins
+- **Right column** — the group's roster with **Add member** pinned to its foot, and the conversation's **Details** panel above it while the header's toggle is on
 
 Core functionality:
 
@@ -30,8 +31,8 @@ Conversations are **ephemeral** — messages and identity exist only while the a
 ### Group conversations
 
 - **New chat > Group** creates a group with you as its only member (no dialog; the group opens immediately).
-- Collect peers' addresses (each copies theirs from their account card), paste one into the members panel's add-member field, and press **Add** to invite.
-- Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. The roster refreshes on selection, a message from a new member, the reload-roster button, or your own add.
+- Collect peers' addresses (each copies theirs from their account card), paste one into **Add member** at the foot of the members card, and confirm to invite.
+- Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. The roster refreshes on selection, a message from a new member, or your own add.
 - Any member can add another; the invite routes from whoever proposed it.
 - During the brief windows while the group is finalizing a membership change, de-mls rejects sends; these surface as an error toast, so retry after a moment.
 
