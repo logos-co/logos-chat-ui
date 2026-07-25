@@ -142,6 +142,60 @@ Item {
         }
     }
     Component {
+        id: chatIconButtonC
+        ChatIconButton {
+            iconSource: Qt.resolvedUrl("../../src/qml/ChatUi/icons/copy.png")
+        }
+    }
+    Component {
+        id: chatMenuItemC
+        ChatMenuItem {
+            text: "Direct message"
+            description: "One person, by address"
+        }
+    }
+    Component {
+        id: dayChipC
+        DayChip {
+            text: "Today"
+        }
+    }
+    Component {
+        id: facepileC
+        Facepile {
+            memberModel: membersMock
+            memberCount: 5
+        }
+    }
+    Component {
+        id: panelHeaderC
+        PanelHeader {
+            title: "Members"
+            count: 3
+        }
+    }
+    Component {
+        id: detailRowC
+        DetailRow {
+            key: "Conversation"
+            value: "0xconversationid"
+            mono: true
+            copyable: true
+        }
+    }
+    Component {
+        id: threadHeaderC
+        ThreadHeader {
+            title: "Design Team"
+            description: "A description long enough that the header has to elide it rather than wrap"
+            isGroup: true
+            avatarInitials: "c2"
+            avatarRamp: 3
+            memberModel: membersMock
+            memberCount: 3
+        }
+    }
+    Component {
         id: emptyStateC
         EmptyState {
             text: "Nothing here"
@@ -270,6 +324,14 @@ Item {
         signalName: "newGroupRequested"
     }
     SignalSpy {
+        id: copyDetailSpy
+        signalName: "copyRequested"
+    }
+    SignalSpy {
+        id: detailsToggledSpy
+        signalName: "detailsToggled"
+    }
+    SignalSpy {
         id: contextMenuRequestedSpy
         signalName: "contextMenuRequested"
     }
@@ -319,6 +381,12 @@ Item {
         function test_leafComponentsInstantiate() {
             instantiate(avatarC);
             instantiate(detailsPanelC);
+            instantiate(chatIconButtonC);
+            instantiate(dayChipC);
+            instantiate(facepileC);
+            instantiate(panelHeaderC);
+            instantiate(detailRowC);
+            instantiate(threadHeaderC);
             instantiate(messageSkeletonC);
             instantiate(emptyStateC);
             instantiate(toastC);
@@ -531,6 +599,65 @@ Item {
                 avatar.ramp = ramp;
                 verify(avatar.gradient, "ramp %1 must resolve to a gradient".arg(ramp));
             }
+        }
+
+        // A pile can only show so many faces, so the rest become a count
+        // rather than an ever-narrower row of tiles.
+        function test_facepileCountsWhoDoesNotFit() {
+            const pile = createTemporaryObject(facepileC, testRoot);
+            verify(pile, "the facepile must instantiate");
+            compare(pile.overflow, 2, "two of the five members are over the limit");
+
+            pile.memberCount = 3;
+            compare(pile.overflow, 0, "a roster that fits leaves no remainder");
+        }
+
+        // The heading counts what the card holds, and says nothing where there
+        // is nothing to count.
+        function test_panelHeaderCount() {
+            const header = createTemporaryObject(panelHeaderC, testRoot);
+            verify(header, "the panel header must instantiate");
+            const pill = findField(header, "panelCount");
+            verify(pill, "the count pill must be reachable");
+            verify(pill.visible, "a card with rows says how many");
+
+            header.count = -1;
+            verify(!pill.visible, "a card with nothing to count says nothing");
+        }
+
+        // A detail row's copy carries the value beside it, not the row's key.
+        function test_detailRowCopiesItsValue() {
+            const row = createTemporaryObject(detailRowC, testRoot);
+            verify(row, "the detail row must instantiate");
+            const btn = findField(row, "copyDetailButton");
+            verify(btn, "the copy button must be reachable");
+            verify(btn.visible, "a copyable row offers it");
+
+            copyDetailSpy.target = row;
+            copyDetailSpy.clear();
+            btn.clicked();
+            compare(copyDetailSpy.count, 1, "the button requests the copy");
+            compare(copyDetailSpy.signalArguments[0][0], "0xconversationid", "with the row's value");
+
+            row.copyable = false;
+            verify(!btn.visible, "a row with nothing to take offers no copy");
+        }
+
+        // The header keeps a long description to one line, whatever its length,
+        // so the thread below it never loses room.
+        function test_threadHeaderClampsItsDescription() {
+            const header = createTemporaryObject(threadHeaderC, testRoot);
+            verify(header, "the thread header must instantiate");
+            header.width = 400;
+            const description = findField(header, "threadDescription");
+            verify(description, "the description must be reachable");
+            tryVerify(() => description.truncated, 2000, "a long description elides");
+            compare(header.implicitHeight, 76, "and the header stays its own height");
+
+            detailsToggledSpy.target = header;
+            detailsToggledSpy.clear();
+            findField(header, "detailsButton").clicked();
+            compare(detailsToggledSpy.count, 1, "the toggle asks for the details");
         }
 
         // A group is a place, not a person, so it carries a glyph and the
