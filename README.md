@@ -32,7 +32,7 @@ Conversations are **ephemeral** — messages and identity exist only while the a
 
 - **New chat > Group** creates a group with you as its only member (no dialog; the group opens immediately).
 - Collect peers' addresses (each copies theirs from their account card), paste one into **Add member** at the foot of the members card, and confirm to invite.
-- Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. The roster refreshes on selection, a message from a new member, or your own add.
+- Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. A peer you invited sits on the roster as a dimmed, spinning row until the group commits it, and stays there across chat switches. The roster refreshes on selection, a message from a new member, or your own add.
 - A right-click on a roster row offers **Copy address**, for passing a member's address on.
 - Any member can add another; the invite routes from whoever proposed it.
 - During the brief windows while the group is finalizing a membership change, de-mls rejects sends; these surface as an error toast, so retry after a moment.

@@ -302,12 +302,10 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
         emit error(QStringLiteral("Failed to add member: ") + reason);
         return;
     }
-    // The commit is async, so the peer isn't in the group yet. Show it as a
-    // pending busy row; the members_changed event reconciles it once committed.
-    if (conversationId == currentConversationId()) {
-        m_pendingMembers.insert(peerAddress);
+    // The commit is async, so the peer joins the roster as a pending busy row;
+    // the members_changed event reconciles it once committed.
+    if (conversationId == currentConversationId())
         refreshMembers();
-    }
 }
 
 void ChatBackend::sendMessage(QString conversationId, QString content)
@@ -345,7 +343,6 @@ void ChatBackend::selectConversation(QString conversationId)
     // members. refreshMembers then loads the new roster when it can, and keeps
     // the last-known one across a transient offline of the same conversation.
     // User-driven, so its synchronous read is safe here (not in an event callback).
-    m_pendingMembers.clear();
     m_memberModel->clear();
     setMemberCount(0);
     setPendingMemberCount(0);
@@ -378,26 +375,24 @@ void ChatBackend::refreshMembers()
     const QVariantList members = modules().chat_module.list_group_members(convoId);
     QVector<MemberItem> rows;
     rows.reserve(members.size());
-    QSet<QString> committed;
+    int committed = 0;
     for (const QVariant& v : members) {
-        const QString address = v.toMap().value(QStringLiteral("address")).toString();
+        const QVariantMap record = v.toMap();
+        const QString address = record.value(QStringLiteral("address")).toString();
+        const bool pending = record.value(QStringLiteral("pending")).toBool();
         // An empty address is the roster's "no confirmed account" signal; keep
         // it — the model renders it as "unknown_account". Only a real account
         // address can be self.
-        rows.append({ address, !address.isEmpty() && address == myAddress(), false });
-        if (!address.isEmpty())
-            committed.insert(address);
+        rows.append({ address, !address.isEmpty() && address == myAddress(), pending });
+        if (!pending)
+            ++committed;
     }
-    // Drop invites that have since committed; show the rest as busy rows.
-    m_pendingMembers.subtract(committed);
-    for (const QString& address : std::as_const(m_pendingMembers))
-        rows.append({ address, false, true });
 
     m_memberModel->setMembers(rows);
     // Committed roster size only; pending invites appear in the list and are
     // counted separately.
-    setMemberCount(static_cast<int>(members.size()));
-    setPendingMemberCount(static_cast<int>(m_pendingMembers.size()));
+    setMemberCount(committed);
+    setPendingMemberCount(static_cast<int>(members.size()) - committed);
     // With our own address unknown every entry looks like the peer, so leave it
     // unset rather than guess.
     setCurrentPeerAddress(myAddress().isEmpty()
@@ -579,7 +574,6 @@ void ChatBackend::applyConversationDeleted(const QVariantList& args)
         m_messageModel->clear();
         // The roster goes with the conversation. Reached with no current
         // conversation, refreshMembers clears it without a module read.
-        m_pendingMembers.clear();
         refreshMembers();
     }
 }

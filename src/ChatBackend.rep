@@ -30,11 +30,12 @@ class ChatBackend
     // conversation model's rows.
     PROP(QString currentAvatarInitials READONLY)
     PROP(int currentAvatarRamp READONLY)
-    // The current group's roster size. Exposed as a property (not read off
-    // memberModel) because the model reaches QML as a QtRO replica whose
-    // rowCount() a non-view caller can't rely on.
+    // How many members the current conversation has committed; pending invites
+    // are listed in memberModel but not counted here. Exposed as a property (not
+    // read off memberModel) because the model reaches QML as a QtRO replica
+    // whose rowCount() a non-view caller can't rely on.
     PROP(int memberCount READONLY)
-    // Members invited into the current group but not yet on its roster.
+    // Members invited into the current group and awaiting its commit.
     PROP(int pendingMemberCount READONLY)
     // The other participant's address in the current direct conversation, empty
     // for a group or while the roster is unknown.
