@@ -63,7 +63,7 @@ void MemberListModel::clear()
 bool MemberListModel::contains(const QString& address) const
 {
     for (const auto& item : m_items) {
-        if (item.address == address)
+        if (!item.pending && item.address == address)
             return true;
     }
     return false;
