@@ -209,12 +209,77 @@ Item {
         }
     }
     Component {
-        id: toastC
-        Toast {}
+        id: statusBarC
+        StatusBar {
+            width: 360
+            errorMessage: ""
+            errorCount: 0
+        }
     }
     Component {
         id: clipboardProxyC
         ClipboardProxy {}
+    }
+    Component {
+        id: sessionLogsDialogC
+        SessionLogsDialog {
+            logDir: "/data/module_data/chat_module/74fe12d2b288"
+            // Two writers in one directory, which is what the tabs divide, plus
+            // one run of this view's that rotated.
+            runs: [
+                {
+                    writer: "chat_ui",
+                    label: "2026-07-28 10:00:00",
+                    sizeLabel: "96 KB",
+                    fileCount: 1,
+                    path: "/data/module_data/chat_module/74fe12d2b288/chat_ui_20260728_100000.log",
+                    paths: "/data/module_data/chat_module/74fe12d2b288/chat_ui_20260728_100000.log",
+                    stamp: "20260728_100000",
+                    current: true
+                },
+                {
+                    writer: "chat_module",
+                    label: "2026-07-28 10:00:00",
+                    sizeLabel: "1.2 MB",
+                    fileCount: 2,
+                    path: "/data/module_data/chat_module/74fe12d2b288/chat_module_20260728_100000.log",
+                    paths: "/data/module_data/chat_module/74fe12d2b288/chat_module_20260728_100000.001.log\n/data/module_data/chat_module/74fe12d2b288/chat_module_20260728_100000.log",
+                    stamp: "20260728_100000",
+                    current: true
+                },
+                {
+                    writer: "chat_module",
+                    label: "2026-07-27 09:00:00",
+                    sizeLabel: "300 KB",
+                    fileCount: 1,
+                    path: "/data/module_data/chat_module/74fe12d2b288/chat_module_20260727_090000.log",
+                    paths: "/data/module_data/chat_module/74fe12d2b288/chat_module_20260727_090000.log",
+                    stamp: "20260727_090000",
+                    current: false
+                }
+            ]
+            errors: [
+                {
+                    when: "14:32:07",
+                    message: "Failed to add member: no key package for peer",
+                    count: 1
+                },
+                {
+                    when: "14:29:02",
+                    message: "Delivery error: connection refused",
+                    count: 3
+                }
+            ]
+        }
+    }
+    // The same dialog with nothing to report, for the tab it opens on.
+    Component {
+        id: quietLogsDialogC
+        SessionLogsDialog {
+            logDir: "/data/module_data/chat_module/74fe12d2b288"
+            runs: []
+            errors: []
+        }
     }
     Component {
         id: newConvDialogC
@@ -339,6 +404,14 @@ Item {
         id: contextMenuSpy
         signalName: "contextMenuRequested"
     }
+    SignalSpy {
+        id: errorActivatedSpy
+        signalName: "errorActivated"
+    }
+    SignalSpy {
+        id: logsRequestedSpy
+        signalName: "logsRequested"
+    }
 
     TestCase {
         name: "ChatUiComponents"
@@ -371,6 +444,22 @@ Item {
             return null;
         }
 
+        // Every named field under an item, for the repeated rows a list draws.
+        function collectFields(obj, objectName, found) {
+            if (!obj)
+                return found;
+            // `data` repeats `children`, so a row is reachable twice.
+            if (obj.objectName === objectName && found.indexOf(obj) === -1)
+                found.push(obj);
+            const pools = [obj.children, obj.contentItem ? [obj.contentItem] : [], obj.contentData || [], obj.data || []];
+            for (let p = 0; p < pools.length; ++p) {
+                const pool = pools[p];
+                for (let i = 0; pool && i < pool.length; ++i)
+                    collectFields(pool[i], objectName, found);
+            }
+            return found;
+        }
+
         function test_panesInstantiate() {
             instantiate(conversationsPaneC);
             instantiate(messageThreadPaneC);
@@ -389,7 +478,7 @@ Item {
             instantiate(threadHeaderC);
             instantiate(messageSkeletonC);
             instantiate(emptyStateC);
-            instantiate(toastC);
+            instantiate(statusBarC);
             instantiate(clipboardProxyC);
         }
 
@@ -1075,6 +1164,159 @@ Item {
             dlg.open();
             dlg.rightActions[0].clicked();
             compare(confirmedSpy.count, 1, "confirming must emit confirmed() once");
+        }
+
+        // The strip shows the newest failure and, once more than one is waiting,
+        // how many there are; a single one needs no count.
+        function test_statusBarCountsWhatIsWaiting() {
+            const bar = createTemporaryObject(statusBarC, testRoot);
+            verify(bar, "the strip must instantiate");
+            const message = findField(bar, "statusMessage");
+            const count = findField(bar, "statusErrorCount");
+            verify(message && count, "the message and the count must be reachable");
+            verify(!count.visible, "nothing waiting shows no count");
+
+            bar.errorMessage = "Failed to add member: no key package for peer";
+            bar.errorCount = 1;
+            compare(message.text, "Failed to add member: no key package for peer");
+            verify(!count.visible, "one failure is the one on show");
+
+            bar.errorCount = 2;
+            verify(count.visible, "a second failure earns a count");
+            compare(count.text, "2 errors");
+        }
+
+        // Activating the message is the only way off the strip, so a failure
+        // stays until it is read.
+        function test_statusBarActivatesOnlyWhileHolding() {
+            const bar = createTemporaryObject(statusBarC, testRoot);
+            verify(bar, "the strip must instantiate");
+            const message = findField(bar, "statusMessage");
+            errorActivatedSpy.target = bar;
+            errorActivatedSpy.clear();
+
+            mouseClick(message);
+            compare(errorActivatedSpy.count, 0, "a resting strip is not a control");
+
+            bar.errorMessage = "Chat not online";
+            bar.errorCount = 1;
+            mouseClick(message);
+            compare(errorActivatedSpy.count, 1, "a held failure activates once");
+        }
+
+        // The way to the logs is always there: it leads to the run's files as
+        // much as to its failures, and a quiet run still has files.
+        function test_statusBarAlwaysOffersTheLogs() {
+            const bar = createTemporaryObject(statusBarC, testRoot);
+            verify(bar, "the strip must instantiate");
+            const button = findField(bar, "showLogsButton");
+            verify(button, "the button must be reachable");
+            verify(button.visible, "a resting strip still offers the logs");
+            waitForRendering(bar);
+
+            logsRequestedSpy.target = bar;
+            logsRequestedSpy.clear();
+            mouseClick(button);
+            compare(logsRequestedSpy.count, 1, "the button asks for the list once");
+        }
+
+        // The badge counts what nobody has looked at, so a run with nothing to
+        // report carries no mark at all.
+        function test_statusBarBadgesTheUnseen() {
+            const bar = createTemporaryObject(statusBarC, testRoot);
+            const badge = findField(bar, "unseenErrorBadge");
+            verify(badge, "the badge must be reachable");
+            verify(!badge.visible, "nothing unseen, no badge");
+
+            bar.errorCount = 3;
+            verify(badge.visible, "an unseen failure earns a badge");
+
+            // What clearing looks like from the view: the count goes to zero and
+            // the list it counted lives on behind the button.
+            bar.errorCount = 0;
+            verify(!badge.visible, "opening the logs quiets the strip");
+        }
+
+        // A tab lists its own writer's runs and no one else's, which is what
+        // lets two writers share one directory.
+        function test_sessionLogsDialogListsOneWritersRuns() {
+            const dlg = instantiate(sessionLogsDialogC);
+            dlg.open();
+
+            compare(dlg.currentWriter, 0, "the view's own log is the first tab");
+            let rows = [];
+            collectFields(dlg, "sessionLogRun", rows);
+            compare(rows.length, 1, "chat-ui kept one run of the three listed");
+
+            dlg.currentWriter = 1;
+            rows = [];
+            collectFields(dlg, "sessionLogRun", rows);
+            compare(rows.length, 2, "the chat module kept the other two");
+        }
+
+        // A writer with no file of its own says why rather than being absent.
+        function test_sessionLogsDialogExplainsTheWriterWithNoFile() {
+            const dlg = instantiate(sessionLogsDialogC);
+            dlg.open();
+            findField(dlg, "logsTabBar").currentIndex = 1;
+            dlg.currentWriter = 2;
+            waitForRendering(dlg.contentItem);
+
+            const pending = findField(dlg, "writerPending");
+            verify(pending && pending.visible, "the tab must say why it holds nothing");
+            const rows = [];
+            collectFields(dlg, "sessionLogRun", rows);
+            compare(rows.length, 0, "and list nothing");
+        }
+
+        // Opening from the strip should land on the failure that brought you
+        // here; with none, the files are the only reason to be here.
+        function test_sessionLogsDialogOpensOnWhatThereIsToSee() {
+            const held = instantiate(sessionLogsDialogC);
+            held.open();
+            const heldTabs = findField(held, "logsTabBar");
+            verify(heldTabs, "the tab bar must be reachable");
+            compare(heldTabs.currentIndex, 0, "failures held, so Errors");
+
+            const quiet = instantiate(quietLogsDialogC);
+            quiet.open();
+            compare(findField(quiet, "logsTabBar").currentIndex, 1, "nothing failed, so Full logs");
+        }
+
+        // Every failure is listed, a repeat counts against its row rather than
+        // adding one, and the count the tab states is of occurrences.
+        function test_sessionLogsDialogListsEveryFailure() {
+            const dlg = instantiate(sessionLogsDialogC);
+            dlg.open();
+            waitForRendering(dlg.contentItem);
+
+            compare(dlg.failureCount, 4, "three deliveries and one add");
+            const rows = [];
+            collectFields(dlg, "errorRow", rows);
+            compare(rows.length, 2, "the repeat is one row, not three");
+
+            const repeated = findField(rows[1], "errorMessage");
+            verify(repeated, "a row's message must be reachable");
+            verify(repeated.text.indexOf("×3") !== -1, "and must say how often it arrived");
+        }
+
+        // The caveat is one line until asked, because the tab that needs
+        // explaining must not also be the tab with three fewer rows.
+        function test_sessionLogsDialogKeepsTheCaveatShort() {
+            const dlg = instantiate(sessionLogsDialogC);
+            dlg.open();
+            findField(dlg, "logsTabBar").currentIndex = 1;
+            waitForRendering(dlg.contentItem);
+
+            const caveat = findField(dlg, "caveatText");
+            const toggle = findField(dlg, "caveatToggle");
+            verify(caveat && toggle, "the caveat and its toggle must be reachable");
+            const oneLine = caveat.text;
+            verify(toggle.visible, "the rest is offered");
+
+            dlg.caveatExpanded = true;
+            verify(caveat.text.length > oneLine.length, "asking spells it out");
+            verify(!toggle.visible, "and the offer goes away");
         }
     }
 }

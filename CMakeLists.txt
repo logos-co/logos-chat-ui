@@ -23,6 +23,14 @@ logos_module(
         src/TimeFormat.cpp
         src/Identity.h
         src/Identity.cpp
+        src/SessionLogFiles.h
+        src/SessionLogFiles.cpp
+        src/ErrorLog.h
+        src/ErrorLog.cpp
+        src/RunLog.h
+        src/RunLog.cpp
+        src/ProcessLog.h
+        src/ProcessLog.cpp
     INCLUDE_DIRS
         src
 )
@@ -59,7 +67,7 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/ClipboardProxy.qml
             src/qml/ChatUi/ChatMenuItem.qml
             src/qml/ChatUi/MessageComposer.qml
-            src/qml/ChatUi/Toast.qml
+            src/qml/ChatUi/StatusBar.qml
             src/qml/ChatUi/MessageDelegate.qml
             src/qml/ChatUi/DayChip.qml
             src/qml/ChatUi/Facepile.qml
@@ -75,5 +83,6 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/MemberAddInfoDialog.qml
             src/qml/ChatUi/AddMemberDialog.qml
             src/qml/ChatUi/SelectableText.qml
+            src/qml/ChatUi/SessionLogsDialog.qml
     )
 endif()

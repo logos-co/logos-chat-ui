@@ -37,7 +37,7 @@ Conversations are **ephemeral** — messages and identity exist only while the a
 - Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. A peer you invited sits on the roster as a dimmed row reading **Waiting to join** until the group commits it, and stays there across chat switches. The roster refreshes on selection, a message from a new member, or your own add.
 - A right-click on a roster row offers **Copy address**, for passing a member's address on.
 - Any member can add another; the invite routes from whoever proposed it.
-- During the brief windows while the group is finalizing a membership change, de-mls rejects sends; these surface as an error toast, so retry after a moment.
+- During the brief windows while the group is finalizing a membership change, de-mls rejects sends; these surface on the status bar at the foot of the window, so retry after a moment.
 
 ## How to Run
 
@@ -150,6 +150,10 @@ logos-chat-ui/
     ├── MemberListModel.h/cpp        # QAbstractListModel for a group's roster
     ├── Identity.h/cpp               # Avatar initials + colour ramp for an address
     ├── TimeFormat.h/cpp             # Clock-time and day-label formatting
+    ├── ErrorLog.h/cpp               # The run's failures, newest first, repeats collapsed
+    ├── RunLog.h/cpp                 # This view's log file, rotated and pruned
+    ├── ProcessLog.h/cpp             # Qt's messages into that file, buffered until it opens
+    ├── SessionLogFiles.h/cpp        # A log directory grouped into runs, per writer
     └── qml/
         ├── ChatView.qml       # Top-level composition (thin)
         └── ChatUi/            # Pure-QML component module, built on Logos.Theme
@@ -179,6 +183,28 @@ view module.
 | `MemberListModel` | A row per member: address, label, whether it is you, whether the invite is still uncommitted, avatar |
 | `Identity` | Derives a row's initials and colour ramp from an address, in one place, so an account keeps its avatar across every list |
 | `TimeFormat` | The single formatter for clock times and day labels, so no view formats its own |
+| `ErrorLog` | Every failure the run reported, newest first, consecutive repeats collapsed to one row with a count |
+| `RunLog` / `ProcessLog` | This view's own log: `ProcessLog` catches everything Qt logs and holds it until a directory is known, `RunLog` writes, rotates and prunes it |
+| `SessionLogFiles` | Groups a log directory into runs by the stem of the announced file, which is what lets two writers share one directory |
+
+## Logs
+
+Two writers keep a log of this run, both in the chat module's instance
+directory. The chat module was assigned that directory; this view borrows it,
+because the platform assigns a view module none of its own
+(`LogosUiPluginContext` has no `instancePersistencePath`) and picking one would
+mean two instances of the app writing into the same folder. The **Show logs**
+button at the foot of the window lists both, a tab per writer, alongside every
+failure the run reported.
+
+Each writer's files are `<stem>_<stamp>.log` for the file being written and
+`<stem>_<stamp>.NNN.log` for a rotation of it, ten runs kept. A list is grouped
+by the stem of the file its own writer announced, so `chat_ui`'s runs and
+`chat_module`'s never pick up each other's.
+
+Delivery has no tab of its own yet: `delivery_module` writes to stderr and the
+node embedded in it to stdout, both wherever the process was started from. The
+tab is there and says so.
 
 ## Requirements
 

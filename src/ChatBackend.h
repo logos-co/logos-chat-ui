@@ -11,6 +11,8 @@
 #include "ConversationListModel.h"
 #include "MessageListModel.h"
 #include "MemberListModel.h"
+#include "ErrorLog.h"
+#include "SessionLogFiles.h"
 
 class ChatBackend : public ChatBackendSimpleSource,
                     public LogosUiPluginContext
@@ -44,9 +46,22 @@ public slots:
     // module read, so never call it from inside a module event callback without
     // deferToEventLoop.
     void refreshMembers() override;
+    void refreshSessionLogs() override;
 
 private:
     void initialiseModule();
+    // Opens this run's logs: the chat module names the file it is writing, and
+    // its directory is where this view writes beside it, for want of one of its
+    // own. Reports rather than falls back when there is nowhere to write.
+    void openRunLogs();
+    // The one way a failure reaches anyone: it joins the retained list, goes into
+    // this view's log, and reaches the strip. Every failing path calls this and
+    // none of them classifies what it is reporting.
+    void report(const QString& message);
+    // A failed action and the module's account of it. An empty reason gets words
+    // of its own rather than a dangling separator: it is what a call that never
+    // reached the module leaves behind, which is the worst moment to say least.
+    void reportFailure(const QString& action, const QString& reason);
     void subscribeToEvents();
     void rehydrateConversations();
     // Reads this account's own address into the myAddress property. A
@@ -99,6 +114,12 @@ private:
     // Set once the initial snapshot has loaded; gates the reconnect resync in
     // applyDeliveryState so it doesn't fire during initial setup.
     bool m_initialSnapshotDone = false;
+
+    ErrorLog m_errors;
+    // The file each writer announced it is writing. Each fixes the naming its own
+    // runs are grouped by, and they share one directory.
+    QString m_moduleLogPath;
+    QString m_viewLogPath;
 };
 
 #endif

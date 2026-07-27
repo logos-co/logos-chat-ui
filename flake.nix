@@ -10,10 +10,11 @@
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
-    # Pinned to the chat_module rev whose roster carries pending invites and
-    # answers for a direct conversation, and whose builder carries the design
-    # system this view draws on; release tags predate it.
-    chat_module.url = "github:logos-co/logos-chat-module/33c624d0e6ea8444486d6bfe68aa07450315bdb6";
+    # Pinned to the chat_module rev that writes the chat core's account of a run
+    # into its instance directory and names the file through get_log_path().
+    # Without it libchat's events are dropped in the module's process, and this
+    # view has no directory to write its own log beside.
+    chat_module.url = "github:logos-co/logos-chat-module/904fc78c9f346a6d23028c0978d9c29a080f3339";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
