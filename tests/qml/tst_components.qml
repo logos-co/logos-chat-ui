@@ -209,8 +209,12 @@ Item {
         }
     }
     Component {
-        id: toastC
-        Toast {}
+        id: statusBarC
+        StatusBar {
+            width: 360
+            errorMessage: ""
+            errorCount: 0
+        }
     }
     Component {
         id: clipboardProxyC
@@ -339,6 +343,10 @@ Item {
         id: contextMenuSpy
         signalName: "contextMenuRequested"
     }
+    SignalSpy {
+        id: errorActivatedSpy
+        signalName: "errorActivated"
+    }
 
     TestCase {
         name: "ChatUiComponents"
@@ -389,7 +397,7 @@ Item {
             instantiate(threadHeaderC);
             instantiate(messageSkeletonC);
             instantiate(emptyStateC);
-            instantiate(toastC);
+            instantiate(statusBarC);
             instantiate(clipboardProxyC);
         }
 
@@ -1075,6 +1083,44 @@ Item {
             dlg.open();
             dlg.rightActions[0].clicked();
             compare(confirmedSpy.count, 1, "confirming must emit confirmed() once");
+        }
+
+        // The strip shows the newest failure and, once more than one is waiting,
+        // how many there are; a single one needs no count.
+        function test_statusBarCountsWhatIsWaiting() {
+            const bar = createTemporaryObject(statusBarC, testRoot);
+            verify(bar, "the strip must instantiate");
+            const message = findField(bar, "statusMessage");
+            const count = findField(bar, "statusErrorCount");
+            verify(message && count, "the message and the count must be reachable");
+            verify(!count.visible, "nothing waiting shows no count");
+
+            bar.errorMessage = "Failed to add member: no key package for peer";
+            bar.errorCount = 1;
+            compare(message.text, "Failed to add member: no key package for peer");
+            verify(!count.visible, "one failure is the one on show");
+
+            bar.errorCount = 2;
+            verify(count.visible, "a second failure earns a count");
+            compare(count.text, "2 errors");
+        }
+
+        // Activating the message is the only way off the strip, so a failure
+        // stays until it is read.
+        function test_statusBarActivatesOnlyWhileHolding() {
+            const bar = createTemporaryObject(statusBarC, testRoot);
+            verify(bar, "the strip must instantiate");
+            const message = findField(bar, "statusMessage");
+            errorActivatedSpy.target = bar;
+            errorActivatedSpy.clear();
+
+            mouseClick(message);
+            compare(errorActivatedSpy.count, 0, "a resting strip is not a control");
+
+            bar.errorMessage = "Chat not online";
+            bar.errorCount = 1;
+            mouseClick(message);
+            compare(errorActivatedSpy.count, 1, "a held failure activates once");
         }
     }
 }
