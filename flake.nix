@@ -1,6 +1,11 @@
 {
   description = "Logos Chat UI - QML view + C++ backend module";
 
+  nixConfig = {
+    extra-substituters = [ "https://cache.nix.logos.co/public" ];
+    extra-trusted-public-keys = [ "public:l4HrXgL4nw246+LBh2SOJyhz64BoGegOYLheT/iIAPU=" ];
+  };
+
   inputs = {
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
