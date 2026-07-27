@@ -15,6 +15,7 @@ QtObject {
     readonly property var conversationModel: typeof logos !== "undefined" && logos ? logos.model("chat_ui", "conversationModel") : null
     readonly property var messageModel: typeof logos !== "undefined" && logos ? logos.model("chat_ui", "messageModel") : null
     readonly property var memberModel: typeof logos !== "undefined" && logos ? logos.model("chat_ui", "memberModel") : null
+    readonly property var logModel: typeof logos !== "undefined" && logos ? logos.model("chat_ui", "logModel") : null
 
     readonly property bool online: backend ? backend.chatStatus === ChatBackend.Online : false
     readonly property bool hasError: backend ? backend.chatStatus === ChatBackend.Error : false
@@ -33,6 +34,43 @@ QtObject {
     readonly property string myAddress: backend ? backend.myAddress : ""
     readonly property string myLabel: backend ? backend.myLabel : ""
     readonly property string myInitials: backend ? backend.myInitials : ""
+
+    // The session log the host is capturing, and the console's account of it.
+    readonly property string sessionLogPath: backend ? backend.sessionLogPath : ""
+    readonly property string sessionLogSizeLabel: backend ? backend.sessionLogSizeLabel : ""
+    readonly property int logLineCount: backend ? backend.logLineCount : 0
+    readonly property int logErrorCount: backend ? backend.logErrorCount : 0
+    readonly property int logShownCount: backend ? backend.logShownCount : 0
+    readonly property var logDomains: backend ? backend.logDomains : []
+    readonly property int logLevels: backend ? backend.logLevels : 0
+    readonly property string logFilterText: backend ? backend.logFilterText : ""
+    readonly property string logLastLine: backend ? backend.logLastLine : ""
+
+    // The severities the console filters by, paired with the names the backend
+    // spells them with. Declared here because this is the one file that sees
+    // the backend's enum.
+    readonly property var logLevelOptions: [
+        {
+            label: qsTr("debug"),
+            name: "debug",
+            value: ChatBackend.LevelDebug
+        },
+        {
+            label: qsTr("info"),
+            name: "info",
+            value: ChatBackend.LevelInfo
+        },
+        {
+            label: qsTr("warn"),
+            name: "warning",
+            value: ChatBackend.LevelWarning
+        },
+        {
+            label: qsTr("error"),
+            name: "error",
+            value: ChatBackend.LevelError
+        }
+    ]
 
     // Short connectivity label for the account card.
     readonly property string statusLabel: {
@@ -56,6 +94,7 @@ QtObject {
     // object directly.
     signal errorOccurred(string message)
     signal sendFailed(string conversationId, string content)
+    signal logExported(string path)
 
     // Actions. Discrete effects, so imperative here is appropriate.
     function selectConversation(conversationId) {
@@ -78,6 +117,26 @@ QtObject {
         if (backend && currentConversationId !== "")
             backend.addGroupMember(currentConversationId, address);
     }
+    function setLogDomainEnabled(domain, enabled) {
+        if (backend)
+            backend.setLogDomainEnabled(domain, enabled);
+    }
+    function setLogLevelEnabled(level, enabled) {
+        if (backend)
+            backend.setLogLevelEnabled(level, enabled);
+    }
+    function setLogFilterText(text) {
+        if (backend)
+            backend.setLogFilter(text);
+    }
+    function exportSessionLog() {
+        if (backend)
+            backend.exportSessionLog();
+    }
+    function exportFilteredLog() {
+        if (backend)
+            backend.exportFilteredLog();
+    }
 
     property Connections _backendSignals: Connections {
         target: root.backend
@@ -86,6 +145,9 @@ QtObject {
         }
         function onSendFailed(conversationId, content) {
             root.sendFailed(conversationId, content);
+        }
+        function onLogExported(path) {
+            root.logExported(path);
         }
     }
 }

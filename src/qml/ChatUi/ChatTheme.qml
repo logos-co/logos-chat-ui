@@ -99,4 +99,36 @@ QtObject {
     // colours have no contrast.
     // TODO(upstream: logos-design-system): an on-accent text token.
     readonly property color avatarInk: Qt.rgba(0, 0, 0, 0.74)
+
+    // One colour per session-log domain, so a chip and the dot on every row it
+    // filters read as the same thing. `domain` is a name the backend publishes.
+    function logDomainColor(domain) {
+        switch (domain) {
+        case "libchat":
+            return Theme.palette.info;
+        case "chat-module":
+            return Theme.palette.primary;
+        case "chat-ui":
+            return Theme.palette.successHover;
+        case "delivery":
+            return Theme.palette.accentYellowSoft;
+        default:
+            return Theme.palette.textMuted;
+        }
+    }
+
+    // One colour per severity, on the same scale the rest of the app uses for
+    // status. `level` is a severity name as the backend spells it.
+    function logLevelColor(level) {
+        switch (level) {
+        case "error":
+            return Theme.palette.error;
+        case "warning":
+            return Theme.palette.warning;
+        case "info":
+            return Theme.palette.info;
+        default:
+            return Theme.palette.textMuted;
+        }
+    }
 }

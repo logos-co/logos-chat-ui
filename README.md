@@ -28,6 +28,28 @@ Core functionality:
 
 Conversations are **ephemeral** — messages and identity exist only while the app is running.
 
+### The status bar and the developer console
+
+A strip across the foot of the window carries whatever the app could not do: the
+newest failure in prose, a count of the ones behind it, and a badge on the
+console button. A failure stays until it is read, rather than passing on a
+timer, and clicking it opens the console. With nothing to report the strip rests
+on the newest line of the session log.
+
+The console takes the whole window and tails the log the host is capturing for
+this run, which carries libchat, `chat_module`, `chat_ui` and `delivery_module`
+alongside the core's own output. Filter it by domain, by severity and by text;
+each domain chip carries its line count, so a domain that said nothing is
+distinguishable from one being hidden. **Export** writes either the whole
+session file or exactly the lines the filters show, into your downloads
+directory, and names what it wrote on the strip.
+
+The filters change what you see and never what is written. A question that needs
+more detail than the session recorded still needs `RUST_LOG` and a restart.
+
+A host that captures no log leaves the console empty and says so; the console
+reads the file, it does not create one.
+
 ### Group conversations
 
 - **New chat > Group** creates a group with you as its only member (no dialog; the group opens immediately).
@@ -145,6 +167,10 @@ logos-chat-ui/
     ├── ChatBackend.h/cpp      # Backend: chat lifecycle, conversations, messages
     ├── ConversationListModel.h/cpp  # QAbstractListModel for conversations
     ├── MessageListModel.h/cpp       # QAbstractListModel for messages
+    ├── LogLine.h/cpp          # One session-log line, parsed
+    ├── SessionLogModel.h/cpp  # Tails the session log; the console's source model
+    ├── LogFilterModel.h/cpp   # The console's domain/level/text predicate
+    ├── SessionLogWriter.h/cpp # This module's own lines, into the same file
     └── qml/
         ├── ChatView.qml       # Top-level composition (thin)
         └── ChatUi/            # Pure-QML component module, built on Logos.Theme
@@ -169,6 +195,8 @@ view module.
 | `ChatBackend` | Derives `ChatBackendSimpleSource` + `LogosUiPluginContext`; initialises the module and subscribes to `chat_module` events in `onContextReady()`; drives the two models |
 | `ConversationListModel` | Roles: `conversationId`, `displayName`, `lastActivity`, `unreadCount` |
 | `MessageListModel` | Roles: `sender`, `content`, `timestamp`, `isMe` |
+| `LogLine` | Parses one line of the session log into a time, a severity, a domain and a message; an unrecognised shape keeps its whole text |
+| `SessionLogModel` | Tails the file the host assigns, retaining the most recent lines and counting everything the session wrote |
 
 ## Requirements
 

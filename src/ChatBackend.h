@@ -1,6 +1,7 @@
 #ifndef CHAT_BACKEND_H
 #define CHAT_BACKEND_H
 
+#include <QElapsedTimer>
 #include <QObject>
 #include <QSortFilterProxyModel>
 #include <QString>
@@ -11,6 +12,9 @@
 #include "ConversationListModel.h"
 #include "MessageListModel.h"
 #include "MemberListModel.h"
+#include "LogFilterModel.h"
+#include "SessionLogModel.h"
+#include "SessionLogWriter.h"
 
 class ChatBackend : public ChatBackendSimpleSource,
                     public LogosUiPluginContext
@@ -21,6 +25,9 @@ class ChatBackend : public ChatBackendSimpleSource,
     Q_PROPERTY(QAbstractItemModel* conversationModel READ conversationModel CONSTANT)
     Q_PROPERTY(MessageListModel* messageModel READ messageModel CONSTANT)
     Q_PROPERTY(MemberListModel* memberModel READ memberModel CONSTANT)
+    // The session log through the console's filters; the unfiltered lines stay
+    // here, so only the view the reader asked for crosses to QML.
+    Q_PROPERTY(QAbstractItemModel* logModel READ logModel CONSTANT)
 
 public:
     explicit ChatBackend(QObject* parent = nullptr);
@@ -29,6 +36,7 @@ public:
     QAbstractItemModel* conversationModel() const;
     MessageListModel* messageModel() const;
     MemberListModel* memberModel() const;
+    QAbstractItemModel* logModel() const;
 
     // Fires once the generated plugin glue has wired modules(); the typed
     // chat_module surface is live, so init + event subscriptions happen here.
@@ -44,8 +52,23 @@ public slots:
     // module read, so never call it from inside a module event callback without
     // deferToEventLoop.
     void refreshMembers() override;
+    void setLogFilter(QString text) override;
+    void setLogLevelEnabled(int level, bool enabled) override;
+    void setLogDomainEnabled(QString domain, bool enabled) override;
+    void exportSessionLog() override;
+    void exportFilteredLog() override;
 
 private:
+    // Reports a failure to the view and records it in the session log. A reason
+    // the module could not supply is left off rather than trailing a colon.
+    void reportFailure(const QString& what, const QString& reason = QString());
+    // Follows and appends to the file the host assigned.
+    void openSessionLog();
+    void republishLogState();
+    // Copies the session file, keeping only the lines the filters show when
+    // `filtered`. The file is read rather than the model, which retains less.
+    void exportLog(bool filtered);
+
     void initialiseModule();
     void subscribeToEvents();
     void rehydrateConversations();
@@ -94,6 +117,11 @@ private:
     QSortFilterProxyModel* m_conversationProxy;
     MessageListModel* m_messageModel;
     MemberListModel* m_memberModel;
+    SessionLogModel* m_sessionLogModel;
+    LogFilterModel* m_logFilter;
+    SessionLogWriter m_sessionLogWriter;
+    // Since the status bar's resting line last moved.
+    QElapsedTimer m_restingLineAge;
 
     bool m_moduleInitialised = false;
     // Set once the initial snapshot has loaded; gates the reconnect resync in

@@ -1,11 +1,11 @@
 name: QML Checks
 
-# Static and unit checks for the plugin's QML, complementing the end-to-end
-# doc-tests. Runs qmllint over the view and Qt Quick Test over the ChatUi
-# components (headless, offscreen). Both need the Logos design system on the QML
-# import path, so this first builds this flake's standalone app (which bundles
-# lib/Logos) and points the tools at it. The Qt Quick tooling itself comes from
-# nixpkgs' qt6.qtdeclarative.
+# Static and unit checks for the plugin, complementing the end-to-end doc-tests.
+# Runs qmllint over the view, Qt Quick Test over the ChatUi components (headless,
+# offscreen), and the backend unit tests. The QML steps need the Logos design
+# system on the QML import path, so this first builds this flake's standalone app
+# (which bundles lib/Logos) and points the tools at it. The Qt Quick tooling
+# itself comes from nixpkgs' qt6.qtdeclarative.
 #
 # A qmlformat --check gate is intentionally omitted: qmlformat's output varies
 # between Qt versions, so a gate run against the CI's Qt would flag files a
@@ -24,6 +24,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  backend-tests:
+    name: Backend unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: logos-co
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      # tests/cpp is a standalone CMake project over the parts of the backend
+      # that need nothing but Qt Core, so it builds without the Logos SDK the
+      # plugin itself is compiled against.
+      - name: ctest
+        shell: bash
+        run: |
+          set -euo pipefail
+          nix shell nixpkgs#qt6.qtbase nixpkgs#cmake nixpkgs#ninja --command bash -c '
+            set -euo pipefail
+            cmake -S tests/cpp -B build/tests -GNinja
+            cmake --build build/tests
+            ctest --test-dir build/tests --output-on-failure
+          '
+
   qml-checks:
     name: qmllint + Qt Quick Test
     runs-on: ubuntu-latest

@@ -42,6 +42,12 @@ Rectangle {
     property string lastError: ""
     property int errorCount: 0
 
+    // Whether the console has the canvas. The chat stays instantiated behind
+    // it, so a selection and a scroll position survive the round trip.
+    property bool consoleShown: false
+    // The one-off line the bar carries after an export.
+    property string statusNotice: ""
+
     ChatStore {
         id: store
     }
@@ -51,6 +57,10 @@ Rectangle {
         function onErrorOccurred(message) {
             root.lastError = message;
             root.errorCount += 1;
+        }
+        function onLogExported(path) {
+            //: Confirms where an exported log was written
+            root.statusNotice = qsTr("Exported to %1").arg(path);
         }
         function onSendFailed(conversationId, content) {
             threadPane.restoreFailedSend(conversationId, content);
@@ -69,6 +79,7 @@ Rectangle {
         spacing: Theme.spacing.medium
 
         RowLayout {
+            visible: !root.consoleShown
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: Theme.spacing.medium
@@ -167,13 +178,51 @@ Rectangle {
             }
         }
 
+        ConsoleView {
+            visible: root.consoleShown
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            logModel: store.logModel
+            domains: store.logDomains
+            levelOptions: store.logLevelOptions
+            levels: store.logLevels
+            filterText: store.logFilterText
+            lineCount: store.logLineCount
+            shownCount: store.logShownCount
+            errorCount: store.logErrorCount
+            logPath: store.sessionLogPath
+            logSizeLabel: store.sessionLogSizeLabel
+            onDomainToggled: function (domain, enabled) {
+                store.setLogDomainEnabled(domain, enabled);
+            }
+            onLevelToggled: function (level, enabled) {
+                store.setLogLevelEnabled(level, enabled);
+            }
+            onFilterTextEdited: function (text) {
+                store.setLogFilterText(text);
+            }
+            onFullExportRequested: store.exportSessionLog()
+            onViewExportRequested: store.exportFilteredLog()
+        }
+
         StatusBar {
             Layout.fillWidth: true
             errorMessage: root.lastError
             errorCount: root.errorCount
+            notice: root.statusNotice
+            lastLine: store.logLastLine
+            consoleOpen: root.consoleShown
             onErrorActivated: {
                 root.lastError = "";
                 root.errorCount = 0;
+                root.consoleShown = true;
+            }
+            onConsoleToggled: {
+                root.consoleShown = !root.consoleShown;
+                if (root.consoleShown) {
+                    root.lastError = "";
+                    root.errorCount = 0;
+                }
             }
         }
     }

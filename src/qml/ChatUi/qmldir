@@ -13,6 +13,9 @@ ClipboardProxy 1.0 ClipboardProxy.qml
 ChatMenuItem 1.0 ChatMenuItem.qml
 MessageComposer 1.0 MessageComposer.qml
 StatusBar 1.0 StatusBar.qml
+LogRow 1.0 LogRow.qml
+LogFilterChip 1.0 LogFilterChip.qml
+ConsoleView 1.0 ConsoleView.qml
 MessageDelegate 1.0 MessageDelegate.qml
 DayChip 1.0 DayChip.qml
 Facepile 1.0 Facepile.qml

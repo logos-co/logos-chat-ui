@@ -7,6 +7,16 @@ class ChatBackend
         Error = 3
     }
 
+    // A session-log line's severity, as a bit so a set of them is one integer.
+    // Named apart from ChatStatus because both enums flatten into one namespace
+    // on the QML side.
+    ENUM LogLevel {
+        LevelDebug = 1,
+        LevelInfo = 2,
+        LevelWarning = 4,
+        LevelError = 8
+    }
+
     PROP(ChatStatus chatStatus READONLY)
     // This account's own address, the string a peer needs to reach it. Fetched
     // once the module comes online, so the view can show it from first paint.
@@ -41,6 +51,27 @@ class ChatBackend
     // for a group or while the roster is unknown.
     PROP(QString currentPeerAddress READONLY)
 
+    // The file this session's host is capturing its log into. Assigned by the
+    // host at spawn, and empty under a host that captures nothing, which is what
+    // leaves the console with nothing to show.
+    PROP(QString sessionLogPath)
+    PROP(QString sessionLogSizeLabel READONLY)
+    // Of the whole session, whether or not the line is still in the model.
+    PROP(int logLineCount READONLY)
+    PROP(int logErrorCount READONLY)
+    // How many of them the current filters leave on screen.
+    PROP(int logShownCount READONLY)
+    // One entry per domain: its name, how many lines it wrote, and whether the
+    // filter is letting them through. A silent domain and a filtered one read
+    // differently, which is the whole point of carrying the count.
+    PROP(QVariantList logDomains READONLY)
+    // Which LogLevels the filter passes, and the text it narrows to.
+    PROP(int logLevels READONLY)
+    PROP(QString logFilterText READONLY)
+    // The newest line written, which is what the status bar rests on to say the
+    // log is running.
+    PROP(QString logLastLine READONLY)
+
     SLOT(void createConversation(QString peerAddress))
     SLOT(void createGroupConversation(QString name, QString description))
     SLOT(void addGroupMember(QString conversationId, QString peerAddress))
@@ -48,7 +79,16 @@ class ChatBackend
     SLOT(void selectConversation(QString conversationId))
     SLOT(void refreshMembers())
 
+    SLOT(void setLogFilter(QString text))
+    SLOT(void setLogLevelEnabled(int level, bool enabled))
+    SLOT(void setLogDomainEnabled(QString domain, bool enabled))
+    // Writes the whole session file, and writes only the lines the filters
+    // currently show, to a fixed directory. Each reports where it landed.
+    SLOT(void exportSessionLog())
+    SLOT(void exportFilteredLog())
+
     // A message the module refused, so the composer can offer the text back.
     SIGNAL(sendFailed(QString conversationId, QString content))
     SIGNAL(error(QString message))
+    SIGNAL(logExported(QString path))
 }

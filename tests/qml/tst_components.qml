@@ -58,6 +58,21 @@ Item {
         }
     }
     ListModel {
+        id: logLinesMock
+        ListElement {
+            time: "14:32:07.114"
+            levelName: "error"
+            domain: "chat-module"
+            message: "delivery_module.send failed"
+        }
+        ListElement {
+            time: "14:32:09.377"
+            levelName: "info"
+            domain: "libchat"
+            message: "mls: welcome accepted"
+        }
+    }
+    ListModel {
         id: emptyMessagesMock
     }
     ListModel {
@@ -217,6 +232,64 @@ Item {
         }
     }
     Component {
+        id: logRowC
+        LogRow {
+            width: 400
+            time: "14:32:07.114"
+            levelName: "error"
+            domain: "chat-module"
+            message: "delivery_module.send failed: node not started"
+            alternate: false
+        }
+    }
+    Component {
+        id: logFilterChipC
+        LogFilterChip {
+            label: "libchat"
+            count: 4102
+            checked: true
+        }
+    }
+    Component {
+        id: consoleViewC
+        ConsoleView {
+            width: 700
+            height: 400
+            logModel: logLinesMock
+            domains: [
+                {
+                    name: "libchat",
+                    count: 12,
+                    enabled: true
+                },
+                {
+                    name: "chat-ui",
+                    count: 3,
+                    enabled: false
+                }
+            ]
+            levelOptions: [
+                {
+                    label: "warn",
+                    name: "warning",
+                    value: 4
+                },
+                {
+                    label: "error",
+                    name: "error",
+                    value: 8
+                }
+            ]
+            levels: 8
+            filterText: ""
+            lineCount: 15
+            shownCount: 15
+            errorCount: 2
+            logPath: "/tmp/session.log"
+            logSizeLabel: "4.1 MB"
+        }
+    }
+    Component {
         id: clipboardProxyC
         ClipboardProxy {}
     }
@@ -347,6 +420,18 @@ Item {
         id: errorActivatedSpy
         signalName: "errorActivated"
     }
+    SignalSpy {
+        id: consoleToggledSpy
+        signalName: "consoleToggled"
+    }
+    SignalSpy {
+        id: domainToggledSpy
+        signalName: "domainToggled"
+    }
+    SignalSpy {
+        id: levelToggledSpy
+        signalName: "levelToggled"
+    }
 
     TestCase {
         name: "ChatUiComponents"
@@ -398,6 +483,9 @@ Item {
             instantiate(messageSkeletonC);
             instantiate(emptyStateC);
             instantiate(statusBarC);
+            instantiate(logRowC);
+            instantiate(logFilterChipC);
+            instantiate(consoleViewC);
             instantiate(clipboardProxyC);
         }
 
@@ -1121,6 +1209,75 @@ Item {
             bar.errorCount = 1;
             mouseClick(message);
             compare(errorActivatedSpy.count, 1, "a held failure activates once");
+        }
+
+        // The console button carries the count as a badge, so a failure is
+        // visible from the button that leads to its history.
+        function test_statusBarBadgesTheConsoleButton() {
+            const bar = createTemporaryObject(statusBarC, testRoot);
+            verify(bar, "the strip must instantiate");
+            const badge = findField(bar, "consoleBadge");
+            const button = findField(bar, "consoleButton");
+            verify(badge && button, "the button and its badge must be reachable");
+            verify(!badge.visible, "nothing waiting earns no badge");
+
+            bar.errorCount = 3;
+            verify(badge.visible, "a waiting failure badges the button");
+
+            consoleToggledSpy.target = bar;
+            consoleToggledSpy.clear();
+            mouseClick(button);
+            compare(consoleToggledSpy.count, 1, "the button asks for the console");
+        }
+
+        // A notice answers something the reader just did, so it takes the strip
+        // for a moment even while a failure is being held, then gives it back.
+        function test_statusBarNoticeOutranksTheRestingLine() {
+            const bar = createTemporaryObject(statusBarC, testRoot);
+            verify(bar, "the strip must instantiate");
+            const message = findField(bar, "statusMessage");
+            bar.lastLine = "14:32:09.377  chat-module  delivery state: online";
+            compare(message.text, bar.lastLine, "at rest the strip carries the log");
+
+            bar.notice = "Exported to /home/me/Downloads/logos-chat.log";
+            compare(message.text, bar.notice, "a notice takes the strip");
+
+            bar.errorMessage = "Chat not online";
+            bar.errorCount = 1;
+            compare(message.text, bar.notice, "and keeps it while it lasts");
+            tryCompare(message, "text", bar.errorMessage, 8000, "then the failure has it");
+        }
+
+        // Toggling a filter reports the value the reader asked for, not the one
+        // on screen, so the backend is told to flip it.
+        function test_consoleFiltersReportTheFlippedState() {
+            const console = createTemporaryObject(consoleViewC, testRoot);
+            verify(console, "the console must instantiate");
+            domainToggledSpy.target = console;
+            domainToggledSpy.clear();
+            levelToggledSpy.target = console;
+            levelToggledSpy.clear();
+
+            const errorChip = findField(console, "levelChip_error");
+            verify(errorChip, "the error level must be reachable");
+            verify(errorChip.checked, "the fixture passes errors");
+            mouseClick(errorChip);
+            compare(levelToggledSpy.count, 1, "the level reports once");
+            compare(levelToggledSpy.signalArguments[0][0], 8, "naming the level");
+            compare(levelToggledSpy.signalArguments[0][1], false, "and asking for it off");
+        }
+
+        // The foot says how much is hidden, because a filtered view that looks
+        // complete is the console's worst failure mode.
+        function test_consoleTallyNamesWhatIsHidden() {
+            const console = createTemporaryObject(consoleViewC, testRoot);
+            verify(console, "the console must instantiate");
+            const tally = findField(console, "consoleTally");
+            verify(tally, "the tally must be reachable");
+            compare(tally.text, "15 lines, none hidden");
+
+            console.shownCount = 4;
+            compare(tally.text, "4 of 15 lines");
         }
     }
 }

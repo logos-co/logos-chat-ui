@@ -5,9 +5,10 @@
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
-    # Pinned to the chat_module rev whose roster carries pending invites and
-    # answers for a direct conversation; release tags predate it.
-    chat_module.url = "github:logos-co/logos-chat-module/af51050f922f17b65da942838b286fc26fb0acc8";
+    # Pinned to the chat_module branch that installs the tracing subscriber and
+    # names a severity and a target on every line, which is what lets the
+    # console tell libchat's events apart from the module's own.
+    chat_module.url = "github:logos-co/logos-chat-module/feat/raise-default-tracing-level";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
@@ -16,6 +17,15 @@
     # plain build renders with it.
     logos-design-system.url = "github:logos-co/logos-design-system/fix/controls-polish";
     chat_module.inputs.logos-module-builder.inputs.logos-design-system.follows = "logos-design-system";
+    # The host side of the session log: the app captures its own streams into
+    # <session dir>/logs and names the file to the view module, which is the
+    # only way the console learns where to read. Routed into the builder's
+    # inputs, which is where the host shell `nix run` uses is pinned.
+    logos-view-module-runtime.url = "github:osmaczko/logos-view-module-runtime/feat/session-log-arg";
+    logos-standalone-app.url = "github:osmaczko/logos-standalone-app/feat/session-log";
+    logos-standalone-app.inputs.logos-view-module-runtime.follows = "logos-view-module-runtime";
+    logos-standalone-app.inputs.logos-design-system.follows = "logos-design-system";
+    chat_module.inputs.logos-module-builder.inputs.logos-standalone-app.follows = "logos-standalone-app";
   };
 
   outputs = inputs@{ logos-module-builder, logos-delivery-module, ... }:
