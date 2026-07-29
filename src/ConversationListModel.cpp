@@ -1,5 +1,8 @@
 #include "ConversationListModel.h"
 
+#include "Identity.h"
+#include "TimeFormat.h"
+
 #include <QDate>
 #include <QLocale>
 
@@ -28,6 +31,9 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     case UnreadCountRole:         return item.unreadCount;
     case IsGroupRole:             return item.isGroup;
     case PreviewRole:             return item.preview;
+    case DescriptionRole:         return item.description;
+    case AvatarInitialsRole:      return Identity::initials(item.conversationId);
+    case AvatarRampRole:          return Identity::avatarRamp(Identity::shortLabel(item.conversationId));
     default:                      return {};
     }
 }
@@ -41,7 +47,10 @@ QHash<int, QByteArray> ConversationListModel::roleNames() const
         { LastActivityDisplayRole, "lastActivityDisplay" },
         { UnreadCountRole,         "unreadCount" },
         { IsGroupRole,             "isGroup" },
-        { PreviewRole,             "preview" }
+        { PreviewRole,             "preview" },
+        { DescriptionRole,         "description" },
+        { AvatarInitialsRole,      "avatarInitials" },
+        { AvatarRampRole,          "avatarRamp" }
     };
 }
 
@@ -70,7 +79,10 @@ void ConversationListModel::updateDescription(const QString& id, const QString& 
 {
     int idx = indexOf(id);
     if (idx < 0) return;
+
+    if (m_items[idx].description == description) return;
     m_items[idx].description = description;
+    emit dataChanged(index(idx), index(idx), { DescriptionRole });
 }
 
 void ConversationListModel::updatePreview(const QString& id, const QString& preview)
@@ -109,6 +121,26 @@ void ConversationListModel::clearUnread(const QString& id)
     if (m_items[idx].unreadCount == 0) return;
     m_items[idx].unreadCount = 0;
     emit dataChanged(index(idx), index(idx), { UnreadCountRole });
+}
+
+QHash<QString, int> ConversationListModel::unreadCounts() const
+{
+    QHash<QString, int> counts;
+    for (const auto& item : m_items) {
+        if (item.unreadCount > 0)
+            counts.insert(item.conversationId, item.unreadCount);
+    }
+    return counts;
+}
+
+void ConversationListModel::restoreUnreadCounts(const QHash<QString, int>& counts)
+{
+    for (int i = 0; i < m_items.size(); ++i) {
+        const int count = counts.value(m_items.at(i).conversationId, 0);
+        if (count == 0 || m_items[i].unreadCount == count) continue;
+        m_items[i].unreadCount = count;
+        emit dataChanged(index(i), index(i), { UnreadCountRole });
+    }
 }
 
 void ConversationListModel::removeConversation(const QString& id)
@@ -170,7 +202,7 @@ QString ConversationListModel::formatLastActivity(const QDateTime& lastActivity)
     const QDate today = QDate::currentDate();
     const QDate date = lastActivity.date();
     if (date == today)
-        return locale.toString(lastActivity.time(), QLocale::ShortFormat);
+        return TimeFormat::shortTime(lastActivity);
     if (date == today.addDays(-1))
         return tr("Yesterday");
     return locale.toString(date, QLocale::ShortFormat);

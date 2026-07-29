@@ -2,16 +2,40 @@ import QtQuick
 import QtCore
 import QtQuick.Layouts
 
+import Logos.Theme
+
 import ChatUi
 
 // Entry view (metadata.json "view"). Instantiates the store, which is the sole
 // reader of the host `logos` context property, and composes the panes, wiring
 // their signals to the store's actions. All UI lives in the ChatUi module; this
 // file is composition only.
-Item {
+Rectangle {
     id: root
-    implicitWidth: 900
-    implicitHeight: 650
+    implicitWidth: 1000
+    implicitHeight: 700
+    color: Theme.palette.backgroundInset
+
+    // The row the user just picked, carrying its own data so the sidebar and the
+    // header move in the same frame as the click instead of waiting for the
+    // backend. It stops applying as soon as the backend reports that
+    // conversation loaded, from when on the store is the truth again.
+    property var pendingSelection: null
+
+    readonly property var optimisticSelection: root.pendingSelection && store.loadedConversationId !== root.pendingSelection.conversationId ? root.pendingSelection : null
+
+    readonly property string selectedConversationId: root.optimisticSelection ? root.optimisticSelection.conversationId : store.currentConversationId
+    readonly property string selectedDisplayName: root.optimisticSelection ? root.optimisticSelection.displayName : store.currentDisplayName
+    readonly property string selectedDescription: root.optimisticSelection ? root.optimisticSelection.description : store.currentDescription
+    readonly property bool selectedIsGroup: root.optimisticSelection ? root.optimisticSelection.isGroup : store.currentIsGroup
+    readonly property string selectedAvatarInitials: root.optimisticSelection ? root.optimisticSelection.avatarInitials : store.currentAvatarInitials
+    readonly property int selectedAvatarRamp: root.optimisticSelection ? root.optimisticSelection.avatarRamp : store.currentAvatarRamp
+    // Whether the models hold the selected conversation's data.
+    readonly property bool selectionLoaded: store.loadedConversationId === root.selectedConversationId
+
+    // Whether the conversation's details panel is showing, toggled from the
+    // thread header and left as the user last set it.
+    property bool detailsShown: false
 
     ChatStore {
         id: store
@@ -19,75 +43,116 @@ Item {
 
     Connections {
         target: store
-        function onAddressReady(address) {
-            addressDialog.addressText = address;
-            addressDialog.open();
-        }
         function onErrorOccurred(message) {
             toast.show(message);
         }
+        function onSendFailed(conversationId, content) {
+            threadPane.restoreFailedSend(conversationId, content);
+        }
+        // The backend switched somewhere else (a new conversation opening, the
+        // selected one going away), which retires the pending row.
+        function onCurrentConversationIdChanged() {
+            if (root.pendingSelection && store.currentConversationId !== root.pendingSelection.conversationId)
+                root.pendingSelection = null;
+        }
     }
 
-    ColumnLayout {
+    RowLayout {
         anchors.fill: parent
-        spacing: 0
+        anchors.margins: Theme.spacing.medium
+        spacing: Theme.spacing.medium
 
-        RowLayout {
-            Layout.fillWidth: true
+        ColumnLayout {
+            // A layout nested in a layout fills by default, which would hand
+            // the sidebar the slack meant for the thread.
+            Layout.fillWidth: false
+            Layout.preferredWidth: 320
+            Layout.minimumWidth: 260
             Layout.fillHeight: true
-            spacing: 0
+            spacing: Theme.spacing.medium
 
             ConversationsPane {
                 id: conversationsPane
-                Layout.preferredWidth: 260
-                Layout.minimumWidth: 200
+                Layout.fillWidth: true
                 Layout.fillHeight: true
                 conversationModel: store.conversationModel
-                currentConversationId: store.currentConversationId
+                currentConversationId: root.selectedConversationId
                 online: store.online
-                onConversationSelected: function (conversationId) {
-                    store.selectConversation(conversationId);
+                onConversationSelected: function (conversation) {
+                    root.pendingSelection = conversation;
+                    store.selectConversation(conversation.conversationId);
                 }
                 onNewConversationRequested: newConvDialog.open()
                 onNewGroupRequested: newGroupDialog.open()
-                onShowAddressRequested: store.requestMyAddress()
             }
 
-            MessageThreadPane {
-                id: threadPane
+            AccountCard {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
-                messageModel: store.messageModel
-                currentIsGroup: store.currentIsGroup
-                title: store.currentDisplayName
-                description: store.currentDescription
-                conversationId: store.currentConversationId
-                hasConversation: store.hasCurrentConversation
-                hasConversations: conversationsPane.count > 0
+                address: store.myAddress
+                label: store.myLabel
+                initials: store.myInitials
                 online: store.online
-                onMessageSubmitted: function (text) {
-                    store.sendMessage(text);
-                }
-                onGroupInfoRequested: groupInfoDialog.open()
-            }
-
-            MembersPane {
-                visible: store.currentIsGroup
-                Layout.preferredWidth: 220
-                Layout.fillHeight: true
-                memberModel: store.memberModel
-                online: store.online
-                onAddMemberRequested: addMemberDialog.open()
+                statusLabel: store.statusLabel
             }
         }
 
-        StatusBar {
+        MessageThreadPane {
+            id: threadPane
             Layout.fillWidth: true
-            statusMessage: store.statusMessage
-            statusLabel: store.statusLabel
+            // The thread is what the window is for, so a window too narrow for
+            // all three columns clips the right one rather than the thread.
+            Layout.minimumWidth: 360
+            Layout.fillHeight: true
+            messageModel: store.messageModel
+            currentIsGroup: root.selectedIsGroup
+            title: root.selectedDisplayName
+            description: root.selectedDescription
+            avatarInitials: root.selectedAvatarInitials
+            avatarRamp: root.selectedAvatarRamp
+            conversationId: root.selectedConversationId
+            memberModel: store.memberModel
+            memberCount: store.memberCount
+            detailsShown: root.detailsShown
+            hasConversation: root.selectedConversationId !== ""
+            hasConversations: conversationsPane.count > 0
             online: store.online
-            hasError: store.hasError
-            identity: store.myIdentity
+            ready: root.selectionLoaded
+            onMessageSubmitted: function (text) {
+                store.sendMessage(text);
+            }
+            onDetailsRequested: root.detailsShown = !root.detailsShown
+        }
+
+        ColumnLayout {
+            visible: root.selectedConversationId !== "" && (root.selectedIsGroup || root.detailsShown)
+            Layout.fillWidth: false
+            Layout.preferredWidth: 280
+            Layout.fillHeight: true
+            spacing: Theme.spacing.medium
+
+            DetailsPanel {
+                id: detailsPanel
+                visible: root.detailsShown
+                Layout.fillWidth: true
+                isGroup: root.selectedIsGroup
+                description: root.selectedDescription
+                conversationId: root.selectedConversationId
+                peerAddress: store.currentPeerAddress
+                memberCount: store.memberCount
+                pendingMemberCount: store.pendingMemberCount
+                onCloseRequested: root.detailsShown = false
+            }
+
+            MembersPane {
+                visible: root.selectedIsGroup
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                memberModel: store.memberModel
+                memberCount: store.memberCount
+                online: store.online
+                ready: root.selectionLoaded
+                onAddMemberRequested: addMemberDialog.open()
+            }
         }
     }
 
@@ -103,18 +168,6 @@ Item {
         onGroupDetailsEntered: function (name, description) {
             store.createGroup(name, description);
         }
-    }
-
-    AddressDialog {
-        id: addressDialog
-    }
-
-    GroupInfoDialog {
-        id: groupInfoDialog
-        groupName: store.currentDisplayName
-        description: store.currentDescription
-        memberCount: store.memberCount
-        conversationId: store.currentConversationId
     }
 
     AddMemberDialog {

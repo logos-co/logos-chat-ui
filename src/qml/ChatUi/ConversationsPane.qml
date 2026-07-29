@@ -7,9 +7,9 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// The conversation sidebar: a header with new-chat and new-group actions plus an
-// online indicator, the keyboard-navigable conversation list, and a
-// show-my-address action. Data in via properties, intent out via signals.
+// The conversations card: the one action that starts a conversation, over the
+// keyboard-navigable list of the ones already open. Data in via properties,
+// intent out via signals.
 Rectangle {
     id: root
 
@@ -17,106 +17,121 @@ Rectangle {
     required property string currentConversationId
     required property bool online
 
-    signal conversationSelected(string conversationId)
+    // Carries the selected row's own data, so a view can render the selection
+    // before the backend has switched to it.
+    signal conversationSelected(var conversation)
     signal newConversationRequested
     signal newGroupRequested
-    signal showAddressRequested
 
     // Exposed for the exchange doc-test's inspector hooks.
     property alias count: convList.count
 
-    implicitWidth: 260
-    color: Theme.palette.backgroundInset
+    implicitWidth: 320
+    implicitHeight: 400
+    radius: Theme.spacing.radiusXlarge
+    color: Theme.palette.backgroundTertiary
+    border.width: 1
+    border.color: Theme.palette.borderSubtle
+
+    QtObject {
+        id: d
+
+        // Select the keyboard-focused row, giving it the same effect as a click.
+        function activateCurrent() {
+            const row = convList.currentItem as ConversationDelegate;
+            if (row)
+                root.conversationSelected(row.conversation);
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
+        anchors.margins: Theme.spacing.medium
+        spacing: Theme.spacing.small
 
-        PaneHeader {
+        LogosButton {
+            id: newButton
+            objectName: "newMenuButton"
+            //: Button that opens the menu of conversations one can start
+            text: qsTr("New chat")
+            variant: LogosButton.Variant.Primary
+            radius: Theme.spacing.radiusLarge
+            font.pixelSize: Theme.typography.primaryText
+            leadingIcon.source: Qt.resolvedUrl("icons/plus.png")
+            leadingIcon.size: 18
+            leadingIcon.color: Theme.palette.backgroundBlack
+            trailingIcon.source: Qt.resolvedUrl("icons/caret-down.png")
+            trailingIcon.size: 14
+            trailingIcon.color: Theme.palette.backgroundBlack
+            enabled: root.online
+            onClicked: newMenu.popup(0, newButton.height + Theme.spacing.tiny)
             Layout.fillWidth: true
-            title: qsTr("Chat")
+            Layout.preferredHeight: 40
 
-            Rectangle {
-                width: 8
-                height: 8
-                radius: 4
-                color: root.online ? Theme.palette.success : Theme.palette.textMuted
-                Layout.alignment: Qt.AlignVCenter
+            // The design system's label is white whatever the fill; on the
+            // primary accent that is the pair with the least contrast.
+            Binding {
+                target: newButton.labelItem
+                property: "color"
+                value: newButton.enabled ? Theme.palette.backgroundBlack : Theme.palette.textMuted
             }
-            LogosButton {
-                id: newButton
-                implicitWidth: 84
-                implicitHeight: 30
-                //: Button that starts a new direct message (1:1) conversation
-                text: qsTr("New DM")
-                enabled: root.online
-                onClicked: root.newConversationRequested()
-                Layout.alignment: Qt.AlignVCenter
 
-                LogosToolTip {
-                    text: qsTr("New direct message")
-                    placement: LogosToolTip.Bottom
-                    visible: newButton.hovered
+            LogosMenu {
+                id: newMenu
+                objectName: "newMenu"
+
+                ChatMenuItem {
+                    objectName: "newDmMenuItem"
+                    //: Menu entry that starts a new direct message (1:1) conversation
+                    text: qsTr("Direct message")
+                    //: Says what a direct message is, under its menu entry
+                    description: qsTr("One person, by address")
+                    iconSource: Qt.resolvedUrl("icons/person.png")
+                    onTriggered: root.newConversationRequested()
                 }
-            }
-            LogosButton {
-                id: groupButton
-                implicitWidth: 84
-                implicitHeight: 30
-                //: Button that starts a new group conversation
-                text: qsTr("New group")
-                enabled: root.online
-                onClicked: root.newGroupRequested()
-                Layout.alignment: Qt.AlignVCenter
-
-                LogosToolTip {
-                    text: qsTr("New group conversation")
-                    placement: LogosToolTip.Bottom
-                    visible: groupButton.hovered
+                ChatMenuItem {
+                    objectName: "newGroupMenuItem"
+                    //: Menu entry that starts a new group conversation
+                    text: qsTr("Group")
+                    //: Says what a group is, under its menu entry
+                    description: qsTr("Named, with members")
+                    iconSource: Qt.resolvedUrl("icons/group.png")
+                    onTriggered: root.newGroupRequested()
                 }
             }
         }
 
         ListView {
             id: convList
+            objectName: "conversationList"
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
             focus: true
             reuseItems: true
+            spacing: Theme.spacing.tiny
             model: root.conversationModel
             currentIndex: -1
 
-            Keys.onReturnPressed: if (currentItem)
-                root.conversationSelected((currentItem as ConversationDelegate).conversationId)
-            Keys.onEnterPressed: if (currentItem)
-                root.conversationSelected((currentItem as ConversationDelegate).conversationId)
+            Keys.onReturnPressed: d.activateCurrent()
+            Keys.onEnterPressed: d.activateCurrent()
 
             ScrollBar.vertical: LogosScrollBar {}
 
             delegate: ConversationDelegate {
                 width: ListView.view.width
                 currentConversationId: root.currentConversationId
-                onActivated: function (conversationId) {
-                    root.conversationSelected(conversationId);
+                onActivated: function (conversation) {
+                    root.conversationSelected(conversation);
                 }
             }
 
             EmptyState {
                 anchors.centerIn: parent
-                width: parent.width - 2 * Theme.spacing.large
+                width: parent.width - 2 * Theme.spacing.medium
                 visible: convList.count === 0
-                text: root.online ? qsTr("No conversations yet. Start one with New DM, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
+                text: root.online ? qsTr("No conversations yet. Use New chat to start one, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
             }
-        }
-
-        LogosButton {
-            Layout.fillWidth: true
-            Layout.margins: Theme.spacing.small
-            implicitHeight: 40
-            text: qsTr("Show My Address")
-            enabled: root.online
-            onClicked: root.showAddressRequested()
         }
     }
 }

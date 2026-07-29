@@ -46,7 +46,7 @@ LogosDialog {
             //: Button that confirms creating the new group
             text: qsTr("Create")
             enabled: nameField.text.trim() !== "" && nameField.text.length <= root.nameLimit && descriptionField.text.length <= root.descriptionLimit
-            onClicked: root._accept()
+            onClicked: d.accept()
         }
     ]
 
@@ -83,7 +83,7 @@ LogosDialog {
             Connections {
                 target: nameField.textInput
                 function onAccepted() {
-                    root._accept();
+                    d.accept();
                 }
             }
         }
@@ -129,16 +129,21 @@ LogosDialog {
         }
     }
 
-    // Emit the trimmed name and description, clear the inputs, and close. No-op
-    // unless the name is non-empty and both fields are within their limits, so
-    // neither Enter nor Create can create a group from invalid input.
-    function _accept() {
-        const name = nameField.text.trim();
-        if (name === "" || nameField.text.length > root.nameLimit || descriptionField.text.length > root.descriptionLimit)
-            return;
-        root.groupDetailsEntered(name, descriptionField.text.trim());
-        nameField.text = "";
-        descriptionField.clear();
-        root.close();
+    QtObject {
+        id: d
+
+        // Emit the trimmed name and description, clear the inputs, and close.
+        // No-op unless the name is non-empty and both fields are within their
+        // limits, so neither Enter nor Create can create a group from invalid
+        // input.
+        function accept() {
+            const name = nameField.text.trim();
+            if (name === "" || nameField.text.length > root.nameLimit || descriptionField.text.length > root.descriptionLimit)
+                return;
+            root.groupDetailsEntered(name, descriptionField.text.trim());
+            nameField.text = "";
+            descriptionField.clear();
+            root.close();
+        }
     }
 }

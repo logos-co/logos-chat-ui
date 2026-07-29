@@ -28,7 +28,14 @@ public:
         // messages and to break the run with a day heading.
         SameSenderAsPreviousRole,
         ShowDaySeparatorRole,
-        DayLabelRole
+        DayLabelRole,
+        // Clock time for the bubble, formatted here so every timestamp in the UI
+        // shares one locale and shape.
+        TimeDisplayRole,
+        // Avatar identity for the sender, on the same rule as the roster's, so
+        // a member wears one colour in the thread and in the member list.
+        AvatarInitialsRole,
+        AvatarRampRole
     };
 
     explicit MessageListModel(QObject* parent = nullptr);

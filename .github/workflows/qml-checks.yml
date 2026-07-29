@@ -3,9 +3,9 @@ name: QML Checks
 # Static and unit checks for the plugin's QML, complementing the end-to-end
 # doc-tests. Runs qmllint over the view and Qt Quick Test over the ChatUi
 # components (headless, offscreen). Both need the Logos design system on the QML
-# import path, so this first builds this flake's standalone app (which bundles
-# lib/Logos) and points the tools at it. The Qt Quick tooling itself comes from
-# nixpkgs' qt6.qtdeclarative.
+# import path, which it takes from the design system's own source tree at the
+# rev this flake resolves. The Qt Quick tooling itself comes from nixpkgs'
+# qt6.qtdeclarative.
 #
 # A qmlformat --check gate is intentionally omitted: qmlformat's output varies
 # between Qt versions, so a gate run against the CI's Qt would flag files a
@@ -40,32 +40,20 @@ jobs:
           attic-token-ci: ${{ secrets.ATTIC_TOKEN_CI }}
           attic-token-public: ${{ secrets.ATTIC_TOKEN_PUBLIC }}
 
-      # Build the standalone app to obtain the design system the plugin QML
-      # imports. The app exposes no buildable package attr, so recover its
-      # derivation from the program string's context, exactly as the doc-test
-      # workflow does, and build it. The design system is bundled as
-      # <pkg>/lib/Logos by the standalone app, which the runner references at
-      # runtime, so it lives in the runner's closure rather than in the runner
-      # output itself; scan the closure for it.
+      # The design system ships Logos.Theme/.Icons/.Controls as static
+      # qt_add_qml_module targets an app links, so no built artifact carries a
+      # loose QML tree the tools could import. Take its source tree instead, at
+      # the rev this flake resolves through chat_module's builder, which is the
+      # one the app is built against.
       - name: Locate the Logos design system
         id: ds
         shell: bash
         run: |
           set -euo pipefail
-          sys="$(nix eval --impure --raw --expr builtins.currentSystem)"
-          drv="$(nix eval --impure --raw --expr \
-            "builtins.head (builtins.attrNames (builtins.getContext (builtins.getFlake (toString ./.)).apps.\"$sys\".default.program))")"
-          nix build --no-link "$drv^*" -L
-          runner="$(nix build --no-link --print-out-paths "$drv^*" | head -n1)"
-          importpath=""
-          for d in $(nix-store --query --requisites "$runner"); do
-            if [ -d "$d/lib/Logos/Theme" ]; then importpath="$d/lib"; break; fi
-          done
-          if [ -z "$importpath" ]; then
-            echo "Could not find lib/Logos/Theme in the app closure of $runner" >&2
-            for d in $(nix-store --query --requisites "$runner"); do
-              find "$d" -maxdepth 3 -type d -name Logos 2>/dev/null || true
-            done >&2
+          importpath="$(nix eval --impure --raw --expr \
+            '(builtins.getFlake (toString ./.)).inputs.chat_module.inputs.logos-module-builder.inputs.logos-design-system.outPath')/src/qml"
+          if [ ! -d "$importpath/Logos/Theme" ]; then
+            echo "No Logos/Theme under $importpath" >&2
             exit 1
           fi
           echo "importpath=$importpath" >> "$GITHUB_OUTPUT"

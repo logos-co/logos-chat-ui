@@ -19,6 +19,10 @@ logos_module(
         src/MessageListModel.cpp
         src/MemberListModel.h
         src/MemberListModel.cpp
+        src/TimeFormat.h
+        src/TimeFormat.cpp
+        src/Identity.h
+        src/Identity.cpp
     INCLUDE_DIRS
         src
 )
@@ -45,19 +49,31 @@ if(CHAT_UI_QML_DEVTOOLS)
         QML_FILES
             src/qml/ChatUi/ChatTheme.qml
             src/qml/ChatUi/ChatStore.qml
-            src/qml/ChatUi/PaneHeader.qml
+            src/qml/ChatUi/PanelHeader.qml
+            src/qml/ChatUi/DetailRow.qml
+            src/qml/ChatUi/DetailsPanel.qml
+            src/qml/ChatUi/ChatIconButton.qml
+            src/qml/ChatUi/Avatar.qml
+            src/qml/ChatUi/AccountCard.qml
             src/qml/ChatUi/EmptyState.qml
             src/qml/ChatUi/ClipboardProxy.qml
-            src/qml/ChatUi/StatusBar.qml
+            src/qml/ChatUi/ChatMenuItem.qml
             src/qml/ChatUi/MessageComposer.qml
             src/qml/ChatUi/Toast.qml
-            src/qml/ChatUi/MessageBubble.qml
+            src/qml/ChatUi/MessageDelegate.qml
+            src/qml/ChatUi/DayChip.qml
+            src/qml/ChatUi/Facepile.qml
+            src/qml/ChatUi/ThreadHeader.qml
+            src/qml/ChatUi/MessageSkeleton.qml
             src/qml/ChatUi/ConversationDelegate.qml
             src/qml/ChatUi/MemberDelegate.qml
             src/qml/ChatUi/ConversationsPane.qml
             src/qml/ChatUi/MessageThreadPane.qml
             src/qml/ChatUi/MembersPane.qml
             src/qml/ChatUi/NewConversationDialog.qml
-            src/qml/ChatUi/AddressDialog.qml
+            src/qml/ChatUi/NewGroupDialog.qml
+            src/qml/ChatUi/MemberAddInfoDialog.qml
+            src/qml/ChatUi/AddMemberDialog.qml
+            src/qml/ChatUi/SelectableText.qml
     )
 endif()

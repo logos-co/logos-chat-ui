@@ -2,7 +2,6 @@
 #define CHAT_BACKEND_H
 
 #include <QObject>
-#include <QSet>
 #include <QSortFilterProxyModel>
 #include <QString>
 #include <QVariantList>
@@ -39,23 +38,28 @@ public slots:
     void createConversation(QString peerAddress) override;
     void createGroupConversation(QString name, QString description) override;
     void addGroupMember(QString conversationId, QString peerAddress) override;
-    void requestMyAddress() override;
     void sendMessage(QString conversationId, QString content) override;
     void selectConversation(QString conversationId) override;
-    // Reloads the current group's roster into memberModel; clears it for a
-    // direct conversation. A synchronous module read, so never call it from
-    // inside a module event callback without deferToEventLoop.
+    // Reloads the current conversation's roster into memberModel. A synchronous
+    // module read, so never call it from inside a module event callback without
+    // deferToEventLoop.
     void refreshMembers() override;
 
 private:
     void initialiseModule();
     void subscribeToEvents();
     void rehydrateConversations();
+    // Reads this account's own address into the myAddress property. A
+    // synchronous module read, so never call it from inside a module event
+    // callback without deferToEventLoop.
+    void refreshMyAddress();
     // Pushes the current conversation's group flag, display name, and description
     // as backend properties for the QML view to bind — see the .cpp for why the
     // view can't read them off the model directly.
     void syncCurrentConversationMeta();
-    void showConversationMessages(const QString& convoId);
+    // Loads a conversation's messages into messageModel. False when the module
+    // could not be read, leaving the model as it was.
+    bool showConversationMessages(const QString& convoId);
 
     // Runs `work` on the next event-loop turn. A module read (list_conversations/
     // get_messages) is a synchronous QtRO call; issuing one from inside a module
@@ -74,6 +78,10 @@ private:
     void applyMembersChanged(const QVariantList& args);
     void applyConversationDeleted(const QVariantList& args);
 
+    // The other participant in a direct conversation's roster; empty for a group
+    // or when no other account is on it.
+    static QString peerAddressOf(const QVector<MemberItem>& members, bool isGroup);
+
     static QString fallbackDisplayName(const QString& convoId, const QString& peerLabel = QString(),
                                        bool isGroup = false);
 
@@ -87,11 +95,6 @@ private:
     MessageListModel* m_messageModel;
     MemberListModel* m_memberModel;
 
-    // This installation's own address, cached lazily on first roster refresh to
-    // mark the self entry.
-    QString m_myAddress;
-    // Addresses invited into the current group but not yet committed to its roster.
-    QSet<QString> m_pendingMembers;
     bool m_moduleInitialised = false;
     // Set once the initial snapshot has loaded; gates the reconnect resync in
     // applyDeliveryState so it doesn't fire during initial setup.

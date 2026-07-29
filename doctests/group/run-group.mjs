@@ -44,8 +44,8 @@ class Inspector {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Evaluate a QML expression in ChatView's root scope (the ids store,
-// conversationsPane, threadPane, addressDialog are all in scope there;
-// store.memberModel is the roster).
+// conversationsPane and threadPane are all in scope there; store.memberModel is
+// the roster).
 async function evalq(insp, expr) {
   const r = await insp.send("evaluate", { expression: expr });
   if (r.error) throw new Error(`eval(${expr}): ${r.error}`);
@@ -80,8 +80,12 @@ async function loadThread(insp, convId, minCount, { timeout = 120000 } = {}) {
     await evalq(insp, `store.backend.selectConversation(${JSON.stringify(convId)})`);
     const innerStart = Date.now();
     while (Date.now() - innerStart < 8000) {
+      // threadReady as well as the count: the pane hides its rows until the
+      // models report the selected conversation, and the screenshots that
+      // follow must show the thread rather than its loading state.
+      const shown = await evalq(insp, "threadPane.threadReady");
       const c = await evalq(insp, "threadPane.messageCount");
-      if (typeof c === "number" && c >= minCount) return c;
+      if (shown === true && typeof c === "number" && c >= minCount) return c;
       await sleep(1000);
     }
   }
@@ -109,22 +113,16 @@ async function waitForRoster(insp, minCount, { timeout = 150000, what = "roster"
   throw new Error(`${what} did not reach ${minCount} members (last ${last})`);
 }
 
-// Ask for the instance's address, wait for it to surface, then close the dialog
-// so it doesn't sit over the window. requestMyAddress triggers a synchronous
-// get_address RPC; the address arrives in addressDialog.addressText via the
-// addressReady signal.
+// Wait for the instance's own address. The backend reads it once the module
+// comes online, so it surfaces on store.myAddress shortly after store.online.
 async function getAddress(insp) {
-  await evalq(insp, `addressDialog.addressText = ""`);
-  await evalq(insp, "store.backend.requestMyAddress()");
-  const start = Date.now(); let addr = "";
+  const start = Date.now();
   while (Date.now() - start < 25000) {
-    const t = await evalq(insp, "addressDialog.addressText");
-    if (typeof t === "string" && t.length > 0) { addr = t; break; }
+    const t = await evalq(insp, "store.myAddress");
+    if (typeof t === "string" && t.length > 0) return t;
     await sleep(1000);
   }
-  await evalq(insp, "addressDialog.close()");
-  if (!addr) throw new Error("address was not produced");
-  return addr;
+  throw new Error("address was not produced");
 }
 
 const CONV_ID_ROLE = 257; // ConversationListModel::ConversationIdRole (Qt::UserRole + 1)

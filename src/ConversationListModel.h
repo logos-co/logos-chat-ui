@@ -3,6 +3,7 @@
 
 #include <QAbstractListModel>
 #include <QDateTime>
+#include <QHash>
 #include <QString>
 #include <QVector>
 
@@ -34,7 +35,13 @@ public:
         // day-tick timer.
         LastActivityDisplayRole,
         // Truncated last-message content for the list preview.
-        PreviewRole
+        PreviewRole,
+        DescriptionRole,
+        // Avatar identity, derived from the conversation id rather than the
+        // display name: a direct conversation's name is generated from that id
+        // too, and a group's avatar carries a glyph instead of initials.
+        AvatarInitialsRole,
+        AvatarRampRole
     };
 
     explicit ConversationListModel(QObject* parent = nullptr);
@@ -52,6 +59,10 @@ public:
     void updateLastActivity(const QString& id, const QDateTime& lastActivity);
     void incrementUnread(const QString& id);
     void clearUnread(const QString& id);
+    // Unread counts by conversation id, and their restoration onto a rebuilt
+    // list: the module does not track them, so a rebuild would drop them.
+    QHash<QString, int> unreadCounts() const;
+    void restoreUnreadCounts(const QHash<QString, int>& counts);
     void removeConversation(const QString& id);
     void clear();
     bool contains(const QString& id) const;

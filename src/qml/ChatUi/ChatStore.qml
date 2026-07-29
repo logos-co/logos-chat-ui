@@ -19,15 +19,22 @@ QtObject {
     readonly property bool online: backend ? backend.chatStatus === ChatBackend.Online : false
     readonly property bool hasError: backend ? backend.chatStatus === ChatBackend.Error : false
     readonly property string currentConversationId: backend ? backend.currentConversationId : ""
-    readonly property bool hasCurrentConversation: currentConversationId !== ""
+    readonly property string loadedConversationId: backend ? backend.loadedConversationId : ""
     readonly property bool currentIsGroup: backend ? backend.currentIsGroup : false
     readonly property string currentDisplayName: backend ? backend.currentDisplayName : ""
     readonly property string currentDescription: backend ? backend.currentDescription : ""
+    readonly property string currentAvatarInitials: backend ? backend.currentAvatarInitials : ""
+    readonly property int currentAvatarRamp: backend ? backend.currentAvatarRamp : 0
     readonly property int memberCount: backend ? backend.memberCount : 0
-    readonly property string statusMessage: backend ? backend.statusMessage : qsTr("No backend")
-    readonly property string myIdentity: backend ? backend.myIdentity : ""
+    readonly property int pendingMemberCount: backend ? backend.pendingMemberCount : 0
+    readonly property string currentPeerAddress: backend ? backend.currentPeerAddress : ""
+    // This account's own address, empty until the backend is online, and its
+    // short form.
+    readonly property string myAddress: backend ? backend.myAddress : ""
+    readonly property string myLabel: backend ? backend.myLabel : ""
+    readonly property string myInitials: backend ? backend.myInitials : ""
 
-    // Short connectivity label for the status bar.
+    // Short connectivity label for the account card.
     readonly property string statusLabel: {
         if (!backend)
             return qsTr("No backend");
@@ -47,8 +54,8 @@ QtObject {
 
     // Backend one-shot signals, relayed so the view never touches the backend
     // object directly.
-    signal addressReady(string address)
     signal errorOccurred(string message)
+    signal sendFailed(string conversationId, string content)
 
     // Actions. Discrete effects, so imperative here is appropriate.
     function selectConversation(conversationId) {
@@ -67,10 +74,6 @@ QtObject {
         if (backend)
             backend.createGroupConversation(name, description);
     }
-    function requestMyAddress() {
-        if (backend)
-            backend.requestMyAddress();
-    }
     function addMember(address) {
         if (backend && currentConversationId !== "")
             backend.addGroupMember(currentConversationId, address);
@@ -78,11 +81,11 @@ QtObject {
 
     property Connections _backendSignals: Connections {
         target: root.backend
-        function onAddressReady(address) {
-            root.addressReady(address);
-        }
         function onError(message) {
             root.errorOccurred(message);
+        }
+        function onSendFailed(conversationId, content) {
+            root.sendFailed(conversationId, content);
         }
     }
 }

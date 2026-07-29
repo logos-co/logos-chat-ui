@@ -8,28 +8,47 @@ class ChatBackend
     }
 
     PROP(ChatStatus chatStatus READONLY)
-    PROP(QString myIdentity READONLY)
-    PROP(QString statusMessage READONLY)
+    // This account's own address, the string a peer needs to reach it. Fetched
+    // once the module comes online, so the view can show it from first paint.
+    PROP(QString myAddress READONLY)
+    // Short form of myAddress, on the same rule as a roster row's label, and
+    // the two-letter form its avatar carries.
+    PROP(QString myLabel READONLY)
+    PROP(QString myInitials READONLY)
     PROP(QString currentConversationId)
+    // The conversation whose messages and roster the models currently hold.
+    // Empty while a selection is being loaded, so the view can tell a loaded
+    // thread from the rows of the conversation left behind.
+    PROP(QString loadedConversationId READONLY)
     // Derived from the current conversation, kept here (not read off the model)
     // because the models reach QML as QtRO replicas that don't proxy the model's
     // Q_INVOKABLE lookups (isGroupFor/displayNameFor/descriptionFor).
     PROP(bool currentIsGroup READONLY)
     PROP(QString currentDisplayName READONLY)
     PROP(QString currentDescription READONLY)
-    // The current group's roster size. Exposed as a property (not read off
-    // memberModel) because the model reaches QML as a QtRO replica whose
-    // rowCount() a non-view caller can't rely on.
+    // The current conversation's avatar identity, on the same rule as the
+    // conversation model's rows.
+    PROP(QString currentAvatarInitials READONLY)
+    PROP(int currentAvatarRamp READONLY)
+    // How many members the current conversation has committed; pending invites
+    // are listed in memberModel but not counted here. Exposed as a property (not
+    // read off memberModel) because the model reaches QML as a QtRO replica
+    // whose rowCount() a non-view caller can't rely on.
     PROP(int memberCount READONLY)
+    // Members invited into the current group and awaiting its commit.
+    PROP(int pendingMemberCount READONLY)
+    // The other participant's address in the current direct conversation, empty
+    // for a group or while the roster is unknown.
+    PROP(QString currentPeerAddress READONLY)
 
     SLOT(void createConversation(QString peerAddress))
     SLOT(void createGroupConversation(QString name, QString description))
     SLOT(void addGroupMember(QString conversationId, QString peerAddress))
-    SLOT(void requestMyAddress())
     SLOT(void sendMessage(QString conversationId, QString content))
     SLOT(void selectConversation(QString conversationId))
     SLOT(void refreshMembers())
 
-    SIGNAL(addressReady(QString address))
+    // A message the module refused, so the composer can offer the text back.
+    SIGNAL(sendFailed(QString conversationId, QString content))
     SIGNAL(error(QString message))
 }

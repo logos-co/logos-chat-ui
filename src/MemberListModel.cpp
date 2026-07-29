@@ -1,4 +1,5 @@
 #include "MemberListModel.h"
+#include "Identity.h"
 
 MemberListModel::MemberListModel(QObject* parent)
     : QAbstractListModel(parent)
@@ -19,13 +20,15 @@ QVariant MemberListModel::data(const QModelIndex& index, int role) const
     const auto& item = m_items.at(index.row());
     switch (role) {
     case AddressRole: return item.address;
-    // Short identity string, mirroring ChatBackend::fallbackDisplayName's left(8);
-    // a member with no confirmed account (empty address) shows as unknown_account.
+    // A member with no confirmed account (empty address) has no identity to
+    // shorten, so it is named as such.
     case LabelRole:   return item.address.isEmpty()
                           ? QStringLiteral("unknown_account")
-                          : item.address.left(8);
+                          : Identity::shortLabel(item.address);
     case IsSelfRole:  return item.isSelf;
     case PendingRole: return item.pending;
+    case AvatarInitialsRole: return Identity::initials(item.address);
+    case AvatarRampRole:     return Identity::avatarRamp(Identity::shortLabel(item.address));
     default:          return {};
     }
 }
@@ -36,7 +39,9 @@ QHash<int, QByteArray> MemberListModel::roleNames() const
         { AddressRole, "address" },
         { LabelRole,   "label" },
         { IsSelfRole,  "isSelf" },
-        { PendingRole, "pending" }
+        { PendingRole, "pending" },
+        { AvatarInitialsRole, "avatarInitials" },
+        { AvatarRampRole,     "avatarRamp" }
     };
 }
 
@@ -58,7 +63,7 @@ void MemberListModel::clear()
 bool MemberListModel::contains(const QString& address) const
 {
     for (const auto& item : m_items) {
-        if (item.address == address)
+        if (!item.pending && item.address == address)
             return true;
     }
     return false;

@@ -27,7 +27,11 @@ public:
         AddressRole = Qt::UserRole + 1,
         LabelRole,
         IsSelfRole,
-        PendingRole
+        PendingRole,
+        // Avatar identity, derived from the address so one account keeps one
+        // pair of initials and one colour wherever it is drawn.
+        AvatarInitialsRole,
+        AvatarRampRole
     };
 
     explicit MemberListModel(QObject* parent = nullptr);
@@ -38,6 +42,8 @@ public:
 
     void setMembers(const QVector<MemberItem>& members);
     void clear();
+    // True when `address` is a committed member. A pending invite does not
+    // count: it cannot take part in the conversation until the group commits it.
     bool contains(const QString& address) const;
 
 private:

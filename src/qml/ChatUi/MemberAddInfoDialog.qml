@@ -48,8 +48,8 @@ LogosDialog {
         spacing: Theme.spacing.medium
 
         LogosText {
-            //: Explains that group membership commits asynchronously (deMLS)
-            text: qsTr("Adding a member isn't synchronous. The group commits the membership change (deMLS) on a timer, so a new member can take up to a minute to appear.")
+            //: Explains that a new member shows up only after the group updates
+            text: qsTr("Adding a member isn't instant. Membership updates apply on a timer, so a new member can take up to a minute to appear.")
             color: Theme.palette.textSecondary
             font.pixelSize: Theme.typography.secondaryText
             wrapMode: Text.WordWrap

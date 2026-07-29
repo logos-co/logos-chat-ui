@@ -1,5 +1,8 @@
 #include "MessageListModel.h"
 
+#include "Identity.h"
+#include "TimeFormat.h"
+
 #include <QDate>
 #include <QLocale>
 #include <algorithm>
@@ -39,6 +42,9 @@ QVariant MessageListModel::data(const QModelIndex& index, int role) const
     case ShowDaySeparatorRole:
         return older >= m_items.size() || item.timestamp.date() != m_items.at(older).timestamp.date();
     case DayLabelRole:  return dayLabel(item.timestamp);
+    case TimeDisplayRole: return TimeFormat::shortTime(item.timestamp);
+    case AvatarInitialsRole: return Identity::initials(item.sender);
+    case AvatarRampRole:     return Identity::avatarRamp(item.sender);
     default:            return {};
     }
 }
@@ -52,7 +58,10 @@ QHash<int, QByteArray> MessageListModel::roleNames() const
         { IsMeRole,                   "isMe" },
         { SameSenderAsPreviousRole,   "sameSenderAsPrevious" },
         { ShowDaySeparatorRole,       "showDaySeparator" },
-        { DayLabelRole,               "dayLabel" }
+        { DayLabelRole,               "dayLabel" },
+        { TimeDisplayRole,            "timeDisplay" },
+        { AvatarInitialsRole,         "avatarInitials" },
+        { AvatarRampRole,             "avatarRamp" }
     };
 }
 

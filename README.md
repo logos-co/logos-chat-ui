@@ -8,30 +8,34 @@ Built with [`logos-module-builder`](https://github.com/logos-co/logos-module-bui
 
 ## What It Does
 
-The application provides a dark-themed chat interface with a conversation
-list (left), a message thread (center), and a members panel (right) that appears
-only for group conversations:
+![A direct conversation in the chat UI](docs/images/exchange/05-bob-roundtrip.png)
 
-- **Conversation list** (left panel) — active conversations with timestamps and unread indicators; group rows are prefixed with `#`
-- **Message thread** (center panel) — messages and a text input for the selected conversation; group messages show a short sender label above incoming bubbles
-- **Members panel** (right panel, groups only) — the group's roster, with an add-member field
+The application provides a dark-themed chat interface laid out as cards on an
+inset background: a conversations card over your account card (left), the
+message thread (center), and a right column that appears for a group or when
+the conversation's details are open:
+
+- **Conversations** (left) — active conversations with an avatar, a preview, a timestamp and an unread badge, under the **New chat** button, with your own account card beneath them
+- **Message thread** (center) — a header naming the conversation and who is in it, the messages, and the composer; an incoming message carries its sender's avatar and name where a run of theirs begins
+- **Right column** — the group's roster with **Add member** pinned to its foot, and the conversation's **Details** panel above it while the header's toggle is on
 
 Core functionality:
 
-- **Identity** — on startup, initializes a chat identity and displays the user's ID in the status bar
-- **Addresses** — show your address (the **Show My Address** button) and share it with others to let them start a conversation with you
-- **Direct messages** — paste another user's address into **New DM** to open a private (1:1) conversation
-- **Group conversations** — start a group with **New group**, then invite peers by address from the members panel (see below)
+- **Identity** — on startup, initializes a chat identity; the account card at the foot of the sidebar shows the account's short form and its connection state
+- **Addresses** — your own address sits on the account card with a copy button beside it; share it with others to let them start a conversation with you
+- **Direct messages** — paste another user's address into **New chat > Direct message** to open a private (1:1) conversation
+- **Group conversations** — start a group with **New chat > Group**, then invite peers by address from the members panel (see below)
 - **Messaging** — send and receive messages in real-time over the Logos network
-- **Chat lifecycle** — auto-initializes and starts on launch; status shown in the bottom bar
+- **Chat lifecycle** — auto-initializes and starts on launch; the connection state shows on the account card
 
 Conversations are **ephemeral** — messages and identity exist only while the app is running.
 
 ### Group conversations
 
-- **Group** creates a group with you as its only member (no dialog; the group opens immediately).
-- Collect peers' addresses (each shares theirs via **Show My Address**), paste one into the members panel's add-member field, and press **Add** to invite.
-- Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. The roster refreshes on selection, a message from a new member, the reload-roster button, or your own add.
+- **New chat > Group** asks for a name and an optional description, neither of which can be changed later, then creates the group with you as its only member.
+- Collect peers' addresses (each copies theirs from their account card), paste one into **Add member** at the foot of the members card, and confirm to invite.
+- Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. A peer you invited sits on the roster as a dimmed row reading **Waiting to join** until the group commits it, and stays there across chat switches. The roster refreshes on selection, a message from a new member, or your own add.
+- A right-click on a roster row offers **Copy address**, for passing a member's address on.
 - Any member can add another; the invite routes from whoever proposed it.
 - During the brief windows while the group is finalizing a membership change, de-mls rejects sends; these surface as an error toast, so retry after a moment.
 
@@ -78,8 +82,9 @@ state apart; it defaults to the platform application data location.
 
 Each node joins the `logos.test` Waku fleet and publishes its key package during
 init, so this needs internet and ~5-20s per window to reach **Online**. Then
-share one window's address (**Show My Address**) and paste it into another
-(**New DM** for a 1:1, or **New group** then the members panel for a group). For
+copy one window's address from its account card and paste it into another
+(**New chat > Direct message** for a 1:1, or **New chat > Group** then the members
+panel for a group). For
 the full walkthrough with screenshots, and the scripted drivers that automate it
 (`doctests/exchange/run-exchange.sh` for a two-party exchange,
 `doctests/group/run-group.sh` for a three-party group), see
@@ -142,12 +147,17 @@ logos-chat-ui/
     ├── ChatBackend.h/cpp      # Backend: chat lifecycle, conversations, messages
     ├── ConversationListModel.h/cpp  # QAbstractListModel for conversations
     ├── MessageListModel.h/cpp       # QAbstractListModel for messages
+    ├── MemberListModel.h/cpp        # QAbstractListModel for a group's roster
+    ├── Identity.h/cpp               # Avatar initials + colour ramp for an address
+    ├── TimeFormat.h/cpp             # Clock-time and day-label formatting
     └── qml/
         ├── ChatView.qml       # Top-level composition (thin)
         └── ChatUi/            # Pure-QML component module, built on Logos.Theme
             ├── ChatStore.qml          # Sole reader of the injected logos context
-            ├── ConversationsPane.qml  # Conversation list (left)
+            ├── ConversationsPane.qml  # Conversations card + account card (left)
             ├── MessageThreadPane.qml  # Message thread + composer (center)
+            ├── ThreadHeader.qml       # Conversation name, facepile, details toggle
+            ├── DetailsPanel.qml       # The conversation's facts (right, on demand)
             ├── MembersPane.qml        # Group roster + add-member (right)
             ├── ...                    # dialogs, delegates, leaf components
             └── qmldir
@@ -155,7 +165,7 @@ logos-chat-ui/
 
 The plugin entry point and QtRO replica/source glue are generated by
 `mkLogosQmlModule` from `metadata.json#codegen` (`rep` / `backend_class` /
-`backend_header`); the repo carries the backend, the two models, and the QML
+`backend_header`); the repo carries the backend, the three models, and the QML
 view module.
 
 ### Key Components
@@ -163,9 +173,12 @@ view module.
 | File | Role |
 |------|------|
 | `ChatBackend.rep` | Defines the C++/QML boundary — `ChatStatus` enum, state props, lifecycle slots, signals |
-| `ChatBackend` | Derives `ChatBackendSimpleSource` + `LogosUiPluginContext`; initialises the module and subscribes to `chat_module` events in `onContextReady()`; drives the two models |
-| `ConversationListModel` | Roles: `conversationId`, `displayName`, `lastActivity`, `unreadCount` |
-| `MessageListModel` | Roles: `sender`, `content`, `timestamp`, `isMe` |
+| `ChatBackend` | Derives `ChatBackendSimpleSource` + `LogosUiPluginContext`; initialises the module and subscribes to `chat_module` events in `onContextReady()`; drives the three models |
+| `ConversationListModel` | A row per conversation: its id, display name, kind, description, last activity and the label for it, message preview, unread count, avatar |
+| `MessageListModel` | A row per message: sender, content, timestamp and the label for it, whether it is yours, where a run of one sender and a new day begin, avatar |
+| `MemberListModel` | A row per member: address, label, whether it is you, whether the invite is still uncommitted, avatar |
+| `Identity` | Derives a row's initials and colour ramp from an address, in one place, so an account keeps its avatar across every list |
+| `TimeFormat` | The single formatter for clock times and day labels, so no view formats its own |
 
 ## Requirements
 
