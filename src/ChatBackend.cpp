@@ -13,6 +13,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QFileInfo>
+#include <QPointer>
 #include <QVariantMap>
 #include <utility>
 
@@ -25,6 +26,16 @@ constexpr const char* kDefaultDeliveryPreset = "logos.test";
 // How much of the chat core's account of a run to keep.
 // TODO: expose to the client through the UI in the future.
 constexpr const char* kChatLogLevel = "info";
+
+// How often the module is asked whether it is still there, and how long that
+// question is worth waiting for. Acquiring the object blocks the caller, so the
+// timeout is what a dead module costs this thread: short enough not to be felt,
+// long enough that a loaded box does not look like a crash.
+constexpr int kHealthIntervalMs = 10000;
+constexpr int kHealthTimeoutMs = 2000;
+// Probes that must go unanswered before the module is called gone. One is a
+// hiccup; the announcement is not worth being wrong about.
+constexpr int kHealthMissesBeforeGone = 2;
 
 QDateTime msToDateTime(qint64 ms)
 {
@@ -190,6 +201,41 @@ void ChatBackend::initialiseModule()
     const QVariantMap status = modules().chat_module.status().toMap();
     applyDeliveryState(status.value(QStringLiteral("delivery_state")).toString(),
                        status.value(QStringLiteral("detail")).toString());
+
+    startHealthProbe();
+}
+
+void ChatBackend::startHealthProbe()
+{
+    m_healthProbe = new QTimer(this);
+    m_healthProbe->setInterval(kHealthIntervalMs);
+    connect(m_healthProbe, &QTimer::timeout, this, [this] {
+        // Guarded rather than captured raw: the reply arrives on a later turn of
+        // the event loop, by which time this backend may be gone.
+        QPointer<ChatBackend> self(this);
+        modules().chat_module.healthAsync([self](bool answered) {
+            if (self)
+                self->onHealthAnswer(answered);
+        }, Timeout(kHealthTimeoutMs));
+    });
+    m_healthProbe->start();
+}
+
+void ChatBackend::onHealthAnswer(bool answered)
+{
+    if (answered) {
+        m_healthMisses = 0;
+        return;
+    }
+    if (++m_healthMisses < kHealthMissesBeforeGone)
+        return;
+
+    // Nothing brings the module back inside this process, so asking again would
+    // only spend the acquire timeout on every tick for the rest of the run.
+    m_healthProbe->stop();
+    setChatStatus(ChatBackendSimpleSource::Error);
+    report(QStringLiteral("The chat module stopped responding and has probably crashed. "
+                          "Its log for this run is where the reason will be."));
 }
 
 void ChatBackend::openRunLogs()

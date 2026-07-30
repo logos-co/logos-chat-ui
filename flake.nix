@@ -11,9 +11,10 @@
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
     # Pinned to the chat_module rev that writes the chat core's account of a run
-    # into its instance directory and names the file through get_log_path().
-    # Without it libchat's events are dropped in the module's process, and this
-    # view has no directory to write its own log beside.
+    # into its instance directory and names the file through get_log_path(), and
+    # that answers health(). Without it libchat's events are dropped in the
+    # module's process, this view has no directory to write its own log beside,
+    # and a module that dies goes unnoticed until the next call times out.
     chat_module.url = "github:logos-co/logos-chat-module/904fc78c9f346a6d23028c0978d9c29a080f3339";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.

@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QSortFilterProxyModel>
 #include <QString>
+#include <QTimer>
 #include <QVariantList>
 #include <functional>
 #include "rep_ChatBackend_source.h"
@@ -62,6 +63,13 @@ private:
     // of its own rather than a dangling separator: it is what a call that never
     // reached the module leaves behind, which is the worst moment to say least.
     void reportFailure(const QString& action, const QString& reason);
+    // Starts asking the module whether it is still there. Until something asks,
+    // a module that died is indistinguishable from an idle one, and the app goes
+    // on looking connected until the next thing the user does times out.
+    void startHealthProbe();
+    // One probe's answer. False is the call failing, not the module saying so:
+    // health() has no other return.
+    void onHealthAnswer(bool answered);
     void subscribeToEvents();
     void rehydrateConversations();
     // Reads this account's own address into the myAddress property. A
@@ -120,6 +128,11 @@ private:
     // runs are grouped by, and they share one directory.
     QString m_moduleLogPath;
     QString m_viewLogPath;
+
+    QTimer* m_healthProbe = nullptr;
+    // Consecutive unanswered probes. Reset by any answer, so what it counts is a
+    // module that has stopped answering rather than one slow reply.
+    int m_healthMisses = 0;
 };
 
 #endif
