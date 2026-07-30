@@ -40,6 +40,19 @@ class ChatBackend
     // The other participant's address in the current direct conversation, empty
     // for a group or while the roster is unknown.
     PROP(QString currentPeerAddress READONLY)
+    // The directory this run's logs are in — the chat module's instance
+    // directory, which this view borrows for want of one of its own. Empty when
+    // no log was opened, which is what leaves the view with none to offer.
+    PROP(QString logDir READONLY)
+    // The runs that directory holds, newest first within a writer, one map per
+    // run: `writer` naming who wrote it ("chat_ui" or "chat_module"), `label`,
+    // `sizeLabel` and `fileCount` for display, `path` for the file being written,
+    // `paths` for all of them one per line, and `current` for the run in
+    // progress.
+    PROP(QVariantList logRuns READONLY)
+    // Every failure this run reported, newest first, one map per entry: `when`,
+    // `message`, and `count` for a message that repeated.
+    PROP(QVariantList errors READONLY)
 
     SLOT(void createConversation(QString peerAddress))
     SLOT(void createGroupConversation(QString name, QString description))
@@ -47,6 +60,10 @@ class ChatBackend
     SLOT(void sendMessage(QString conversationId, QString content))
     SLOT(void selectConversation(QString conversationId))
     SLOT(void refreshMembers())
+    // Re-reads the log directory, both writers' runs. The files grow, rotate and
+    // get pruned while the app runs, so the view asks for a fresh list when it is
+    // about to show one rather than holding what the last read found.
+    SLOT(void refreshSessionLogs())
 
     // A message the module refused, so the composer can offer the text back.
     SIGNAL(sendFailed(QString conversationId, QString content))

@@ -3,6 +3,7 @@
 #include "MessageListModel.h"
 #include "MemberListModel.h"
 #include "Identity.h"
+#include "ProcessLog.h"
 
 // Generated umbrella: LogosModules (behind modules()) from
 // metadata.json#dependencies — the Qt-typed chat_module wrapper.
@@ -10,6 +11,9 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QDebug>
+#include <QFileInfo>
+#include <QPointer>
 #include <QVariantMap>
 #include <utility>
 
@@ -19,10 +23,66 @@ namespace {
 // matches the one a rehydrate reads back from the module.
 constexpr int kPreviewMaxChars = 160;
 constexpr const char* kDefaultDeliveryPreset = "logos.test";
+// How much of the chat core's account of a run to keep.
+// TODO: expose to the client through the UI in the future.
+constexpr const char* kChatLogLevel = "info";
+
+// How often the module is asked whether it is still there, and how long that
+// question is worth waiting for. Acquiring the object blocks the caller, so the
+// timeout is what a dead module costs this thread: short enough not to be felt,
+// long enough that a loaded box does not look like a crash.
+constexpr int kHealthIntervalMs = 10000;
+constexpr int kHealthTimeoutMs = 2000;
+// Probes that must go unanswered before the module is called gone. One is a
+// hiccup; the announcement is not worth being wrong about.
+constexpr int kHealthMissesBeforeGone = 2;
 
 QDateTime msToDateTime(qint64 ms)
 {
     return ms > 0 ? QDateTime::fromMSecsSinceEpoch(ms) : QDateTime::currentDateTime();
+}
+
+QString humanSize(qint64 bytes)
+{
+    static const char* const units[] = {"bytes", "KB", "MB", "GB"};
+    double size = static_cast<double>(bytes);
+    int unit = 0;
+    while (size >= 1024.0 && unit < 3) {
+        size /= 1024.0;
+        ++unit;
+    }
+    return unit == 0 ? QStringLiteral("%1 bytes").arg(bytes)
+                     : QStringLiteral("%1 %2").arg(size, 0, 'f', 1).arg(QLatin1String(units[unit]));
+}
+
+// The run's start time as a reader states it, or the stamp itself when the file
+// name does not spell one.
+QString runLabel(const QString& stamp)
+{
+    const QDateTime started = QDateTime::fromString(stamp, QStringLiteral("yyyyMMdd_HHmmss"));
+    return started.isValid() ? started.toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")) : stamp;
+}
+
+// One writer's runs, newest first, appended to `published` and tagged with the
+// writer so the view can offer each on its own tab. The announced path fixes both
+// the directory to read and the naming to group by, so the two writers sharing a
+// directory never pick up each other's files.
+void appendRuns(QVariantList& published, const QString& writer, const QString& announcedPath)
+{
+    const QList<SessionLogRun> runs = listSessionLogRuns(announcedPath);
+    const QString currentStamp = runs.isEmpty() ? QString() : runs.first().stamp;
+    for (const SessionLogRun& run : runs) {
+        published.append(QVariantMap{
+            {QStringLiteral("writer"), writer},
+            {QStringLiteral("label"), runLabel(run.stamp)},
+            {QStringLiteral("sizeLabel"), humanSize(run.bytes)},
+            {QStringLiteral("fileCount"), run.paths.size()},
+            {QStringLiteral("path"), run.paths.isEmpty() ? QString() : run.paths.last()},
+            {QStringLiteral("paths"), run.paths.join(QLatin1Char('\n'))},
+            {QStringLiteral("stamp"), run.stamp},
+            {QStringLiteral("current"), run.stamp == currentStamp},
+        });
+    }
 }
 
 } // namespace
@@ -59,7 +119,13 @@ ChatBackend::ChatBackend(QObject* parent)
     setMyInitials(QString());
     setCurrentConversationId(QString());
     setLoadedConversationId(QString());
+    setLogDir(QString());
     syncCurrentConversationMeta();
+
+    // As early as this plugin can reach: the QML engine has not loaded the view
+    // yet, so its warnings are caught too. The lines are held in memory until
+    // openRunLogs finds somewhere to put them.
+    ProcessLog::install();
 }
 
 void ChatBackend::onContextReady()
@@ -97,15 +163,25 @@ void ChatBackend::initialiseModule()
 {
     setChatStatus(ChatBackendSimpleSource::Initialising);
 
-    const LogosResult res = modules().chat_module.init(QString::fromLatin1(kDefaultDeliveryPreset));
+    // The ChatConfig record, which reaches the module untyped: there is no
+    // generated struct for a record in parameter position, so the wire shape is
+    // the contract.
+    const QVariantMap config{
+        {QStringLiteral("delivery_preset"), QString::fromLatin1(kDefaultDeliveryPreset)},
+        {QStringLiteral("log_level"), QString::fromLatin1(kChatLogLevel)},
+    };
+    const LogosResult res = modules().chat_module.init(config);
     if (!res.success) {
         const QString reason = res.getError<QString>();
         setChatStatus(ChatBackendSimpleSource::Error);
-        emit error(QStringLiteral("Failed to initialise chat: ") + reason);
+        reportFailure(QStringLiteral("Failed to initialise chat"), reason);
         return;
     }
 
     m_moduleInitialised = true;
+
+    // After init, because that is when the module opens the file it names.
+    openRunLogs();
 
     // Subscribe before the initial snapshot so no event fires in the gap
     // between snapshotting and registering the listeners.
@@ -125,6 +201,82 @@ void ChatBackend::initialiseModule()
     const QVariantMap status = modules().chat_module.status().toMap();
     applyDeliveryState(status.value(QStringLiteral("delivery_state")).toString(),
                        status.value(QStringLiteral("detail")).toString());
+
+    startHealthProbe();
+}
+
+void ChatBackend::startHealthProbe()
+{
+    m_healthProbe = new QTimer(this);
+    m_healthProbe->setInterval(kHealthIntervalMs);
+    connect(m_healthProbe, &QTimer::timeout, this, [this] {
+        // Guarded rather than captured raw: the reply arrives on a later turn of
+        // the event loop, by which time this backend may be gone.
+        QPointer<ChatBackend> self(this);
+        modules().chat_module.healthAsync([self](bool answered) {
+            if (self)
+                self->onHealthAnswer(answered);
+        }, Timeout(kHealthTimeoutMs));
+    });
+    m_healthProbe->start();
+}
+
+void ChatBackend::onHealthAnswer(bool answered)
+{
+    if (answered) {
+        m_healthMisses = 0;
+        return;
+    }
+    if (++m_healthMisses < kHealthMissesBeforeGone)
+        return;
+
+    // Nothing brings the module back inside this process, so asking again would
+    // only spend the acquire timeout on every tick for the rest of the run.
+    m_healthProbe->stop();
+    setChatStatus(ChatBackendSimpleSource::Error);
+    report(QStringLiteral("The chat module stopped responding and has probably crashed. "
+                          "Its log for this run is where the reason will be."));
+}
+
+void ChatBackend::openRunLogs()
+{
+    m_moduleLogPath = modules().chat_module.get_log_path();
+    if (m_moduleLogPath.isEmpty()) {
+        report(QStringLiteral("Failed to open this run's logs: the chat module opened none"));
+        return;
+    }
+
+    // The chat module's instance directory, borrowed: the platform assigns a view
+    // module none of its own, and picking one would mean two instances writing
+    // into the same folder. The two writers' runs stay apart because each list is
+    // grouped by the stem of the file its own writer announced.
+    // TODO: write into this view's own instance directory once
+    // LogosUiPluginContext hands one over.
+    const QString directory = QFileInfo(m_moduleLogPath).absolutePath();
+    setLogDir(directory);
+
+    if (ProcessLog::openIn(directory))
+        m_viewLogPath = ProcessLog::path();
+    else
+        report(QStringLiteral("Failed to open this view's log: cannot write to ") + directory);
+
+    refreshSessionLogs();
+}
+
+void ChatBackend::report(const QString& message)
+{
+    m_errors.add(message, QDateTime::currentDateTime());
+    setErrors(m_errors.published());
+    // Through Qt's logging, so the line reaches this run's log by the same route
+    // and in the same order as everything else the view writes.
+    qWarning().noquote() << "chat_ui:" << message;
+    emit error(message);
+}
+
+void ChatBackend::reportFailure(const QString& action, const QString& reason)
+{
+    report(reason.isEmpty() ? action + QStringLiteral(": the chat module gave no reason")
+                            : action + QStringLiteral(": ") + reason);
 }
 
 void ChatBackend::subscribeToEvents()
@@ -184,7 +336,7 @@ void ChatBackend::refreshMyAddress()
 
     const QString address = modules().chat_module.get_address();
     if (address.isEmpty()) {
-        emit error(QStringLiteral("Failed to get your address"));
+        report(QStringLiteral("Failed to get your address"));
         return;
     }
     setMyAddress(address);
@@ -223,7 +375,7 @@ bool ChatBackend::showConversationMessages(const QString& convoId)
     const QVariantList msgs = modules().chat_module.get_messages(convoId, &err);
     if (!err.ok()) {
         const QString reason = QString::fromStdString(err.message);
-        emit error(QStringLiteral("Could not load messages: ") + reason);
+        reportFailure(QStringLiteral("Could not load messages"), reason);
         return false;
     }
 
@@ -252,18 +404,18 @@ void ChatBackend::deferToEventLoop(std::function<void()> work)
 void ChatBackend::createConversation(QString peerAddress)
 {
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
-        emit error(QStringLiteral("Chat not online"));
+        report(QStringLiteral("Failed to create DM: chat is not online"));
         return;
     }
     if (peerAddress.isEmpty()) {
-        emit error(QStringLiteral("Address cannot be empty"));
+        report(QStringLiteral("Failed to create DM: address cannot be empty"));
         return;
     }
 
     const LogosResult res = modules().chat_module.create_conversation(peerAddress);
     if (!res.success) {
         const QString reason = res.getError<QString>();
-        emit error(QStringLiteral("Failed to create DM: ") + reason);
+        reportFailure(QStringLiteral("Failed to create DM"), reason);
     }
     // The conversation_created event surfaces via the push subscription — the
     // appliers handle the UI side from there.
@@ -272,14 +424,14 @@ void ChatBackend::createConversation(QString peerAddress)
 void ChatBackend::createGroupConversation(QString name, QString description)
 {
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
-        emit error(QStringLiteral("Chat not online"));
+        report(QStringLiteral("Failed to create group: chat is not online"));
         return;
     }
 
     const LogosResult res = modules().chat_module.create_group_conversation(name, description);
     if (!res.success) {
         const QString reason = res.getError<QString>();
-        emit error(QStringLiteral("Failed to create group: ") + reason);
+        reportFailure(QStringLiteral("Failed to create group"), reason);
     }
     // The group starts with only this member; conversation_created selects it.
     // Members are added afterwards from the members panel.
@@ -288,18 +440,22 @@ void ChatBackend::createGroupConversation(QString name, QString description)
 void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
 {
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
-        emit error(QStringLiteral("Chat not online"));
+        report(QStringLiteral("Failed to add member: chat is not online"));
         return;
     }
-    if (conversationId.isEmpty() || peerAddress.isEmpty()) {
-        emit error(QStringLiteral("Address cannot be empty"));
+    if (conversationId.isEmpty()) {
+        report(QStringLiteral("Failed to add member: no conversation selected"));
+        return;
+    }
+    if (peerAddress.isEmpty()) {
+        report(QStringLiteral("Failed to add member: address cannot be empty"));
         return;
     }
 
     const LogosResult res = modules().chat_module.add_group_member(conversationId, peerAddress);
     if (!res.success) {
         const QString reason = res.getError<QString>();
-        emit error(QStringLiteral("Failed to add member: ") + reason);
+        reportFailure(QStringLiteral("Failed to add member"), reason);
         return;
     }
     // The commit is async, so the peer joins the roster as a pending busy row;
@@ -311,7 +467,7 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
 void ChatBackend::sendMessage(QString conversationId, QString content)
 {
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
-        emit error(QStringLiteral("Chat not online"));
+        report(QStringLiteral("Failed to send message: chat is not online"));
         return;
     }
     if (conversationId.isEmpty() || content.isEmpty()) return;
@@ -319,7 +475,7 @@ void ChatBackend::sendMessage(QString conversationId, QString content)
     const LogosResult res = modules().chat_module.send_message(conversationId, content);
     if (!res.success) {
         const QString reason = res.getError<QString>();
-        emit error(QStringLiteral("Failed to send message: ") + reason);
+        reportFailure(QStringLiteral("Failed to send message"), reason);
         emit sendFailed(conversationId, content);
     }
     // On success the module emits a message_sent event, which applyMessageSent
@@ -400,6 +556,14 @@ void ChatBackend::refreshMembers()
                               : peerAddressOf(rows, m_conversationModel->isGroupFor(convoId)));
 }
 
+void ChatBackend::refreshSessionLogs()
+{
+    QVariantList published;
+    appendRuns(published, QStringLiteral("chat_ui"), m_viewLogPath);
+    appendRuns(published, QStringLiteral("chat_module"), m_moduleLogPath);
+    setLogRuns(published);
+}
+
 // ── event handlers ────────────────────────────────────────────────────────────
 
 void ChatBackend::applyDeliveryState(const QString& state, const QString& detail)
@@ -427,7 +591,8 @@ void ChatBackend::applyDeliveryState(const QString& state, const QString& detail
     // The connectivity label says only that delivery is in error; what went
     // wrong reaches the user here or not at all.
     if (becameError)
-        emit error(detail.isEmpty() ? QStringLiteral("Delivery error") : detail);
+        report(detail.isEmpty() ? QStringLiteral("Delivery error")
+                                : QStringLiteral("Delivery error: ") + detail);
 
     // Events are push-only, so a fresh online transition (reconnect) is our
     // cue to refetch the lists and recover anything missed while offline.

@@ -37,6 +37,12 @@ Rectangle {
     // thread header and left as the user last set it.
     property bool detailsShown: false
 
+    // The newest failure the status bar is holding, and how many nobody has
+    // looked at yet. Both stand until the logs are opened, which is what marks
+    // them seen; the failures themselves are retained by the backend either way.
+    property string lastError: ""
+    property int unseenErrorCount: 0
+
     ChatStore {
         id: store
     }
@@ -44,7 +50,8 @@ Rectangle {
     Connections {
         target: store
         function onErrorOccurred(message) {
-            toast.show(message);
+            root.lastError = message;
+            root.unseenErrorCount += 1;
         }
         function onSendFailed(conversationId, content) {
             threadPane.restoreFailedSend(conversationId, content);
@@ -57,103 +64,135 @@ Rectangle {
         }
     }
 
-    RowLayout {
+    ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacing.medium
         spacing: Theme.spacing.medium
 
-        ColumnLayout {
-            // A layout nested in a layout fills by default, which would hand
-            // the sidebar the slack meant for the thread.
-            Layout.fillWidth: false
-            Layout.preferredWidth: 320
-            Layout.minimumWidth: 260
-            Layout.fillHeight: true
-            spacing: Theme.spacing.medium
-
-            ConversationsPane {
-                id: conversationsPane
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                conversationModel: store.conversationModel
-                currentConversationId: root.selectedConversationId
-                online: store.online
-                onConversationSelected: function (conversation) {
-                    root.pendingSelection = conversation;
-                    store.selectConversation(conversation.conversationId);
-                }
-                onNewConversationRequested: newConvDialog.open()
-                onNewGroupRequested: newGroupDialog.open()
-            }
-
-            AccountCard {
-                Layout.fillWidth: true
-                address: store.myAddress
-                label: store.myLabel
-                initials: store.myInitials
-                online: store.online
-                statusLabel: store.statusLabel
-            }
-        }
-
-        MessageThreadPane {
-            id: threadPane
+        RowLayout {
             Layout.fillWidth: true
-            // The thread is what the window is for, so a window too narrow for
-            // all three columns clips the right one rather than the thread.
-            Layout.minimumWidth: 360
-            Layout.fillHeight: true
-            messageModel: store.messageModel
-            currentIsGroup: root.selectedIsGroup
-            title: root.selectedDisplayName
-            description: root.selectedDescription
-            avatarInitials: root.selectedAvatarInitials
-            avatarRamp: root.selectedAvatarRamp
-            conversationId: root.selectedConversationId
-            memberModel: store.memberModel
-            memberCount: store.memberCount
-            detailsShown: root.detailsShown
-            hasConversation: root.selectedConversationId !== ""
-            hasConversations: conversationsPane.count > 0
-            online: store.online
-            ready: root.selectionLoaded
-            onMessageSubmitted: function (text) {
-                store.sendMessage(text);
-            }
-            onDetailsRequested: root.detailsShown = !root.detailsShown
-        }
-
-        ColumnLayout {
-            visible: root.selectedConversationId !== "" && (root.selectedIsGroup || root.detailsShown)
-            Layout.fillWidth: false
-            Layout.preferredWidth: 280
             Layout.fillHeight: true
             spacing: Theme.spacing.medium
 
-            DetailsPanel {
-                id: detailsPanel
-                visible: root.detailsShown
-                Layout.fillWidth: true
-                isGroup: root.selectedIsGroup
-                description: root.selectedDescription
-                conversationId: root.selectedConversationId
-                peerAddress: store.currentPeerAddress
-                memberCount: store.memberCount
-                pendingMemberCount: store.pendingMemberCount
-                onCloseRequested: root.detailsShown = false
+            ColumnLayout {
+                // A layout nested in a layout fills by default, which would hand
+                // the sidebar the slack meant for the thread.
+                Layout.fillWidth: false
+                Layout.preferredWidth: 320
+                Layout.minimumWidth: 260
+                Layout.fillHeight: true
+                spacing: Theme.spacing.medium
+
+                ConversationsPane {
+                    id: conversationsPane
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    conversationModel: store.conversationModel
+                    currentConversationId: root.selectedConversationId
+                    online: store.online
+                    onConversationSelected: function (conversation) {
+                        root.pendingSelection = conversation;
+                        store.selectConversation(conversation.conversationId);
+                    }
+                    onNewConversationRequested: newConvDialog.open()
+                    onNewGroupRequested: newGroupDialog.open()
+                }
+
+                AccountCard {
+                    Layout.fillWidth: true
+                    address: store.myAddress
+                    label: store.myLabel
+                    initials: store.myInitials
+                    online: store.online
+                    statusLabel: store.statusLabel
+                }
             }
 
-            MembersPane {
-                visible: root.selectedIsGroup
+            MessageThreadPane {
+                id: threadPane
                 Layout.fillWidth: true
+                // The thread is what the window is for, so a window too narrow for
+                // all three columns clips the right one rather than the thread.
+                Layout.minimumWidth: 360
                 Layout.fillHeight: true
+                messageModel: store.messageModel
+                currentIsGroup: root.selectedIsGroup
+                title: root.selectedDisplayName
+                description: root.selectedDescription
+                avatarInitials: root.selectedAvatarInitials
+                avatarRamp: root.selectedAvatarRamp
+                conversationId: root.selectedConversationId
                 memberModel: store.memberModel
                 memberCount: store.memberCount
+                detailsShown: root.detailsShown
+                hasConversation: root.selectedConversationId !== ""
+                hasConversations: conversationsPane.count > 0
                 online: store.online
                 ready: root.selectionLoaded
-                onAddMemberRequested: addMemberDialog.open()
+                onMessageSubmitted: function (text) {
+                    store.sendMessage(text);
+                }
+                onDetailsRequested: root.detailsShown = !root.detailsShown
+            }
+
+            ColumnLayout {
+                visible: root.selectedConversationId !== "" && (root.selectedIsGroup || root.detailsShown)
+                Layout.fillWidth: false
+                Layout.preferredWidth: 280
+                Layout.fillHeight: true
+                spacing: Theme.spacing.medium
+
+                DetailsPanel {
+                    id: detailsPanel
+                    visible: root.detailsShown
+                    Layout.fillWidth: true
+                    isGroup: root.selectedIsGroup
+                    description: root.selectedDescription
+                    conversationId: root.selectedConversationId
+                    peerAddress: store.currentPeerAddress
+                    memberCount: store.memberCount
+                    pendingMemberCount: store.pendingMemberCount
+                    onCloseRequested: root.detailsShown = false
+                }
+
+                MembersPane {
+                    visible: root.selectedIsGroup
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    memberModel: store.memberModel
+                    memberCount: store.memberCount
+                    online: store.online
+                    ready: root.selectionLoaded
+                    onAddMemberRequested: addMemberDialog.open()
+                }
             }
         }
+
+        StatusBar {
+            Layout.fillWidth: true
+            errorMessage: root.lastError
+            errorCount: root.unseenErrorCount
+            onErrorActivated: root.showLogs()
+            onLogsRequested: root.showLogs()
+        }
+    }
+
+    // Opening the logs is what marks the held failures seen: the strip goes
+    // quiet, and nothing is discarded — the list is behind the button.
+    function showLogs() {
+        // The files rotate and get pruned while the app runs, so the list is
+        // read at the moment it is shown.
+        store.refreshLogRuns();
+        root.lastError = "";
+        root.unseenErrorCount = 0;
+        sessionLogsDialog.open();
+    }
+
+    SessionLogsDialog {
+        id: sessionLogsDialog
+        errors: store.errors
+        runs: store.logRuns
+        logDir: store.logDir
     }
 
     NewConversationDialog {
@@ -194,10 +233,6 @@ Rectangle {
                 store.addMember(pendingAddress);
             pendingAddress = "";
         }
-    }
-
-    Toast {
-        id: toast
     }
 
     // Persisted UI preferences.

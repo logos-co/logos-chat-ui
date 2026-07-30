@@ -34,6 +34,12 @@ QtObject {
     readonly property string myLabel: backend ? backend.myLabel : ""
     readonly property string myInitials: backend ? backend.myInitials : ""
 
+    // The run's logs: every failure it reported, every run each writer kept, and
+    // the directory they share.
+    readonly property var errors: backend ? backend.errors : []
+    readonly property var logRuns: backend ? backend.logRuns : []
+    readonly property string logDir: backend ? backend.logDir : ""
+
     // Short connectivity label for the account card.
     readonly property string statusLabel: {
         if (!backend)
@@ -77,6 +83,10 @@ QtObject {
     function addMember(address) {
         if (backend && currentConversationId !== "")
             backend.addGroupMember(currentConversationId, address);
+    }
+    function refreshLogRuns() {
+        if (backend)
+            backend.refreshSessionLogs();
     }
 
     property Connections _backendSignals: Connections {

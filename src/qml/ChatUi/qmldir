@@ -12,7 +12,7 @@ SelectableText 1.0 SelectableText.qml
 ClipboardProxy 1.0 ClipboardProxy.qml
 ChatMenuItem 1.0 ChatMenuItem.qml
 MessageComposer 1.0 MessageComposer.qml
-Toast 1.0 Toast.qml
+StatusBar 1.0 StatusBar.qml
 MessageDelegate 1.0 MessageDelegate.qml
 DayChip 1.0 DayChip.qml
 Facepile 1.0 Facepile.qml
@@ -27,3 +27,4 @@ NewConversationDialog 1.0 NewConversationDialog.qml
 NewGroupDialog 1.0 NewGroupDialog.qml
 MemberAddInfoDialog 1.0 MemberAddInfoDialog.qml
 AddMemberDialog 1.0 AddMemberDialog.qml
+SessionLogsDialog 1.0 SessionLogsDialog.qml

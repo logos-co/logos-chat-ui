@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QSortFilterProxyModel>
 #include <QString>
+#include <QTimer>
 #include <QVariantList>
 #include <functional>
 #include "rep_ChatBackend_source.h"
@@ -11,6 +12,8 @@
 #include "ConversationListModel.h"
 #include "MessageListModel.h"
 #include "MemberListModel.h"
+#include "ErrorLog.h"
+#include "SessionLogFiles.h"
 
 class ChatBackend : public ChatBackendSimpleSource,
                     public LogosUiPluginContext
@@ -44,9 +47,29 @@ public slots:
     // module read, so never call it from inside a module event callback without
     // deferToEventLoop.
     void refreshMembers() override;
+    void refreshSessionLogs() override;
 
 private:
     void initialiseModule();
+    // Opens this run's logs: the chat module names the file it is writing, and
+    // its directory is where this view writes beside it, for want of one of its
+    // own. Reports rather than falls back when there is nowhere to write.
+    void openRunLogs();
+    // The one way a failure reaches anyone: it joins the retained list, goes into
+    // this view's log, and reaches the strip. Every failing path calls this and
+    // none of them classifies what it is reporting.
+    void report(const QString& message);
+    // A failed action and the module's account of it. An empty reason gets words
+    // of its own rather than a dangling separator: it is what a call that never
+    // reached the module leaves behind, which is the worst moment to say least.
+    void reportFailure(const QString& action, const QString& reason);
+    // Starts asking the module whether it is still there. Until something asks,
+    // a module that died is indistinguishable from an idle one, and the app goes
+    // on looking connected until the next thing the user does times out.
+    void startHealthProbe();
+    // One probe's answer. False is the call failing, not the module saying so:
+    // health() has no other return.
+    void onHealthAnswer(bool answered);
     void subscribeToEvents();
     void rehydrateConversations();
     // Reads this account's own address into the myAddress property. A
@@ -99,6 +122,17 @@ private:
     // Set once the initial snapshot has loaded; gates the reconnect resync in
     // applyDeliveryState so it doesn't fire during initial setup.
     bool m_initialSnapshotDone = false;
+
+    ErrorLog m_errors;
+    // The file each writer announced it is writing. Each fixes the naming its own
+    // runs are grouped by, and they share one directory.
+    QString m_moduleLogPath;
+    QString m_viewLogPath;
+
+    QTimer* m_healthProbe = nullptr;
+    // Consecutive unanswered probes. Reset by any answer, so what it counts is a
+    // module that has stopped answering rather than one slow reply.
+    int m_healthMisses = 0;
 };
 
 #endif
