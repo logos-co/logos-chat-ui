@@ -13,7 +13,7 @@
     # Pinned to the chat_module rev that builds against delivery_module v0.2.0
     # (chat-module#63); re-pin to the v0.2.2 release tag once it is cut, so the
     # module built here is the release the package manager resolves.
-    chat_module.url = "github:logos-co/logos-chat-module/bf626e71ef1481c3c6a9ebb89dc94c4f17ce2a12";
+    chat_module.url = "github:logos-co/logos-chat-module/fb98285f114bffbd651e57f91061876f94aa78d4";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
