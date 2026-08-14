@@ -10,10 +10,12 @@
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
-    # Pinned to the v0.2.2 release tag: this view and the module it renders are
-    # released in lockstep, so the module built here is the release the package
-    # manager resolves.
-    chat_module.url = "github:logos-co/logos-chat-module/v0.2.2";
+    # Pinned to the chat_module commit that moved onto logos-module-builder
+    # master (the typed-record codegen this view now consumes) and publishes an
+    # x86_64-windows target. A rev rather than a tag only because no release
+    # carries either yet -- re-pin to the tag once one is cut, and keep the
+    # lockstep the paragraph above describes.
+    chat_module.url = "github:logos-co/logos-chat-module/f24fe1917423e33a672f3301fb1e41468ce4d3b1";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
