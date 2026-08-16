@@ -8,7 +8,7 @@
   "description": "Chat App for Logos - Private messaging interface",
   "main": "chat_ui_plugin",
   "view": "qml/ChatView.qml",
-  "icon": "src/icons/messages-square.svg",
+  "icon": "src/icons/messages-square.png",
   "dependencies": ["chat_module", "delivery_module"],
   "codegen": {
     "rep": "src/ChatBackend.rep",
