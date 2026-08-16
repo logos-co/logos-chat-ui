@@ -163,13 +163,11 @@ void ChatBackend::initialiseModule()
 {
     setChatStatus(ChatBackendSimpleSource::Initialising);
 
-    // The ChatConfig record, which reaches the module untyped: there is no
-    // generated struct for a record in parameter position, so the wire shape is
-    // the contract.
-    const QVariantMap config{
-        {QStringLiteral("delivery_preset"), QString::fromLatin1(kDefaultDeliveryPreset)},
-        {QStringLiteral("log_level"), QString::fromLatin1(kChatLogLevel)},
-    };
+    // Both fields are optional in the contract, so the generated struct spells
+    // them QVariant; assigning a QString is "present".
+    ChatModule::ChatConfig config;
+    config.delivery_preset = QString::fromLatin1(kDefaultDeliveryPreset);
+    config.log_level = QString::fromLatin1(kChatLogLevel);
     const LogosResult res = modules().chat_module.init(config);
     if (!res.success) {
         const QString reason = res.getError<QString>();
@@ -198,9 +196,8 @@ void ChatBackend::initialiseModule()
 
     // Seed delivery state from the snapshot in case delivery_state_changed
     // fired during init(), before subscribeToEvents() registered the listener.
-    const QVariantMap status = modules().chat_module.status().toMap();
-    applyDeliveryState(status.value(QStringLiteral("delivery_state")).toString(),
-                       status.value(QStringLiteral("detail")).toString());
+    const ChatModule::Status status = modules().chat_module.status();
+    applyDeliveryState(status.delivery_state, status.detail);
 
     startHealthProbe();
 }
@@ -303,20 +300,21 @@ void ChatBackend::rehydrateConversations()
 {
     if (!m_moduleInitialised) return;
 
-    const QVariantList convos = modules().chat_module.list_conversations();
+    const QList<ChatModule::Conversation> convos = modules().chat_module.list_conversations();
     // Unread counts live only here, so carry them across the rebuild.
     const QHash<QString, int> unread = m_conversationModel->unreadCounts();
     m_conversationModel->clear();
-    for (const QVariant& v : convos) {
-        const QVariantMap obj = v.toMap();
-        const QString convoId = obj.value(QStringLiteral("convo_id")).toString();
+    for (const ChatModule::Conversation& c : convos) {
+        const QString convoId = c.convo_id;
         if (convoId.isEmpty()) continue;
-        const QString nickname = obj.value(QStringLiteral("nickname")).toString();
-        const QString name = obj.value(QStringLiteral("name")).toString();
-        const QString description = obj.value(QStringLiteral("description")).toString();
-        const QString preview = obj.value(QStringLiteral("preview")).toString();
-        const qint64 lastActivity = obj.value(QStringLiteral("last_activity_ms")).toLongLong();
-        const bool isGroup = obj.value(QStringLiteral("kind")).toString() == QStringLiteral("group");
+        // The optional fields are QVariant in the generated record; an absent
+        // one converts to an empty QString exactly as the map lookup did.
+        const QString nickname = c.nickname.toString();
+        const QString name = c.name.toString();
+        const QString description = c.description.toString();
+        const QString preview = c.preview.toString();
+        const qint64 lastActivity = c.last_activity_ms;
+        const bool isGroup = c.kind == QStringLiteral("group");
         // Local nickname wins, then the group's shared name, else a generated label.
         const QString displayName = !nickname.isEmpty() ? nickname
             : !name.isEmpty()                           ? name
@@ -372,7 +370,7 @@ bool ChatBackend::showConversationMessages(const QString& convoId)
     // A failed read comes back as an empty list, so ask for the error too: an
     // empty thread and an unreachable module must not look alike.
     logos::CallError err;
-    const QVariantList msgs = modules().chat_module.get_messages(convoId, &err);
+    const QList<ChatModule::Message> msgs = modules().chat_module.get_messages(convoId, &err);
     if (!err.ok()) {
         const QString reason = QString::fromStdString(err.message);
         reportFailure(QStringLiteral("Could not load messages"), reason);
@@ -381,14 +379,12 @@ bool ChatBackend::showConversationMessages(const QString& convoId)
 
     QVector<MessageItem> rows;
     rows.reserve(msgs.size());
-    for (const QVariant& v : msgs) {
-        const QVariantMap obj = v.toMap();
-        const bool fromSelf = obj.value(QStringLiteral("from_self")).toBool();
-        const QString content = obj.value(QStringLiteral("content")).toString();
-        const qint64 ts = obj.value(QStringLiteral("timestamp_ms")).toLongLong();
-        const QString sender = obj.value(QStringLiteral("sender")).toString();
-        rows.append({ fromSelf ? QStringLiteral("Me") : shortSenderLabel(sender),
-                      content, msToDateTime(ts), fromSelf });
+    for (const ChatModule::Message& m : msgs) {
+        // `sender` is optional in the contract (absent on our own messages), so
+        // it stays a QVariant; toString() gives the same empty string the map
+        // lookup did, and shortSenderLabel already handles that.
+        rows.append({ m.from_self ? QStringLiteral("Me") : shortSenderLabel(m.sender.toString()),
+                      m.content, msToDateTime(m.timestamp_ms), m.from_self });
     }
     m_messageModel->setMessages(std::move(rows));
     return true;
@@ -526,21 +522,18 @@ void ChatBackend::refreshMembers()
     if (myAddress().isEmpty())
         refreshMyAddress();
 
-    // list_group_members returns [GroupMember], so the typed wrapper is a
-    // QVariantList (each element a QVariantMap), like the other record lists.
-    const QVariantList members = modules().chat_module.list_group_members(convoId);
+    const QList<ChatModule::GroupMember> members = modules().chat_module.list_group_members(convoId);
     QVector<MemberItem> rows;
     rows.reserve(members.size());
     int committed = 0;
-    for (const QVariant& v : members) {
-        const QVariantMap record = v.toMap();
-        const QString address = record.value(QStringLiteral("address")).toString();
-        const bool pending = record.value(QStringLiteral("pending")).toBool();
+    for (const ChatModule::GroupMember& member : members) {
         // An empty address is the roster's "no confirmed account" signal; keep
         // it — the model renders it as "unknown_account". Only a real account
         // address can be self.
-        rows.append({ address, !address.isEmpty() && address == myAddress(), pending });
-        if (!pending)
+        rows.append({ member.address,
+                      !member.address.isEmpty() && member.address == myAddress(),
+                      member.pending });
+        if (!member.pending)
             ++committed;
     }
 
