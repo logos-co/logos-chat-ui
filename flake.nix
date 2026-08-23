@@ -31,6 +31,23 @@
 
       nixpkgs = logos-module-builder.inputs.nixpkgs;
 
+      # x86_64-windows is a cross PSEUDO-SYSTEM, and only `packages` means
+      # anything under it.
+      #
+      # `apps` does not, and the whole key has to go rather than just the two
+      # added below: mkLogosQmlModule's own `apps.<system>.default` resolves the
+      # standalone runner against a NATIVE Windows nixpkgs, which nixpkgs
+      # refuses outright ("Package … is not available on the requested
+      # hostPlatform"). The two doc-test runners fail one layer earlier still --
+      # `import nixpkgs { inherit system; }` for this key dies in cc-wrapper
+      # ("called without required argument 'runtimeShell'").
+      #
+      # Neither a standalone runner nor a doc-test means anything on a cross
+      # target, so `apps` keeps the native systems only, and `packages` gains
+      # `exchange` only where it can be evaluated. `packages.x86_64-windows.*`
+      # itself is untouched and is what the Windows build consumes.
+      windowsSystem = "x86_64-windows";
+
       # `nix run .#exchange`: drive the real two-party message round-trip and hold
       # the receiving window open showing the result. The doc-test launches this
       # to capture one post-exchange screenshot (see doctests/chat-ui-exchange.test.yaml);
@@ -75,11 +92,12 @@
             exchange = { type = "app"; program = "${exchangeRunner system}/bin/chat-ui-exchange"; };
             group = groupApp system;
           })
-          base.apps;
+          (builtins.removeAttrs base.apps [ windowsSystem ]);
         # Also a package so `nix build .#exchange` resolves: the doc-test runner
         # pre-builds its launch target that way to warm the store before the run.
         packages = builtins.mapAttrs
-          (system: sysPkgs: sysPkgs // { exchange = exchangeRunner system; })
+          (system: sysPkgs: sysPkgs // nixpkgs.lib.optionalAttrs
+            (system != windowsSystem) { exchange = exchangeRunner system; })
           base.packages;
       };
 }
