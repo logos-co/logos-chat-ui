@@ -10,10 +10,13 @@
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
-    # Pinned to the v0.2.2 release tag: this view and the module it renders are
-    # released in lockstep, so the module built here is the release the package
-    # manager resolves.
-    chat_module.url = "github:logos-co/logos-chat-module/v0.2.2";
+    # Pinned past the v0.2.2 release tag, for what no released module carries
+    # yet: libchat's GroupV2 join-time fork fix, without which a group splits
+    # into branches that never converge again on the first member added after a
+    # voted steward election; and the account of a group that stops moving,
+    # which is the protocol's own log at debug plus a report of any send the
+    # delivery node gave up on.
+    chat_module.url = "github:logos-co/logos-chat-module/a4b938d1d3c262b3cf4ba631a649674e1bd04ace";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
