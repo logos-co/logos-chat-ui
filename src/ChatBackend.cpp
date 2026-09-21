@@ -183,6 +183,10 @@ void ChatBackend::initialiseModule()
     // After init, because that is when the module opens the file it names.
     openRunLogs();
 
+    // The address is settled once init succeeds, so the view shows it while
+    // delivery is still coming up.
+    refreshMyAddress();
+
     // Subscribe before the initial snapshot so no event fires in the gap
     // between snapshotting and registering the listeners.
     subscribeToEvents();
@@ -331,7 +335,7 @@ void ChatBackend::rehydrateConversations()
 
 void ChatBackend::refreshMyAddress()
 {
-    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady())
+    if (!m_moduleInitialised)
         return;
 
     const QString address = modules().chat_module.get_address();
@@ -522,7 +526,7 @@ void ChatBackend::refreshMembers()
         return; // can't fetch now; keep the last-known roster
 
     // Telling our own entry from the others needs our address; recover it here
-    // if the online transition could not.
+    // if init could not.
     if (myAddress().isEmpty())
         refreshMyAddress();
 
@@ -600,7 +604,6 @@ void ChatBackend::applyDeliveryState(const QString& state, const QString& detail
     // synchronous module reads (see deferToEventLoop).
     if (becameOnline && m_initialSnapshotDone) {
         deferToEventLoop([this] {
-            refreshMyAddress();
             rehydrateConversations();
             const QString convoId = currentConversationId();
             if (convoId.isEmpty())

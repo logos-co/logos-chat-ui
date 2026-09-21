@@ -113,8 +113,9 @@ async function waitForRoster(insp, minCount, { timeout = 150000, what = "roster"
   throw new Error(`${what} did not reach ${minCount} members (last ${last})`);
 }
 
-// Wait for the instance's own address. The backend reads it once the module
-// comes online, so it surfaces on store.myAddress shortly after store.online.
+// Wait for the instance's own address. The backend reads it as soon as the
+// module's init succeeds, so it is on store.myAddress by the time store.online
+// is true.
 async function getAddress(insp) {
   const start = Date.now();
   while (Date.now() - start < 25000) {

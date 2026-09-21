@@ -776,8 +776,8 @@ Item {
             compare(address.text, "Copied to clipboard", "and the confirmation lands on the value");
         }
 
-        // Before the network is up there is no address to show, and a card
-        // showing an empty field would read as a failure rather than a wait.
+        // Before init there is no address to show, and a card showing an empty
+        // field would read as a failure rather than a wait.
         function test_accountCardHidesAnUnknownAddress() {
             const card = createTemporaryObject(accountCardC, testRoot);
             verify(card, "the card must instantiate");

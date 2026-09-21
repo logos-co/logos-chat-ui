@@ -89,8 +89,9 @@ async function loadThread(insp, convId, minCount, { timeout = 90000 } = {}) {
   throw new Error(`conversation thread did not reach ${minCount} message(s)`);
 }
 
-// Wait for the instance's own address. The backend reads it once the module
-// comes online, so it surfaces on store.myAddress shortly after store.online.
+// Wait for the instance's own address. The backend reads it as soon as the
+// module's init succeeds, so it is on store.myAddress by the time store.online
+// is true.
 async function getAddress(insp) {
   const start = Date.now();
   while (Date.now() - start < 25000) {

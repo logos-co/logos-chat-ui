@@ -10,7 +10,7 @@ import Logos.Controls
 Rectangle {
     id: root
 
-    // This account's own address. Empty until the backend is online, which
+    // This account's own address. Empty until the module has initialised, which
     // leaves the card showing the connection state alone.
     required property string address
     // Short form of the address, the card's headline identity.
