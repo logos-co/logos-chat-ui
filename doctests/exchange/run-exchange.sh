@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Role: headless two-party exchange test driver (CI); see run-exchange-show.sh for the doc-test display variant.
+# Role: headless two-party exchange test driver; run-exchange-show.sh wraps it for the doc-test.
 # Regenerate the two-instance message-exchange screenshots for the docs.
 #
 # Launches two logos-chat-ui instances offscreen — each with its own data dir

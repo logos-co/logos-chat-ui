@@ -50,7 +50,8 @@ doctests/exchange/run-exchange.sh docs/images/exchange
 The wrapper builds the standalone app from the flake, launches Alice and Bob
 offscreen, runs the exchange, writes the PNGs below, and tears both instances
 down. It exits non-zero if the round-trip does not complete, so it doubles as an
-end-to-end integration check.
+end-to-end integration check. CI's doc-test run on Linux uploads a fresh set as
+the `chat-ui-flow-screenshots` artifact.
 
 The icons are absent from these captures: `LogosIcon` tints its asset through a
 `MultiEffect`, and the offscreen platform plugin has no GPU to rasterize a
