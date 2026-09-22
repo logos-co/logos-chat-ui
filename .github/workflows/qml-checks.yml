@@ -7,11 +7,10 @@ name: QML Checks
 # system on the QML import path, which they take from the design system's own
 # source tree at the rev this flake resolves.
 #
-# A qmlformat --check gate is intentionally omitted: qmlformat's output varies
-# between Qt versions, so a gate run against the CI's Qt would flag files a
-# developer formatted with a different Qt. The tree is qmlformat-normalized (see
-# the qmlformat baseline commit); enforce it in CI once the Qt version is pinned
-# across environments.
+# A qmlformat check fails on any QML file qmlformat would change. Its output
+# varies between Qt versions, so the check holds the tree to the Qt in the
+# `tests` shell; format with the same one:
+#   nix develop .#tests --command qmlformat -i <file.qml>
 
 on:
   pull_request:
@@ -104,6 +103,18 @@ jobs:
               -I "$LOGOS_DESIGN_SYSTEM_QML" \
               -I "$QT_QML_DIR" \
               $(find src/qml -name "*.qml" | sort)
+          '
+
+      - name: qmlformat
+        shell: bash
+        run: |
+          set -euo pipefail
+          nix develop .#tests --command bash -c '
+            status=0
+            for f in $(find src/qml tests -name "*.qml" | sort); do
+              qmlformat "$f" | diff -u "$f" - || status=1
+            done
+            exit $status
           '
 
       - name: Qt Quick Test (offscreen)
