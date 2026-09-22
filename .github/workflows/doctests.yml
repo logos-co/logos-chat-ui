@@ -98,10 +98,12 @@ jobs:
           nix build --no-link "$drv^*" -L
 
       # The runner is the shared `doctest` CLI, invoked directly via its flake
-      # (github:logos-co/logos-doctest). --release-for pins the {release}
-      # placeholder for logos-chat-ui to the commit under test, so every
+      # (github:logos-co/logos-doctest) at a pinned rev. --release-for pins the
+      # {release} placeholder for logos-chat-ui to the commit under test, so every
       # `github:logos-co/logos-chat-ui{release}` URL in the spec becomes
-      # `.../<sha>` and the module is built against this PR/push.
+      # `.../<sha>` and the module is built against this PR/push; it pins
+      # logos-qt-mcp, which the specs drive the app with, to a fixed rev. Bump the
+      # two harness revs on purpose, here and in the markdown step below.
       # The workspace tests-and-doctests pipeline parses this block to discover
       # the spec list — keep every spec here.
       - name: Run doc-tests
@@ -124,11 +126,12 @@ jobs:
           fi
           # --continue-on-fail so the run walks every step and the published report
           # is complete. The job still fails (non-zero exit) if any step failed.
-          nix run github:logos-co/logos-doctest -- run \
+          nix run github:logos-co/logos-doctest/8a967779fb5e1953028aaac2de9316f6c676a630 -- run \
             "${specs[@]}" \
             --verbose \
             --continue-on-fail \
             --release-for logos-chat-ui=${{ steps.commit.outputs.sha }} \
+            --release-for logos-qt-mcp=1fea509485a48ab185fafae8dc21bdbcc808a07e \
             --report "${{ runner.temp }}/chat-ui-doctest-report.html"
 
       - name: Stage report for upload
@@ -155,9 +158,10 @@ jobs:
         run: |
           for spec in doctests/chat-ui.test.yaml doctests/chat-ui-exchange.test.yaml doctests/chat-ui-group.test.yaml; do
             out="/tmp/$(basename "$spec" .test.yaml).md"
-            nix run github:logos-co/logos-doctest -- generate \
+            nix run github:logos-co/logos-doctest/8a967779fb5e1953028aaac2de9316f6c676a630 -- generate \
               "$spec" \
               --release-for logos-chat-ui=${{ steps.commit.outputs.sha }} \
+              --release-for logos-qt-mcp=1fea509485a48ab185fafae8dc21bdbcc808a07e \
               -o "$out"
             test -s "$out"
           done
