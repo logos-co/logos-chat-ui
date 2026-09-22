@@ -9,7 +9,8 @@ class ChatBackend
 
     PROP(ChatStatus chatStatus READONLY)
     // This account's own address, the string a peer needs to reach it. Fetched
-    // once the module comes online, so the view can show it from first paint.
+    // as soon as init succeeds, so the view shows it while delivery is still
+    // coming up.
     PROP(QString myAddress READONLY)
     // Short form of myAddress, on the same rule as a roster row's label, and
     // the two-letter form its avatar carries.
