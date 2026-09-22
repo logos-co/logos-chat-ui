@@ -95,9 +95,14 @@ jobs:
               exit 1
             fi
             qmllint --version
+            # Unwrapped like qmltestrunner below, so it needs the Qt QML module
+            # dir too. An unresolved import or type is only a warning, hence
+            # --max-warnings 0.
             qmllint \
+              --max-warnings 0 \
               -I src/qml \
               -I "$LOGOS_DESIGN_SYSTEM_QML" \
+              -I "$QT_QML_DIR" \
               $(find src/qml -name "*.qml" | sort)
           '
 
@@ -108,9 +113,8 @@ jobs:
           nix develop .#tests --command bash -c '
             set -euo pipefail
             # qmltestrunner here is unwrapped, so QtQuick.Controls and QtQuick.Layouts
-            # are not on its default import path (qmllint resolves them itself;
-            # qmltestrunner does not). Point it at the qtdeclarative QML module dir,
-            # which the tests shell exports as QT_QML_DIR.
+            # are not on its default import path. Point it at the qtdeclarative QML
+            # module dir, which the tests shell exports as QT_QML_DIR.
             [ -d "$QT_QML_DIR/QtQuick/Controls" ] || { echo "QtQuick.Controls not under $QT_QML_DIR" >&2; exit 1; }
             QT_QPA_PLATFORM=offscreen qmltestrunner \
               -input tests/qml \
