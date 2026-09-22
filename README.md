@@ -117,6 +117,7 @@ nix build .#lgx      # .lgx package for distribution
 nix build .#install  # lgpm-installed output (modules/ + plugins/)
 nix run              # standalone app with chat_module
 nix develop          # enter development shell
+nix develop .#tests  # the Qt and tools the CI checks run on
 ```
 
 ## Documentation
