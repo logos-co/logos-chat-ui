@@ -167,6 +167,7 @@ jobs:
     # the report. Skip on forks, where GITHUB_TOKEN can't push or comment.
     if: ${{ always() && github.event.pull_request.head.repo.fork != true }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     permissions:
       contents: write          # push to the gh-pages branch
