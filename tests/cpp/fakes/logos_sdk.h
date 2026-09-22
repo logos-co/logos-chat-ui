@@ -55,6 +55,7 @@ public:
         qlonglong convo_count{};
         QString delivery_state{};
         QString detail{};
+        bool delivery_adopted{};
     };
     struct GroupMember {
         QString address{};
@@ -67,8 +68,9 @@ public:
 
     using EventCallback = std::function<void(const QVariantList&)>;
 
-    // The delivery state status() reports.
+    // The delivery state status() reports, and the node it is on.
     QString deliveryState = QStringLiteral("initialising");
+    bool deliveryAdopted = false;
     // The address init settles on.
     QString address = QStringLiteral("fake-account-address-0123456789abcdef");
     QString logPath;
@@ -81,7 +83,7 @@ public:
     {
         deliveryState = QStringLiteral("online");
         if (auto handler = m_handlers.value(QStringLiteral("delivery_state_changed")))
-            handler({QStringLiteral("online"), QString()});
+            handler({QStringLiteral("online"), QString(), deliveryAdopted});
     }
 
     bool on(const QString& name, EventCallback cb)
@@ -108,7 +110,7 @@ public:
             whileListingConversations();
         return {};
     }
-    Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString()}; }
+    Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString(), deliveryAdopted}; }
     void healthAsync(std::function<void(bool)>, Timeout = Timeout()) {}
     QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return {}; }
     QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return {}; }

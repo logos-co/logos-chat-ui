@@ -132,6 +132,8 @@ Item {
             initials: "0x"
             online: true
             statusLabel: "Online"
+            deliveryAdopted: false
+            deliveryPreset: "logos.test"
         }
     }
     Component {
@@ -286,6 +288,14 @@ Item {
         NewConversationDialog {}
     }
     Component {
+        id: deliveryNoticeC
+        DeliveryNotice {}
+    }
+    Component {
+        id: unknownNetworkDialogC
+        UnknownNetworkDialog {}
+    }
+    Component {
         id: newGroupDialogC
         NewGroupDialog {}
     }
@@ -412,6 +422,10 @@ Item {
         id: logsRequestedSpy
         signalName: "logsRequested"
     }
+    SignalSpy {
+        id: unknownNetworkSpy
+        signalName: "unknownNetworkRequested"
+    }
 
     TestCase {
         name: "ChatUiComponents"
@@ -493,6 +507,8 @@ Item {
             instantiate(newConvDialogC);
             instantiate(newGroupDialogC);
             instantiate(memberAddInfoDialogC);
+            instantiate(deliveryNoticeC);
+            instantiate(unknownNetworkDialogC);
         }
 
         // A direct conversation's details name the peer once their address is
@@ -790,6 +806,56 @@ Item {
             card.label = "";
             verify(!label.visible, "an unknown identity leaves no empty line");
             tryVerify(() => !address.visible, 2000, "and no empty address field");
+        }
+
+        // Once online the card names Chat's own network after the status, and
+        // for a node Chat did not start says the network is unknown instead.
+        function test_accountCardNamesTheNetwork() {
+            const card = createTemporaryObject(accountCardC, testRoot);
+            verify(card, "the card must instantiate");
+            const name = findField(card, "deliveryNetworkName");
+            const link = findField(card, "deliveryNetworkLink");
+            verify(name && link, "the network must be reachable");
+            verify(name.visible && !link.visible, "an online card names its network");
+            compare(name.text, "logos.test", "Chat's own node is on Chat's network");
+
+            card.deliveryAdopted = true;
+            verify(!name.visible && link.visible, "another module's node is not named");
+            compare(link.text, "network unknown", "its network is unknown");
+
+            unknownNetworkSpy.target = card;
+            unknownNetworkSpy.clear();
+            link.activate();
+            compare(unknownNetworkSpy.count, 1, "the link opens what that means");
+
+            card.online = false;
+            verify(!name.visible && !link.visible, "before online there is no network to name");
+        }
+
+        // Hovering Chat's own network says what it means.
+        function test_accountCardExplainsChatsNetwork() {
+            const card = createTemporaryObject(accountCardC, testRoot);
+            const name = findField(card, "deliveryNetworkName");
+            const hint = findField(card, "deliveryNetworkHint");
+            verify(name && hint, "the network and its hint must be reachable");
+            tryVerify(() => name.width > 0, 1000, "the card lays out");
+            verify(!hint.opened, "the hint waits for the pointer");
+
+            mouseMove(name);
+            tryVerify(() => hint.opened, 2000, "hovering the network shows the hint");
+            verify(hint.text.indexOf("logos.test") !== -1, "the hint names Chat's network");
+        }
+
+        // The link is a click target, so the card's blank space beside it must
+        // not be one.
+        function test_accountCardNetworkIsOnlyItsText() {
+            const card = createTemporaryObject(accountCardC, testRoot, {
+                width: 320,
+                deliveryAdopted: true
+            });
+            const link = findField(card, "deliveryNetworkLink");
+            tryVerify(() => link.width > 0, 1000, "the card lays out");
+            verify(link.width <= link.implicitWidth + 0.5, "the link spans its text, not the row: " + link.width + " > " + link.implicitWidth);
         }
 
         // The roster line counts who is in and names invitations that have not

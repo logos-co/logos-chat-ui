@@ -84,5 +84,7 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/AddMemberDialog.qml
             src/qml/ChatUi/SelectableText.qml
             src/qml/ChatUi/SessionLogsDialog.qml
+            src/qml/ChatUi/DeliveryNotice.qml
+            src/qml/ChatUi/UnknownNetworkDialog.qml
     )
 endif()

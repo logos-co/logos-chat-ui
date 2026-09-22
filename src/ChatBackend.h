@@ -93,7 +93,7 @@ private:
 
     // Event handlers. Each receives the event's positional argument list, in
     // the order declared in chat_module.lidl.
-    void applyDeliveryState(const QString& state, const QString& detail);
+    void applyDeliveryState(const QString& state, const QString& detail, bool adopted);
     void applyMessageReceived(const QVariantList& args);
     void applyMessageSent(const QVariantList& args);
     void applyConversationCreated(const QVariantList& args);

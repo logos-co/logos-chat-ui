@@ -114,6 +114,8 @@ ChatBackend::ChatBackend(QObject* parent)
     m_conversationProxy->sort(0, Qt::DescendingOrder);
 
     setChatStatus(ChatBackendSimpleSource::Stopped);
+    setDeliveryAdopted(false);
+    setDeliveryPreset(QString::fromLatin1(kDefaultDeliveryPreset));
     setMyAddress(QString());
     setMyLabel(QString());
     setMyInitials(QString());
@@ -199,7 +201,7 @@ void ChatBackend::initialiseModule()
     // Seed delivery state from the snapshot in case delivery_state_changed
     // fired during init(), before subscribeToEvents() registered the listener.
     const ChatModule::Status status = modules().chat_module.status();
-    applyDeliveryState(status.delivery_state, status.detail);
+    applyDeliveryState(status.delivery_state, status.detail, status.delivery_adopted);
 
     startHealthProbe();
 }
@@ -294,7 +296,7 @@ void ChatBackend::subscribeToEvents()
     chat.on(QStringLiteral("conversation_deleted"),
             [this](const QVariantList& a) { applyConversationDeleted(a); });
     chat.on(QStringLiteral("delivery_state_changed"), [this](const QVariantList& a) {
-        applyDeliveryState(a.value(0).toString(), a.value(1).toString());
+        applyDeliveryState(a.value(0).toString(), a.value(1).toString(), a.value(2).toBool());
     });
 }
 
@@ -556,7 +558,7 @@ void ChatBackend::refreshSessionLogs()
 
 // ── event handlers ────────────────────────────────────────────────────────────
 
-void ChatBackend::applyDeliveryState(const QString& state, const QString& detail)
+void ChatBackend::applyDeliveryState(const QString& state, const QString& detail, bool adopted)
 {
     ChatBackendSimpleSource::ChatStatus next = ChatBackendSimpleSource::Stopped;
     if (state == QStringLiteral("online")) {
@@ -576,6 +578,8 @@ void ChatBackend::applyDeliveryState(const QString& state, const QString& detail
     const bool becameError =
         next == ChatBackendSimpleSource::Error && chatStatus() != ChatBackendSimpleSource::Error;
 
+    // Before the status, so a view reacting to Online reads the node it is on.
+    setDeliveryAdopted(adopted);
     setChatStatus(next);
 
     // The connectivity label says only that delivery is in error; what went

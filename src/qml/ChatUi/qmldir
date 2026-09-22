@@ -28,3 +28,5 @@ NewGroupDialog 1.0 NewGroupDialog.qml
 MemberAddInfoDialog 1.0 MemberAddInfoDialog.qml
 AddMemberDialog 1.0 AddMemberDialog.qml
 SessionLogsDialog 1.0 SessionLogsDialog.qml
+DeliveryNotice 1.0 DeliveryNotice.qml
+UnknownNetworkDialog 1.0 UnknownNetworkDialog.qml

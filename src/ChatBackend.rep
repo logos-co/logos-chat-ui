@@ -8,6 +8,12 @@ class ChatBackend
     }
 
     PROP(ChatStatus chatStatus READONLY)
+    // True when delivery was already running a node the chat module's current
+    // process did not start, so it keeps the settings it was started with.
+    // Settled by the time chatStatus reaches Online.
+    PROP(bool deliveryAdopted READONLY)
+    // The delivery network Chat asks for when it starts the node itself.
+    PROP(QString deliveryPreset READONLY)
     // This account's own address, the string a peer needs to reach it. Fetched
     // as soon as init succeeds, so the view shows it while delivery is still
     // coming up.

@@ -10,10 +10,10 @@
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
-    # Pinned to the master rev that bumps module-builder to 0.3.0: this view and
+    # Pinned to the master rev that reports delivery_adopted: this view and
     # the module it renders are released in lockstep, so re-pin to the release
     # tag once one carries it.
-    chat_module.url = "github:logos-co/logos-chat-module/1c2fcdcf2e872336326345811a8d04a9fb11b57e";
+    chat_module.url = "github:logos-co/logos-chat-module/39d6adb74ce674c0ece7238e7c1f270a95aa8e3a";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
