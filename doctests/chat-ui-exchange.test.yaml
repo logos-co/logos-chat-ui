@@ -40,6 +40,9 @@ prerequisites:
 
 sections:
   - title: "Run the automated exchange"
+    # Linux only: GitHub's macOS runners can't provide the live P2P networking
+    # the exchange needs.
+    platform: linux
     step: true
     text: |
       The `exchange` app launches two instances offscreen and runs the real

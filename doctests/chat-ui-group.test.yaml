@@ -38,6 +38,9 @@ prerequisites:
 
 sections:
   - title: "Run the automated group chat"
+    # Linux only: GitHub's macOS runners can't provide the live P2P networking
+    # the group flow needs.
+    platform: linux
     step: true
     text: |
       The `group` app launches three instances offscreen and runs the real flow

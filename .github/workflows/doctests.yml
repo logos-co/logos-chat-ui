@@ -106,25 +106,19 @@ jobs:
       # logos-qt-mcp, which the specs drive the app with, to a fixed rev. Bump the
       # two harness revs on purpose, here and in the markdown step below.
       # The workspace tests-and-doctests pipeline parses this block to discover
-      # the spec list — keep every spec here.
+      # the spec list, so keep every spec in the one array.
       - name: Run doc-tests
         shell: bash
         env:
           PYTHONUNBUFFERED: "1"
         run: |
-          # Spec list. The two-party exchange and three-party group specs need live
-          # P2P networking that GitHub's macOS runners can't provide (each has its
-          # own dedicated ubuntu gate: two-instance-exchange.yml and group-chat.yml),
-          # so they run on ubuntu only; macOS keeps the single-instance chat-ui spec.
-          # Every path stays listed for the workspace tests-and-doctests spec discovery.
+          # The exchange and group specs mark their live sections `platform:
+          # linux`, so the macOS leg skips them.
           specs=(
             doctests/chat-ui.test.yaml
             doctests/chat-ui-exchange.test.yaml
             doctests/chat-ui-group.test.yaml
           )
-          if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            specs=(doctests/chat-ui.test.yaml)
-          fi
           # --continue-on-fail so the run walks every step and the published report
           # is complete. The job still fails (non-zero exit) if any step failed.
           nix run github:logos-co/logos-doctest/8a967779fb5e1953028aaac2de9316f6c676a630 -- run \
