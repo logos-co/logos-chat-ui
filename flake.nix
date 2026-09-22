@@ -74,8 +74,8 @@
             group = groupApp system;
           })
           base.apps;
-        # Also a package so `nix build .#exchange` resolves: the doc-test runner
-        # pre-builds its launch target that way to warm the store before the run.
+        # Also a package, so `nix build .#exchange` builds the runner without
+        # running it.
         packages = builtins.mapAttrs
           (system: sysPkgs: sysPkgs // { exchange = exchangeRunner system; })
           base.packages;

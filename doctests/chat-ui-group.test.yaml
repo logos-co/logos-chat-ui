@@ -56,7 +56,7 @@ sections:
           # Opens the default inspector port 3768: the qt-mcp test framework
           # always connects to QML_INSPECTOR_PORT (default 3768), so the captured
           # window must be reachable there. The group flow runs on its own
-          # inspector ports (4768/4769/4770) during this (unbounded) launch wait;
+          # inspector ports (4778-4780) during this (unbounded) launch wait;
           # 3768 opens (proxied onto Carol's live window) only once the flow is
           # done, so the capture below runs against the already-finished window.
           # Larger than the exchange's 1800: forming a three-member group runs

@@ -34,7 +34,7 @@ SHOW_PORT="${SHOW_PORT:-3768}"
 CAROL_PORT=4780
 mkdir -p "$DATA_DIR" "$OUT_DIR"
 
-# All three exchange instances outlive run-group.sh here (KEEP_INSTANCES), so
+# All three group instances outlive run-group.sh here (KEEP_INSTANCES), so
 # their teardown is ours: snapshot the logos process set before launch and, on
 # exit, kill exactly the processes this run added (the module host processes set
 # their own session, so a process-group kill would miss them). Plus the proxy.
@@ -51,7 +51,7 @@ show_cleanup() {
 trap 'exit 0' TERM INT
 trap show_cleanup EXIT
 
-# Phase 1: the real group flow, on inspector ports 4768/4769/4770 so SHOW_PORT
+# Phase 1: the real group flow, on inspector ports 4778-4780 so SHOW_PORT
 # stays closed until the finished window is ready. KEEP_INSTANCES leaves all
 # three running with the completed group on screen.
 echo "=== phase 1: three-party group chat (instances kept alive) ==="

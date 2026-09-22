@@ -38,7 +38,7 @@ prerequisites:
     echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
     ```
   - "**A Linux or macOS machine.** Nix provides every toolchain (Qt, CMake, Rust) during the builds."
-  - "**Network access.** The two delivery nodes discover each other over the configured network preset; an isolated sandbox won't complete the exchange."
+  - "**Network access.** The delivery node connects over the configured network preset; an isolated sandbox never goes Online."
 
 sections:
   - title: "Build the chat UI"

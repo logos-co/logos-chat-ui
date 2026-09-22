@@ -80,12 +80,13 @@ jobs:
         run: |
           echo "sha=${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_OUTPUT"
 
-      # Pre-build the standalone app the doctest launches. The spec drives it via
-      # `nix run github:logos-co/logos-chat-ui/<sha>`; building that same ref's
-      # runner here puts it in the store so the launch is instant — otherwise the
-      # build runs inside the doctest's 120s inspector-wait and times out. The app
-      # exposes no buildable package attr, so recover the runner derivation from
-      # its program string's context (a pinned github ref, so the lock matches the
+      # Pre-build the standalone app the doctest launches. The doctest warms it
+      # too, but under a 30-minute build timeout the cache-less macOS build can
+      # exceed, and it launches anyway when that build fails; here a broken build
+      # fails the job before any spec runs. The spec drives it via
+      # `nix run github:logos-co/logos-chat-ui/<sha>`. The app exposes no
+      # buildable package attr, so recover the runner derivation from its
+      # program string's context (a pinned github ref, so the lock matches the
       # spec's).
       - name: Pre-build the chat UI app
         shell: bash

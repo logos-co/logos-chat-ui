@@ -1,7 +1,8 @@
 name: CI
 
 # Builds the module itself on every supported platform, complementing the
-# qml-checks and doc-test workflows, which exercise the built app on one.
+# qml-checks and doc-test workflows, which check the sources and exercise the
+# built app.
 
 on:
   pull_request:
