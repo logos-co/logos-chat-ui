@@ -19,6 +19,9 @@ on:
     branches: [master, main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: qml-checks-${{ github.ref }}
   cancel-in-progress: true

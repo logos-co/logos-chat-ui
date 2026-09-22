@@ -19,6 +19,9 @@ on:
     branches: [master, main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: two-instance-exchange-${{ github.ref }}
   cancel-in-progress: true
