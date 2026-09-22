@@ -22,8 +22,10 @@ on:
 permissions:
   contents: read
 
+# A pull request's runs share a group, so a push cancels the run it
+# supersedes; every other run gets a group of its own and always finishes.
 concurrency:
-  group: two-instance-exchange-${{ github.ref }}
+  group: two-instance-exchange-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
