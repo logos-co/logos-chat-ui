@@ -12,7 +12,7 @@ name: Doc-Tests
 #
 # Each run publishes the two-column HTML report to:
 #   https://<owner>.github.io/<repo>/pr-<N>/<os>/      (pull requests)
-#   https://<owner>.github.io/<repo>/master/<os>/      (pushes to master)
+#   https://<owner>.github.io/<repo>/<branch>/<os>/    (pushes and manual runs)
 # and (for PRs) posts/updates a comment with the links. The repo's GitHub Pages
 # must be enabled once (deploy from the gh-pages branch); see the README.
 #
@@ -172,6 +172,9 @@ jobs:
       contents: write          # push to the gh-pages branch
       pull-requests: write      # post/update the PR comment
 
+    env:
+      TESTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
     # Serialize Pages pushes so two refs can't race on the gh-pages branch.
     concurrency:
       group: gh-pages-publish
@@ -192,7 +195,7 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="pr-${{ github.event.pull_request.number }}"
           else
-            BASE="master"
+            BASE="${{ github.ref_name }}"
           fi
           echo "base=$BASE" >> "$GITHUB_OUTPUT"
 
@@ -214,7 +217,7 @@ jobs:
             echo "<title>logos-chat-ui doc-test reports — $BASE</title>"
             echo "<style>body{font:16px system-ui;margin:40px;max-width:640px}a{color:#2563eb}</style>"
             echo "<h1>logos-chat-ui doc-test reports</h1>"
-            echo "<p><strong>$BASE</strong> · commit <code>${GITHUB_SHA::7}</code></p><ul>"
+            echo "<p><strong>$BASE</strong> · commit <code>${TESTED_SHA::7}</code></p><ul>"
             for os in ubuntu-latest macos-latest; do
               if [ -d "site/$BASE/$os" ]; then
                 echo "<li><a href=\"./$os/\">$os</a></li>"
@@ -230,7 +233,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
           keep_files: true          # don't wipe other PRs' directories
-          commit_message: "Publish doc-test reports for ${{ steps.arrange.outputs.base }} (${{ github.sha }})"
+          commit_message: "Publish doc-test reports for ${{ steps.arrange.outputs.base }} (${{ env.TESTED_SHA }})"
 
       - name: Comment on PR with report links
         if: ${{ github.event_name == 'pull_request' && steps.arrange.outputs.found != '' }}
@@ -242,16 +245,16 @@ jobs:
             const repo = context.repo.repo;
             const root = `https://${owner}.github.io/${repo}/${base}`;
             const oses = "${{ steps.arrange.outputs.found }}".trim().split(/\s+/).filter(Boolean);
+            const sha = process.env.TESTED_SHA.slice(0, 7);
 
             const links = oses.map(os => `- [\`${os}\` report](${root}/${os}/)`).join("\n");
             const marker = "<!-- chat-ui-doctest-report-links -->";
             const body =
               `${marker}\n` +
               `### 📊 Doc-test report\n\n` +
-              `The chat UI built against this commit, driven headless to connect ` +
-              `and share its address, rendered alongside the commands ` +
-              `actually run and their output ` +
-              `(updated each run, commit \`${context.sha.slice(0,7)}\`):\n\n` +
+              `The chat UI built against this commit and driven headless through ` +
+              `the doc-test tutorials, rendered alongside the commands actually ` +
+              `run and their output (updated each run, commit \`${sha}\`):\n\n` +
               `${links}\n\n` +
               `_Pages can take a minute to update after the run finishes._`;
 
