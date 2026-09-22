@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Nix and Logos cache
         if: matrix.os != 'macos-latest'
@@ -138,20 +138,23 @@ jobs:
         if: always()
         shell: bash
         run: |
-          mkdir -p report-out
-          # Name it index.html so the published directory URL renders directly.
+          # Name it index.html so the published directory URL renders directly,
+          # under a directory named for the OS so the legs' reports merge into
+          # one tree when publish-report downloads them.
+          out="report-out/${{ matrix.os }}"
+          mkdir -p "$out"
           if [ -f "${{ runner.temp }}/chat-ui-doctest-report.html" ]; then
-            cp "${{ runner.temp }}/chat-ui-doctest-report.html" report-out/index.html
+            cp "${{ runner.temp }}/chat-ui-doctest-report.html" "$out/index.html"
           else
-            echo "<h1>No report produced</h1>" > report-out/index.html
+            echo "<h1>No report produced</h1>" > "$out/index.html"
           fi
 
       - name: Upload execution report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: chat-ui-doctest-report-${{ matrix.os }}
-          path: report-out/index.html
+          path: report-out/
           if-no-files-found: warn
 
       - name: Verify markdown generation
@@ -190,10 +193,13 @@ jobs:
 
     steps:
       - name: Download all reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
-          # No `name:` → downloads every artifact into artifacts/<name>/...
+          pattern: chat-ui-doctest-report-*
+          # Merged, each report lands at artifacts/<os>/index.html however many
+          # legs uploaded one; unmerged, a single artifact would be flattened.
+          merge-multiple: true
 
       - name: Arrange site directory
         id: arrange
@@ -210,7 +216,7 @@ jobs:
           mkdir -p "site/$BASE"
           found=""
           for os in ubuntu-latest macos-latest; do
-            src="artifacts/chat-ui-doctest-report-$os/index.html"
+            src="artifacts/$os/index.html"
             if [ -f "$src" ]; then
               mkdir -p "site/$BASE/$os"
               cp "$src" "site/$BASE/$os/index.html"
@@ -245,7 +251,7 @@ jobs:
 
       - name: Comment on PR with report links
         if: ${{ github.event_name == 'pull_request' && steps.arrange.outputs.found != '' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const base = "${{ steps.arrange.outputs.base }}";

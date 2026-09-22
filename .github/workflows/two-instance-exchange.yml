@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Nix and Logos cache
         uses: logos-co/setup-nix-cache-action@v1
@@ -56,7 +56,7 @@ jobs:
 
       - name: Upload regenerated screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: two-instance-exchange-screenshots
           path: docs/images/exchange/*.png
