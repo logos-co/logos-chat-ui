@@ -2,16 +2,15 @@ name: QML Checks
 
 # Static and unit checks for the plugin, complementing the end-to-end doc-tests.
 # Runs qmllint over the view, Qt Quick Test over the ChatUi components (headless,
-# offscreen), and the backend unit tests. The QML steps need the Logos design
+# offscreen), and the backend unit tests. Every step runs in the flake's `tests`
+# shell, on the Qt the module is built with. The QML steps need the Logos design
 # system on the QML import path, which they take from the design system's own
-# source tree at the rev this flake resolves. The Qt Quick tooling itself comes
-# from nixpkgs' qt6.qtdeclarative.
+# source tree at the rev this flake resolves.
 #
-# A qmlformat --check gate is intentionally omitted: qmlformat's output varies
-# between Qt versions, so a gate run against the CI's Qt would flag files a
-# developer formatted with a different Qt. The tree is qmlformat-normalized (see
-# the qmlformat baseline commit); enforce it in CI once the Qt version is pinned
-# across environments.
+# A qmlformat check fails on any QML file qmlformat would change. Its output
+# varies between Qt versions, so the check holds the tree to the Qt in the
+# `tests` shell; format with the same one:
+#   nix develop .#tests --command qmlformat -i <file.qml>
 
 on:
   pull_request:
@@ -52,10 +51,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # The compiler comes from nixpkgs too: with the runner's toolchain the
-          # binary keeps the system loader and libc while Qt brings nixpkgs's,
-          # and the two disagree at load time (GLIBC_ABI_GNU2_TLS not found).
-          nix shell nixpkgs#qt6.qtbase nixpkgs#qt6.qtremoteobjects nixpkgs#cmake nixpkgs#ninja nixpkgs#gcc --command bash -c '
+          # The compiler comes from the shell's nixpkgs too: with the runner's
+          # toolchain the binary keeps the system loader and libc while Qt brings
+          # nixpkgs's, and the two disagree at load time (GLIBC_ABI_GNU2_TLS not
+          # found).
+          nix develop .#tests --command bash -c '
             set -euo pipefail
             cmake -S tests/cpp -B build/tests -GNinja
             cmake --build build/tests
@@ -80,50 +80,56 @@ jobs:
 
       # The design system ships Logos.Theme/.Icons/.Controls as static
       # qt_add_qml_module targets an app links, so no built artifact carries a
-      # loose QML tree the tools could import. Take its source tree instead, at
-      # the rev this flake resolves through chat_module's builder, which is the
-      # one the app is built against.
-      - name: Locate the Logos design system
-        id: ds
-        shell: bash
-        run: |
-          set -euo pipefail
-          importpath="$(nix eval --impure --raw --expr \
-            '(builtins.getFlake (toString ./.)).inputs.chat_module.inputs.logos-module-builder.inputs.logos-design-system.outPath')/src/qml"
-          if [ ! -d "$importpath/Logos/Theme" ]; then
-            echo "No Logos/Theme under $importpath" >&2
-            exit 1
-          fi
-          echo "importpath=$importpath" >> "$GITHUB_OUTPUT"
-          echo "Design system import path: $importpath"
-
+      # loose QML tree the tools could import. The tests shell exports its source
+      # tree instead, as LOGOS_DESIGN_SYSTEM_QML, at the rev this flake resolves
+      # through chat_module's builder, which is the one the app is built against.
       - name: qmllint
         shell: bash
         run: |
           set -euo pipefail
-          nix shell nixpkgs#qt6.qtdeclarative --command bash -c '
+          nix develop .#tests --command bash -c '
+            set -euo pipefail
+            if [ ! -d "$LOGOS_DESIGN_SYSTEM_QML/Logos/Theme" ]; then
+              echo "No Logos/Theme under $LOGOS_DESIGN_SYSTEM_QML" >&2
+              exit 1
+            fi
             qmllint --version
+            # Unwrapped like qmltestrunner below, so it needs the Qt QML module
+            # dir too. An unresolved import or type is only a warning, hence
+            # --max-warnings 0.
             qmllint \
+              --max-warnings 0 \
               -I src/qml \
-              -I "${{ steps.ds.outputs.importpath }}" \
+              -I "$LOGOS_DESIGN_SYSTEM_QML" \
+              -I "$QT_QML_DIR" \
               $(find src/qml -name "*.qml" | sort)
+          '
+
+      - name: qmlformat
+        shell: bash
+        run: |
+          set -euo pipefail
+          nix develop .#tests --command bash -c '
+            status=0
+            for f in $(find src/qml tests -name "*.qml" | sort); do
+              qmlformat "$f" | diff -u "$f" - || status=1
+            done
+            exit $status
           '
 
       - name: Qt Quick Test (offscreen)
         shell: bash
         run: |
           set -euo pipefail
-          nix shell nixpkgs#qt6.qtdeclarative --command bash -c '
+          nix develop .#tests --command bash -c '
             set -euo pipefail
             # qmltestrunner here is unwrapped, so QtQuick.Controls and QtQuick.Layouts
-            # are not on its default import path (qmllint resolves them itself;
-            # qmltestrunner does not). Point it at the qtdeclarative QML module dir,
-            # which sits next to the binary.
-            qmlpath="$(dirname "$(dirname "$(readlink -f "$(command -v qmltestrunner)")")")/lib/qt-6/qml"
-            [ -d "$qmlpath/QtQuick/Controls" ] || { echo "QtQuick.Controls not under $qmlpath" >&2; exit 1; }
+            # are not on its default import path. Point it at the qtdeclarative QML
+            # module dir, which the tests shell exports as QT_QML_DIR.
+            [ -d "$QT_QML_DIR/QtQuick/Controls" ] || { echo "QtQuick.Controls not under $QT_QML_DIR" >&2; exit 1; }
             QT_QPA_PLATFORM=offscreen qmltestrunner \
               -input tests/qml \
               -import src/qml \
-              -import "${{ steps.ds.outputs.importpath }}" \
-              -import "$qmlpath"
+              -import "$LOGOS_DESIGN_SYSTEM_QML" \
+              -import "$QT_QML_DIR"
           '

@@ -66,6 +66,18 @@
           type = "app";
           program = "${runner}/bin/chat-ui-group";
         };
+
+      # `nix develop .#tests`: the checks' toolchain on the Qt this module ships
+      # with. The QML tools also need the design system's QML source and Qt's
+      # own QML modules on their import path: LOGOS_DESIGN_SYSTEM_QML and
+      # QT_QML_DIR.
+      testsShell = system:
+        let pkgs = import nixpkgs { inherit system; };
+        in pkgs.mkShell {
+          packages = with pkgs; [ qt6.qtbase qt6.qtdeclarative qt6.qtremoteobjects cmake ninja ];
+          LOGOS_DESIGN_SYSTEM_QML = "${logos-module-builder.inputs.logos-design-system}/src/qml";
+          QT_QML_DIR = "${pkgs.qt6.qtdeclarative}/${pkgs.qt6.qtbase.qtQmlPrefix}";
+        };
     in
       base // {
         apps = builtins.mapAttrs
@@ -79,5 +91,8 @@
         packages = builtins.mapAttrs
           (system: sysPkgs: sysPkgs // { exchange = exchangeRunner system; })
           base.packages;
+        devShells = builtins.mapAttrs
+          (system: sysShells: sysShells // { tests = testsShell system; })
+          base.devShells;
       };
 }
