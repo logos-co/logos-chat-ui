@@ -1,6 +1,8 @@
 {
   "base": true,
   "scenes": [
+    "view-adopted",
+    "view-delivery-dialog",
     "view-direct",
     "view-group-pending",
     "view-initialising",
@@ -16,6 +18,9 @@
     "view-logs-dialog",
     "view-online-empty"
   ],
-  "added": [],
+  "added": [
+    "view-adopted",
+    "view-delivery-dialog"
+  ],
   "removed": []
 }
