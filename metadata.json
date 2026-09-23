@@ -15,12 +15,6 @@
     "backend_class": "ChatBackend",
     "backend_header": "ChatBackend.h"
   },
-  "dependency_overrides": {
-    "delivery_module": {
-      "input": "chat_module",
-      "file": "rust-lib/deps/delivery_module.lidl"
-    }
-  },
   "nix": {
     "packages": {
       "build": [],
