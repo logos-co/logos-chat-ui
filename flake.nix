@@ -12,7 +12,7 @@
     logos-module-builder.follows = "chat_module/logos-module-builder";
     # PR #66 adds the Windows target and follows a Windows-capable delivery
     # module. Pin its tested revision until a chat_module release includes it.
-    chat_module.url = "github:logos-co/logos-chat-module/9556167c9ed8d9535802b522ae9981f3308dea49";
+    chat_module.url = "github:logos-co/logos-chat-module/f41b29a04c1e085f6fc53020adb9ced05d91f435";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
