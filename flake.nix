@@ -10,9 +10,9 @@
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
-    # PR #66 adds the Windows target and follows a Windows-capable delivery
-    # module. Pin its tested revision until a chat_module release includes it.
-    chat_module.url = "github:logos-co/logos-chat-module/f41b29a04c1e085f6fc53020adb9ced05d91f435";
+    # chat_module master includes the Windows target and a Windows-capable
+    # delivery module. The lockfile pins the tested PR #66 merge commit.
+    chat_module.url = "github:logos-co/logos-chat-module";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
