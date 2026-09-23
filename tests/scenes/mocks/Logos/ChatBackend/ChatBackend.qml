@@ -13,6 +13,8 @@ QtObject {
     }
 
     property int chatStatus: ChatBackend.Stopped
+    property bool deliveryAdopted: false
+    property string deliveryPreset: "logos.test"
     property string myAddress: ""
     property string myLabel: ""
     property string myInitials: ""

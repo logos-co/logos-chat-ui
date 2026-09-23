@@ -114,6 +114,8 @@ ChatBackend::ChatBackend(QObject* parent)
     m_conversationProxy->sort(0, Qt::DescendingOrder);
 
     setChatStatus(ChatBackendSimpleSource::Stopped);
+    setDeliveryAdopted(false);
+    setDeliveryPreset(QString::fromLatin1(kDefaultDeliveryPreset));
     setMyAddress(QString());
     setMyLabel(QString());
     setMyInitials(QString());
@@ -163,13 +165,9 @@ void ChatBackend::initialiseModule()
 {
     setChatStatus(ChatBackendSimpleSource::Initialising);
 
-    // The ChatConfig record, which reaches the module untyped: there is no
-    // generated struct for a record in parameter position, so the wire shape is
-    // the contract.
-    const QVariantMap config{
-        {QStringLiteral("delivery_preset"), QString::fromLatin1(kDefaultDeliveryPreset)},
-        {QStringLiteral("log_level"), QString::fromLatin1(kChatLogLevel)},
-    };
+    ChatModule::ChatConfig config;
+    config.delivery_preset = QString::fromLatin1(kDefaultDeliveryPreset);
+    config.log_level = QString::fromLatin1(kChatLogLevel);
     const LogosResult res = modules().chat_module.init(config);
     if (!res.success) {
         const QString reason = res.getError<QString>();
@@ -202,9 +200,8 @@ void ChatBackend::initialiseModule()
 
     // Seed delivery state from the snapshot in case delivery_state_changed
     // fired during init(), before subscribeToEvents() registered the listener.
-    const QVariantMap status = modules().chat_module.status().toMap();
-    applyDeliveryState(status.value(QStringLiteral("delivery_state")).toString(),
-                       status.value(QStringLiteral("detail")).toString());
+    const ChatModule::Status status = modules().chat_module.status();
+    applyDeliveryState(status.delivery_state, status.detail, status.delivery_adopted);
 
     startHealthProbe();
 }
@@ -299,7 +296,7 @@ void ChatBackend::subscribeToEvents()
     chat.on(QStringLiteral("conversation_deleted"),
             [this](const QVariantList& a) { applyConversationDeleted(a); });
     chat.on(QStringLiteral("delivery_state_changed"), [this](const QVariantList& a) {
-        applyDeliveryState(a.value(0).toString(), a.value(1).toString());
+        applyDeliveryState(a.value(0).toString(), a.value(1).toString(), a.value(2).toBool());
     });
 }
 
@@ -307,20 +304,19 @@ void ChatBackend::rehydrateConversations()
 {
     if (!m_moduleInitialised) return;
 
-    const QVariantList convos = modules().chat_module.list_conversations();
+    const QList<ChatModule::Conversation> convos = modules().chat_module.list_conversations();
     // Unread counts live only here, so carry them across the rebuild.
     const QHash<QString, int> unread = m_conversationModel->unreadCounts();
     m_conversationModel->clear();
-    for (const QVariant& v : convos) {
-        const QVariantMap obj = v.toMap();
-        const QString convoId = obj.value(QStringLiteral("convo_id")).toString();
+    for (const ChatModule::Conversation& convo : convos) {
+        const QString& convoId = convo.convo_id;
         if (convoId.isEmpty()) continue;
-        const QString nickname = obj.value(QStringLiteral("nickname")).toString();
-        const QString name = obj.value(QStringLiteral("name")).toString();
-        const QString description = obj.value(QStringLiteral("description")).toString();
-        const QString preview = obj.value(QStringLiteral("preview")).toString();
-        const qint64 lastActivity = obj.value(QStringLiteral("last_activity_ms")).toLongLong();
-        const bool isGroup = obj.value(QStringLiteral("kind")).toString() == QStringLiteral("group");
+        const QString nickname = convo.nickname.value_or(QString());
+        const QString name = convo.name.value_or(QString());
+        const QString description = convo.description.value_or(QString());
+        const QString preview = convo.preview.value_or(QString());
+        const qint64 lastActivity = convo.last_activity_ms;
+        const bool isGroup = convo.kind == QStringLiteral("group");
         // Local nickname wins, then the group's shared name, else a generated label.
         const QString displayName = !nickname.isEmpty() ? nickname
             : !name.isEmpty()                           ? name
@@ -376,7 +372,7 @@ bool ChatBackend::showConversationMessages(const QString& convoId)
     // A failed read comes back as an empty list, so ask for the error too: an
     // empty thread and an unreachable module must not look alike.
     logos::CallError err;
-    const QVariantList msgs = modules().chat_module.get_messages(convoId, &err);
+    const QList<ChatModule::Message> msgs = modules().chat_module.get_messages(convoId, &err);
     if (!err.ok()) {
         const QString reason = QString::fromStdString(err.message);
         reportFailure(QStringLiteral("Could not load messages"), reason);
@@ -385,14 +381,10 @@ bool ChatBackend::showConversationMessages(const QString& convoId)
 
     QVector<MessageItem> rows;
     rows.reserve(msgs.size());
-    for (const QVariant& v : msgs) {
-        const QVariantMap obj = v.toMap();
-        const bool fromSelf = obj.value(QStringLiteral("from_self")).toBool();
-        const QString content = obj.value(QStringLiteral("content")).toString();
-        const qint64 ts = obj.value(QStringLiteral("timestamp_ms")).toLongLong();
-        const QString sender = obj.value(QStringLiteral("sender")).toString();
-        rows.append({ fromSelf ? QStringLiteral("Me") : shortSenderLabel(sender),
-                      content, msToDateTime(ts), fromSelf });
+    for (const ChatModule::Message& msg : msgs) {
+        const QString sender = msg.sender.value_or(QString());
+        rows.append({ msg.from_self ? QStringLiteral("Me") : shortSenderLabel(sender),
+                      msg.content, msToDateTime(msg.timestamp_ms), msg.from_self });
     }
     m_messageModel->setMessages(std::move(rows));
     return true;
@@ -530,21 +522,17 @@ void ChatBackend::refreshMembers()
     if (myAddress().isEmpty())
         refreshMyAddress();
 
-    // list_group_members returns [GroupMember], so the typed wrapper is a
-    // QVariantList (each element a QVariantMap), like the other record lists.
-    const QVariantList members = modules().chat_module.list_group_members(convoId);
+    const QList<ChatModule::GroupMember> members = modules().chat_module.list_group_members(convoId);
     QVector<MemberItem> rows;
     rows.reserve(members.size());
     int committed = 0;
-    for (const QVariant& v : members) {
-        const QVariantMap record = v.toMap();
-        const QString address = record.value(QStringLiteral("address")).toString();
-        const bool pending = record.value(QStringLiteral("pending")).toBool();
+    for (const ChatModule::GroupMember& member : members) {
+        const QString& address = member.address;
         // An empty address is the roster's "no confirmed account" signal; keep
         // it — the model renders it as "unknown_account". Only a real account
         // address can be self.
-        rows.append({ address, !address.isEmpty() && address == myAddress(), pending });
-        if (!pending)
+        rows.append({ address, !address.isEmpty() && address == myAddress(), member.pending });
+        if (!member.pending)
             ++committed;
     }
 
@@ -570,7 +558,7 @@ void ChatBackend::refreshSessionLogs()
 
 // ── event handlers ────────────────────────────────────────────────────────────
 
-void ChatBackend::applyDeliveryState(const QString& state, const QString& detail)
+void ChatBackend::applyDeliveryState(const QString& state, const QString& detail, bool adopted)
 {
     ChatBackendSimpleSource::ChatStatus next = ChatBackendSimpleSource::Stopped;
     if (state == QStringLiteral("online")) {
@@ -590,6 +578,8 @@ void ChatBackend::applyDeliveryState(const QString& state, const QString& detail
     const bool becameError =
         next == ChatBackendSimpleSource::Error && chatStatus() != ChatBackendSimpleSource::Error;
 
+    // Before the status, so a view reacting to Online reads the node it is on.
+    setDeliveryAdopted(adopted);
     setChatStatus(next);
 
     // The connectivity label says only that delivery is in error; what went

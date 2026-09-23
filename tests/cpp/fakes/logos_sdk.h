@@ -3,11 +3,12 @@
 // Test double for the build-generated logos_sdk.h: a LogosModules whose
 // chat_module answers from scripted state instead of over QtRO.
 #include <QHash>
+#include <QList>
 #include <QString>
 #include <QVariant>
 #include <QVariantList>
-#include <QVariantMap>
 #include <functional>
+#include <optional>
 #include <string>
 
 struct LogosResult {
@@ -32,12 +33,44 @@ struct Timeout {
     int ms;
 };
 
-class FakeChatModule {
+class ChatModule {
 public:
+    struct Conversation {
+        QString convo_id{};
+        std::optional<QString> nickname{};
+        qlonglong message_count{};
+        qlonglong last_activity_ms{};
+        QString kind{};
+        std::optional<QString> name{};
+        std::optional<QString> description{};
+        std::optional<QString> preview{};
+    };
+    struct Message {
+        bool from_self{};
+        QString content{};
+        qlonglong timestamp_ms{};
+        std::optional<QString> sender{};
+    };
+    struct Status {
+        qlonglong convo_count{};
+        QString delivery_state{};
+        QString detail{};
+        bool delivery_adopted{};
+    };
+    struct GroupMember {
+        QString address{};
+        bool pending{};
+    };
+    struct ChatConfig {
+        std::optional<QString> delivery_preset{};
+        std::optional<QString> log_level{};
+    };
+
     using EventCallback = std::function<void(const QVariantList&)>;
 
-    // The delivery state status() reports.
+    // The delivery state status() reports, and the node it is on.
     QString deliveryState = QStringLiteral("initialising");
+    bool deliveryAdopted = false;
     // The address init settles on.
     QString address = QStringLiteral("fake-account-address-0123456789abcdef");
     QString logPath;
@@ -50,7 +83,7 @@ public:
     {
         deliveryState = QStringLiteral("online");
         if (auto handler = m_handlers.value(QStringLiteral("delivery_state_changed")))
-            handler({QStringLiteral("online"), QString()});
+            handler({QStringLiteral("online"), QString(), deliveryAdopted});
     }
 
     bool on(const QString& name, EventCallback cb)
@@ -59,7 +92,7 @@ public:
         return true;
     }
 
-    LogosResult init(const QVariantMap&, logos::CallError* = nullptr)
+    LogosResult init(const ChatConfig&, logos::CallError* = nullptr)
     {
         m_initialised = true;
         return {true, {}, {}};
@@ -71,21 +104,16 @@ public:
     }
     QString get_log_path(logos::CallError* = nullptr) { return logPath; }
     QString get_address(logos::CallError* = nullptr) { return m_initialised ? address : QString(); }
-    QVariantList list_conversations(logos::CallError* = nullptr)
+    QList<Conversation> list_conversations(logos::CallError* = nullptr)
     {
         if (whileListingConversations)
             whileListingConversations();
         return {};
     }
-    QVariant status(logos::CallError* = nullptr)
-    {
-        return QVariantMap{{QStringLiteral("convo_count"), 0},
-                           {QStringLiteral("delivery_state"), deliveryState},
-                           {QStringLiteral("detail"), QString()}};
-    }
+    Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString(), deliveryAdopted}; }
     void healthAsync(std::function<void(bool)>, Timeout = Timeout()) {}
-    QVariantList get_messages(const QString&, logos::CallError* = nullptr) { return {}; }
-    QVariantList list_group_members(const QString&, logos::CallError* = nullptr) { return {}; }
+    QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return {}; }
+    QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return {}; }
     LogosResult create_conversation(const QString&, logos::CallError* = nullptr) { return {true, {}, {}}; }
     LogosResult create_group_conversation(const QString&, const QString&, logos::CallError* = nullptr)
     {
@@ -106,5 +134,5 @@ private:
 };
 
 struct LogosModules {
-    FakeChatModule chat_module;
+    ChatModule chat_module;
 };

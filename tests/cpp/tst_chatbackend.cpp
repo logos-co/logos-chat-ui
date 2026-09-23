@@ -11,6 +11,8 @@ class TestChatBackend : public QObject
 private slots:
     void showsTheAddressWhileDeliveryIsComingUp();
     void showsTheAddressWhenDeliveryComesUpDuringTheFirstSnapshot();
+    void reportsTheNodeDeliveryCameUpOn();
+    void readsTheNodeFromStatusWhenAlreadyOnline();
 
 private:
     QTemporaryDir m_logs;
@@ -46,6 +48,38 @@ void TestChatBackend::showsTheAddressWhenDeliveryComesUpDuringTheFirstSnapshot()
 
     QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Online);
     QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+}
+
+void TestChatBackend::reportsTheNodeDeliveryCameUpOn()
+{
+    LogosModules modules;
+    place(modules);
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QCOMPARE(backend.deliveryAdopted(), false);
+
+    modules.chat_module.deliveryAdopted = true;
+    modules.chat_module.goOnline();
+
+    QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Online);
+    QCOMPARE(backend.deliveryAdopted(), true);
+    QCOMPARE(backend.deliveryPreset(), QStringLiteral("logos.test"));
+}
+
+// A view opened on a module that is already up gets no transition to learn the
+// node from.
+void TestChatBackend::readsTheNodeFromStatusWhenAlreadyOnline()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+    modules.chat_module.deliveryAdopted = true;
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+
+    QCOMPARE(backend.deliveryAdopted(), true);
 }
 
 QTEST_MAIN(TestChatBackend)

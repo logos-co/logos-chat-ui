@@ -69,6 +69,14 @@ Rectangle {
         anchors.margins: Theme.spacing.medium
         spacing: Theme.spacing.medium
 
+        // Closing the notice replaces this binding, so the close lasts for this
+        // run and is not remembered: a later run on a node Chat did not start
+        // says so again.
+        DeliveryNotice {
+            Layout.fillWidth: true
+            shown: store.deliveryAdopted
+        }
+
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -105,6 +113,9 @@ Rectangle {
                     initials: store.myInitials
                     online: store.online
                     statusLabel: store.statusLabel
+                    deliveryAdopted: store.deliveryAdopted
+                    deliveryPreset: store.deliveryPreset
+                    onUnknownNetworkRequested: unknownNetworkDialog.open()
                 }
             }
 
@@ -193,6 +204,10 @@ Rectangle {
         errors: store.errors
         runs: store.logRuns
         logDir: store.logDir
+    }
+
+    UnknownNetworkDialog {
+        id: unknownNetworkDialog
     }
 
     NewConversationDialog {

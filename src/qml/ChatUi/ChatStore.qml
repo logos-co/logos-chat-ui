@@ -18,6 +18,10 @@ QtObject {
 
     readonly property bool online: backend ? backend.chatStatus === ChatBackend.Online : false
     readonly property bool hasError: backend ? backend.chatStatus === ChatBackend.Error : false
+    // The delivery node: whether it was already running when Chat opened, and
+    // the network Chat asks for when it starts the node itself.
+    readonly property bool deliveryAdopted: backend ? backend.deliveryAdopted : false
+    readonly property string deliveryPreset: backend ? backend.deliveryPreset : ""
     readonly property string currentConversationId: backend ? backend.currentConversationId : ""
     readonly property string loadedConversationId: backend ? backend.loadedConversationId : ""
     readonly property bool currentIsGroup: backend ? backend.currentIsGroup : false
