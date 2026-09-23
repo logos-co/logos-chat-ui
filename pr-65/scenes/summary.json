@@ -1,0 +1,21 @@
+{
+  "base": true,
+  "scenes": [
+    "view-direct",
+    "view-group-pending",
+    "view-initialising",
+    "view-loading",
+    "view-logs-dialog",
+    "view-online-empty"
+  ],
+  "changed": [
+    "view-direct",
+    "view-group-pending",
+    "view-initialising",
+    "view-loading",
+    "view-logs-dialog",
+    "view-online-empty"
+  ],
+  "added": [],
+  "removed": []
+}
