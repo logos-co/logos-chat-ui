@@ -7,8 +7,10 @@ name: Doc-Tests
 #   - chat-ui-exchange  runs the real two-party round-trip and captures the result
 #   - chat-ui-group     forms a real three-party group and captures the result
 #
-# The dedicated two-instance-exchange.yml job stays the robust gate for the
-# round-trip and regenerates docs/two-instance-exchange.md's screenshots.
+# The exchange and group specs are this repo's only runs of the live
+# multi-instance flows, on the ubuntu leg alone. That leg uploads each flow's
+# full screenshot set, docs/two-instance-exchange.md's images among them, and a
+# failing leg uploads every app log.
 #
 # Each run publishes the two-column HTML report to:
 #   https://<owner>.github.io/<repo>/pr-<N>/<os>/      (pull requests)
@@ -106,31 +108,31 @@ jobs:
       # logos-qt-mcp, which the specs drive the app with, to a fixed rev. Bump the
       # two harness revs on purpose, here and in the markdown step below.
       # The workspace tests-and-doctests pipeline parses this block to discover
-      # the spec list — keep every spec here.
+      # the spec list, so keep every spec in the one array.
       - name: Run doc-tests
         shell: bash
         env:
           PYTHONUNBUFFERED: "1"
+          # The exchange and group apps write their full screenshot sets here.
+          OUT_DIR: ${{ runner.temp }}/flow-screenshots
+          # doctest's work dirs and the apps' data dirs land under TMPDIR, and
+          # --keep-workdir keeps doctest's, so the log upload below finds them.
+          TMPDIR: ${{ runner.temp }}
         run: |
-          # Spec list. The two-party exchange and three-party group specs need live
-          # P2P networking that GitHub's macOS runners can't provide (each has its
-          # own dedicated ubuntu gate: two-instance-exchange.yml and group-chat.yml),
-          # so they run on ubuntu only; macOS keeps the single-instance chat-ui spec.
-          # Every path stays listed for the workspace tests-and-doctests spec discovery.
+          # The exchange and group specs mark their live sections `platform:
+          # linux`, so the macOS leg skips them.
           specs=(
             doctests/chat-ui.test.yaml
             doctests/chat-ui-exchange.test.yaml
             doctests/chat-ui-group.test.yaml
           )
-          if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            specs=(doctests/chat-ui.test.yaml)
-          fi
           # --continue-on-fail so the run walks every step and the published report
           # is complete. The job still fails (non-zero exit) if any step failed.
           nix run github:logos-co/logos-doctest/8a967779fb5e1953028aaac2de9316f6c676a630 -- run \
             "${specs[@]}" \
             --verbose \
             --continue-on-fail \
+            --keep-workdir \
             --release-for logos-chat-ui=${{ steps.commit.outputs.sha }} \
             --release-for logos-qt-mcp=1fea509485a48ab185fafae8dc21bdbcc808a07e \
             --report "${{ runner.temp }}/chat-ui-doctest-report.html"
@@ -156,6 +158,27 @@ jobs:
         with:
           name: chat-ui-doctest-report-${{ matrix.os }}
           path: report-out/
+          if-no-files-found: warn
+
+      - name: Upload the flows' screenshots
+        if: always() && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-ui-flow-screenshots
+          path: ${{ runner.temp }}/flow-screenshots/
+          if-no-files-found: warn
+
+      # doctest's ui-test-app.log holds each app's output, including a failed
+      # driver's dump of its instances' logs; the instances' own logs are kept
+      # in their data dirs either way.
+      - name: Upload the app logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-ui-app-logs-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/doctest-test-*/ui-test-app.log
+            ${{ runner.temp }}/chat-*-show.*/data/*.log
           if-no-files-found: warn
 
       - name: Verify markdown generation

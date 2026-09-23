@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Role: headless three-party group-chat test driver (CI); see run-group-show.sh for the doc-test display variant.
+# Role: headless three-party group-chat test driver; run-group-show.sh wraps it for the doc-test.
 # Regenerate the three-instance group-chat screenshots for the docs.
 #
 # Launches three logos-chat-ui instances offscreen — each with its own data dir

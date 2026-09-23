@@ -19,6 +19,7 @@
 # Env:
 #   APP_BIN       run-logos-standalone-ui path (baked in by the flake app)
 #   SHOW_PORT     capture port the doc-test attaches to (default 3768)
+#   OUT_DIR       the group flow's screenshot dir (default <base-dir>/images)
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
