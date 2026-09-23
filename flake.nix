@@ -10,10 +10,9 @@
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
-    # Pinned to the master rev that reports delivery_adopted: this view and
-    # the module it renders are released in lockstep, so re-pin to the release
-    # tag once one carries it.
-    chat_module.url = "github:logos-co/logos-chat-module/39d6adb74ce674c0ece7238e7c1f270a95aa8e3a";
+    # chat_module master includes the Windows target and a Windows-capable
+    # delivery module. The lockfile pins the tested PR #66 merge commit.
+    chat_module.url = "github:logos-co/logos-chat-module";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
@@ -152,7 +151,7 @@
     in
       base // {
         apps = builtins.mapAttrs
-          (system: sysApps: sysApps // {
+          (system: sysApps: sysApps // nixpkgs.lib.optionalAttrs (system != "x86_64-windows") {
             exchange = { type = "app"; program = "${exchangeRunner system}/bin/chat-ui-exchange"; };
             group = groupApp system;
           } // nixpkgs.lib.optionalAttrs (nixpkgs.lib.hasSuffix "-linux" system) {
@@ -163,10 +162,14 @@
         # Also a package, so `nix build .#exchange` builds the runner without
         # running it.
         packages = builtins.mapAttrs
-          (system: sysPkgs: sysPkgs // { exchange = exchangeRunner system; })
+          (system: sysPkgs: sysPkgs // nixpkgs.lib.optionalAttrs (system != "x86_64-windows") {
+            exchange = exchangeRunner system;
+          })
           base.packages;
         devShells = builtins.mapAttrs
-          (system: sysShells: sysShells // { tests = testsShell system; })
+          (system: sysShells: sysShells // nixpkgs.lib.optionalAttrs (system != "x86_64-windows") {
+            tests = testsShell system;
+          })
           base.devShells;
       };
 }
