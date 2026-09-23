@@ -1,0 +1,68 @@
+name: Prune Pages
+
+# Deletes the gh-pages directories of pull requests that are no longer open.
+# pr-<N>/ holds a pull request's doc-test report and scenes, and nothing else
+# removes it. Closing a pull request prunes; the weekly run sweeps up any
+# directory a publish recreated after its pull request closed.
+#
+# pull_request_target runs this file from the base branch with a write token,
+# and it never checks out the pull request's code.
+
+on:
+  pull_request_target:
+    types: [closed]
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prune:
+    name: Prune closed pull requests' pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write          # push to the gh-pages branch
+      pull-requests: read      # list the open pull requests
+
+    # Serialize with the jobs that publish to gh-pages, queued as they are.
+    concurrency:
+      group: gh-pages-publish
+      cancel-in-progress: false
+      queue: max
+
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+
+      - name: Remove closed pull requests' directories
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          open="$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 1000 --json number --jq '.[].number')"
+          removed=()
+          for dir in pr-*/; do
+            [ -d "$dir" ] || continue
+            number="${dir#pr-}"
+            number="${number%/}"
+            if ! grep -qx "$number" <<<"$open"; then
+              git rm -rq "$dir"
+              removed+=("$number")
+            fi
+          done
+          if [ ${#removed[@]} -eq 0 ]; then
+            echo "Every pull request with pages is open."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qm "Prune pages of closed pull requests: ${removed[*]}"
+          git push origin gh-pages
+          echo "Pruned: ${removed[*]}"
