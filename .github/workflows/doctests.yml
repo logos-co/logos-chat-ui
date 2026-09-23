@@ -186,10 +186,12 @@ jobs:
     env:
       TESTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
-    # Serialize Pages pushes so two refs can't race on the gh-pages branch.
+    # Serialize Pages pushes so two refs can't race on the gh-pages branch. The
+    # queue keeps every waiting publish; a group otherwise holds only one.
     concurrency:
       group: gh-pages-publish
       cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Download all reports
