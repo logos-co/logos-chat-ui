@@ -1,0 +1,175 @@
+name: Scenes
+
+# Renders the scene catalog (tests/scenes: the view in each of its states, on a
+# QML stand-in for the backend) with `nix run .#scenes`, and publishes it:
+#   https://<owner>.github.io/<repo>/pr-<N>/scenes/    (pull requests)
+#   https://<owner>.github.io/<repo>/<branch>/scenes/  (pushes and manual runs)
+# A pull request's page sets each scene beside its render at the base the pull
+# request merges into, and a comment shows the scenes it changes. Each commit
+# renders its own catalog, so a changed scene shows as a change too. Nothing
+# gates on pixels, since a UI change is meant to change them. A scene that fails
+# to compile fails the job; a QML warning at run time, such as a delegate the
+# mock's model leaves unfilled, shows only in the log and in the render.
+#
+# Pull requests from forks get a read-only GITHUB_TOKEN, so they get the pages
+# as an artifact only, as with the doc-test report.
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A pull request's runs share a group, so a push cancels the run it
+# supersedes; every other run gets a group of its own and always finishes.
+concurrency:
+  group: scenes-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    name: Render scenes
+    environment: ${{ github.ref == 'refs/heads/master' && 'public-cache' || '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # A pull request checks out its merge commit, whose first parent is
+          # the base.
+          fetch-depth: 2
+
+      - name: Setup Nix and Logos cache
+        uses: logos-co/setup-nix-cache-action@v1
+        with:
+          attic-token-ci: ${{ secrets.ATTIC_TOKEN_CI }}
+          attic-token-public: ${{ secrets.ATTIC_TOKEN_PUBLIC }}
+
+      - name: Render the commit under test
+        shell: bash
+        run: nix run .#scenes -- "${{ runner.temp }}/scenes/head"
+
+      # A base from before the catalog has nothing to render, and then every
+      # scene shows as new.
+      - name: Render the base
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="${{ runner.temp }}/base-src"
+          mkdir -p "$src"
+          git archive HEAD^1 | tar -x -C "$src"
+          if [ -d "$src/tests/scenes" ]; then
+            nix run "path:$src#scenes" -- "${{ runner.temp }}/scenes/base"
+          else
+            echo "The base has no scene catalog."
+          fi
+
+      - name: Lay out the pages
+        shell: bash
+        run: |
+          nix develop .#tests --command node tests/scenes/compare.mjs \
+            site "${{ runner.temp }}/scenes/head" "${{ runner.temp }}/scenes/base"
+
+      - name: Upload the pages
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-ui-scenes
+          path: site/
+
+  publish:
+    name: Publish scenes to GitHub Pages
+    needs: render
+    # Skip on forks, where GITHUB_TOKEN can't push or comment.
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      contents: write          # push to the gh-pages branch
+      pull-requests: write      # post/update the PR comment
+
+    env:
+      TESTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PAGES_DIR: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref_name }}/scenes
+
+    # Serialize Pages pushes so two refs can't race on the gh-pages branch. The
+    # queue keeps every waiting publish; a group otherwise holds only one.
+    concurrency:
+      group: gh-pages-publish
+      cancel-in-progress: false
+      queue: max
+
+    steps:
+      - name: Download the pages
+        uses: actions/download-artifact@v8
+        with:
+          name: chat-ui-scenes
+          path: site
+
+      # Replaces the directory, so a removed scene's images go with it.
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          destination_dir: ${{ env.PAGES_DIR }}
+          commit_message: "Publish scenes for ${{ env.PAGES_DIR }} (${{ env.TESTED_SHA }})"
+
+      - name: Comment on PR with the changed scenes
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require("fs");
+            const summary = JSON.parse(fs.readFileSync("site/summary.json", "utf8"));
+            const { owner, repo } = context.repo;
+            const root = `https://${owner}.github.io/${repo}/${process.env.PAGES_DIR}`;
+            const sha = process.env.TESTED_SHA.slice(0, 7);
+            // The run id in the query makes GitHub's image proxy fetch this run's
+            // images rather than serve a cached earlier render at the same path.
+            const img = (side, name) => `<img src="${root}/${side}/${name}.png?run=${context.runId}" width="400">`;
+            const names = (list) => list.map((n) => `\`${n}\``).join(", ");
+            const shown = 8;
+
+            let text;
+            if (!summary.base) {
+              text = `The base has no scene catalog to compare with. [${summary.scenes.length} scenes](${root}/) rendered at \`${sha}\`.`;
+            } else if (!summary.changed.length && !summary.added.length && !summary.removed.length) {
+              text = `No scene changes at \`${sha}\`. [The catalog](${root}/) has ${summary.scenes.length} scenes.`;
+            } else {
+              const parts = [
+                `At \`${sha}\` this pull request changes ${summary.changed.length} of ${summary.scenes.length} scenes: ` +
+                  `[before, after and diff for each](${root}/).`,
+              ];
+              for (const name of summary.changed.slice(0, shown)) {
+                parts.push(`#### \`${name}\`\n\n| Before | After |\n|---|---|\n| ${img("base", name)} | ${img("head", name)} |`);
+              }
+              if (summary.changed.length > shown)
+                parts.push(`${summary.changed.length - shown} more changed scenes are on the page.`);
+              if (summary.added.length) parts.push(`New: ${names(summary.added)}.`);
+              if (summary.removed.length) parts.push(`Removed: ${names(summary.removed)}.`);
+              text = parts.join("\n\n");
+            }
+
+            const marker = "<!-- chat-ui-scenes -->";
+            const body =
+              `${marker}\n` +
+              `### 🖼️ Scenes\n\n` +
+              `${text}\n\n` +
+              `_Pages can take a minute to update after the run finishes._`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number: context.issue.number, per_page: 100,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: context.issue.number, body });
+            }
