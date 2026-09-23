@@ -42,7 +42,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # macos-latest is off for now; see doctests-macos below.
+        os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 150
@@ -169,6 +170,20 @@ jobs:
             test -s "$out"
           done
           echo "Generated markdown successfully"
+
+  # The macOS leg runs without the Logos cache (see its setup step above), so it
+  # builds the whole chat stack from source: 30 to 50 minutes a run. Until the
+  # delivery module bundles the libiconv its librln.dylib loads, this stands in
+  # for it and fails at once; then put macos-latest back in the matrix and
+  # delete this job.
+  doctests-macos:
+    name: doc-tests (macos-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report the macOS leg as off
+        run: |
+          echo "::error title=macOS doc-tests are off::Without the Logos cache the macOS leg builds the whole chat stack from source, which takes 30 to 50 minutes. It comes back once the delivery module bundles the libiconv its librln.dylib loads."
+          exit 1
 
   publish-report:
     name: Publish report to GitHub Pages
