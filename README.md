@@ -125,11 +125,13 @@ nix develop          # enter development shell
   exchanging encrypted messages end-to-end (with screenshots), plus how to run
   two instances locally.
 - Doc-test tutorials — executable walkthroughs that CI runs and publishes as an
-  HTML report under `https://logos-co.github.io/logos-chat-ui/`:
+  HTML report under `https://logos-co.github.io/logos-chat-ui/master/`:
   [The Logos Chat UI](doctests/chat-ui.test.yaml) (connect + share your
-  address) and
+  address),
   [Run the automated message-exchange test](doctests/chat-ui-exchange.test.yaml)
-  (the real two-party round-trip, captured).
+  (the real two-party round-trip, captured) and
+  [Run the automated group-chat test](doctests/chat-ui-group.test.yaml)
+  (a real three-party group, captured).
 
   Enabling the report links is a one-time repo setup: Settings -> Pages ->
   "Deploy from a branch", branch `gh-pages` / `(root)` (the CI publish-report

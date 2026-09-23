@@ -19,8 +19,13 @@ on:
     branches: [master, main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+# A pull request's runs share a group, so a push cancels the run it
+# supersedes; every other run gets a group of its own and always finishes.
 concurrency:
-  group: qml-checks-${{ github.ref }}
+  group: qml-checks-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -28,11 +33,11 @@ jobs:
     name: Backend unit tests
     environment: ${{ github.ref == 'refs/heads/master' && 'public-cache' || '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Nix and Logos cache
         uses: logos-co/setup-nix-cache-action@v1
@@ -61,11 +66,11 @@ jobs:
     name: qmllint + Qt Quick Test
     environment: ${{ github.ref == 'refs/heads/master' && 'public-cache' || '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Nix and Logos cache
         uses: logos-co/setup-nix-cache-action@v1

@@ -1,7 +1,8 @@
 name: CI
 
 # Builds the module itself on every supported platform, complementing the
-# qml-checks and doc-test workflows, which exercise the built app on one.
+# qml-checks and doc-test workflows, which check the sources and exercise the
+# built app.
 
 on:
   pull_request:
@@ -9,8 +10,13 @@ on:
     branches: [master, main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+# A pull request's runs share a group, so a push cancels the run it
+# supersedes; every other run gets a group of its own and always finishes.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -26,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Nix and Logos cache
         uses: logos-co/setup-nix-cache-action@v1

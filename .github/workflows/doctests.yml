@@ -12,7 +12,7 @@ name: Doc-Tests
 #
 # Each run publishes the two-column HTML report to:
 #   https://<owner>.github.io/<repo>/pr-<N>/<os>/      (pull requests)
-#   https://<owner>.github.io/<repo>/master/<os>/      (pushes to master)
+#   https://<owner>.github.io/<repo>/<branch>/<os>/    (pushes and manual runs)
 # and (for PRs) posts/updates a comment with the links. The repo's GitHub Pages
 # must be enabled once (deploy from the gh-pages branch); see the README.
 #
@@ -26,8 +26,13 @@ on:
     branches: [master, main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+# A pull request's runs share a group, so a push cancels the run it
+# supersedes; every other run gets a group of its own and always finishes.
 concurrency:
-  group: doctests-${{ github.ref }}
+  group: doctests-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -37,14 +42,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # macos-latest is off for now; see doctests-macos below.
+        os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 150
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Nix and Logos cache
         if: matrix.os != 'macos-latest'
@@ -75,12 +81,13 @@ jobs:
         run: |
           echo "sha=${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_OUTPUT"
 
-      # Pre-build the standalone app the doctest launches. The spec drives it via
-      # `nix run github:logos-co/logos-chat-ui/<sha>`; building that same ref's
-      # runner here puts it in the store so the launch is instant — otherwise the
-      # build runs inside the doctest's 120s inspector-wait and times out. The app
-      # exposes no buildable package attr, so recover the runner derivation from
-      # its program string's context (a pinned github ref, so the lock matches the
+      # Pre-build the standalone app the doctest launches. The doctest warms it
+      # too, but under a 30-minute build timeout the cache-less macOS build can
+      # exceed, and it launches anyway when that build fails; here a broken build
+      # fails the job before any spec runs. The spec drives it via
+      # `nix run github:logos-co/logos-chat-ui/<sha>`. The app exposes no
+      # buildable package attr, so recover the runner derivation from its
+      # program string's context (a pinned github ref, so the lock matches the
       # spec's).
       - name: Pre-build the chat UI app
         shell: bash
@@ -92,14 +99,18 @@ jobs:
           nix build --no-link "$drv^*" -L
 
       # The runner is the shared `doctest` CLI, invoked directly via its flake
-      # (github:logos-co/logos-doctest). --release-for pins the {release}
-      # placeholder for logos-chat-ui to the commit under test, so every
+      # (github:logos-co/logos-doctest) at a pinned rev. --release-for pins the
+      # {release} placeholder for logos-chat-ui to the commit under test, so every
       # `github:logos-co/logos-chat-ui{release}` URL in the spec becomes
-      # `.../<sha>` and the module is built against this PR/push.
+      # `.../<sha>` and the module is built against this PR/push; it pins
+      # logos-qt-mcp, which the specs drive the app with, to a fixed rev. Bump the
+      # two harness revs on purpose, here and in the markdown step below.
       # The workspace tests-and-doctests pipeline parses this block to discover
       # the spec list — keep every spec here.
       - name: Run doc-tests
         shell: bash
+        env:
+          PYTHONUNBUFFERED: "1"
         run: |
           # Spec list. The two-party exchange and three-party group specs need live
           # P2P networking that GitHub's macOS runners can't provide (each has its
@@ -116,44 +127,63 @@ jobs:
           fi
           # --continue-on-fail so the run walks every step and the published report
           # is complete. The job still fails (non-zero exit) if any step failed.
-          nix run github:logos-co/logos-doctest -- run \
+          nix run github:logos-co/logos-doctest/8a967779fb5e1953028aaac2de9316f6c676a630 -- run \
             "${specs[@]}" \
             --verbose \
             --continue-on-fail \
             --release-for logos-chat-ui=${{ steps.commit.outputs.sha }} \
+            --release-for logos-qt-mcp=1fea509485a48ab185fafae8dc21bdbcc808a07e \
             --report "${{ runner.temp }}/chat-ui-doctest-report.html"
 
       - name: Stage report for upload
         if: always()
         shell: bash
         run: |
-          mkdir -p report-out
-          # Name it index.html so the published directory URL renders directly.
+          # Name it index.html so the published directory URL renders directly,
+          # under a directory named for the OS so the legs' reports merge into
+          # one tree when publish-report downloads them.
+          out="report-out/${{ matrix.os }}"
+          mkdir -p "$out"
           if [ -f "${{ runner.temp }}/chat-ui-doctest-report.html" ]; then
-            cp "${{ runner.temp }}/chat-ui-doctest-report.html" report-out/index.html
+            cp "${{ runner.temp }}/chat-ui-doctest-report.html" "$out/index.html"
           else
-            echo "<h1>No report produced</h1>" > report-out/index.html
+            echo "<h1>No report produced</h1>" > "$out/index.html"
           fi
 
       - name: Upload execution report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: chat-ui-doctest-report-${{ matrix.os }}
-          path: report-out/index.html
+          path: report-out/
           if-no-files-found: warn
 
       - name: Verify markdown generation
         run: |
           for spec in doctests/chat-ui.test.yaml doctests/chat-ui-exchange.test.yaml doctests/chat-ui-group.test.yaml; do
             out="/tmp/$(basename "$spec" .test.yaml).md"
-            nix run github:logos-co/logos-doctest -- generate \
+            nix run github:logos-co/logos-doctest/8a967779fb5e1953028aaac2de9316f6c676a630 -- generate \
               "$spec" \
               --release-for logos-chat-ui=${{ steps.commit.outputs.sha }} \
+              --release-for logos-qt-mcp=1fea509485a48ab185fafae8dc21bdbcc808a07e \
               -o "$out"
             test -s "$out"
           done
           echo "Generated markdown successfully"
+
+  # The macOS leg runs without the Logos cache (see its setup step above), so it
+  # builds the whole chat stack from source: 30 to 50 minutes a run. Until the
+  # delivery module bundles the libiconv its librln.dylib loads, this stands in
+  # for it and fails at once; then put macos-latest back in the matrix and
+  # delete this job.
+  doctests-macos:
+    name: doc-tests (macos-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report the macOS leg as off
+        run: |
+          echo "::error title=macOS doc-tests are off::Without the Logos cache the macOS leg builds the whole chat stack from source, which takes 30 to 50 minutes. It comes back once the delivery module bundles the libiconv its librln.dylib loads."
+          exit 1
 
   publish-report:
     name: Publish report to GitHub Pages
@@ -162,22 +192,31 @@ jobs:
     # the report. Skip on forks, where GITHUB_TOKEN can't push or comment.
     if: ${{ always() && github.event.pull_request.head.repo.fork != true }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     permissions:
       contents: write          # push to the gh-pages branch
       pull-requests: write      # post/update the PR comment
 
-    # Serialize Pages pushes so two refs can't race on the gh-pages branch.
+    env:
+      TESTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+    # Serialize Pages pushes so two refs can't race on the gh-pages branch. The
+    # queue keeps every waiting publish; a group otherwise holds only one.
     concurrency:
       group: gh-pages-publish
       cancel-in-progress: false
+      queue: max
 
     steps:
       - name: Download all reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
-          # No `name:` → downloads every artifact into artifacts/<name>/...
+          pattern: chat-ui-doctest-report-*
+          # Merged, each report lands at artifacts/<os>/index.html however many
+          # legs uploaded one; unmerged, a single artifact would be flattened.
+          merge-multiple: true
 
       - name: Arrange site directory
         id: arrange
@@ -187,14 +226,14 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="pr-${{ github.event.pull_request.number }}"
           else
-            BASE="master"
+            BASE="${{ github.ref_name }}"
           fi
           echo "base=$BASE" >> "$GITHUB_OUTPUT"
 
           mkdir -p "site/$BASE"
           found=""
           for os in ubuntu-latest macos-latest; do
-            src="artifacts/chat-ui-doctest-report-$os/index.html"
+            src="artifacts/$os/index.html"
             if [ -f "$src" ]; then
               mkdir -p "site/$BASE/$os"
               cp "$src" "site/$BASE/$os/index.html"
@@ -209,7 +248,7 @@ jobs:
             echo "<title>logos-chat-ui doc-test reports — $BASE</title>"
             echo "<style>body{font:16px system-ui;margin:40px;max-width:640px}a{color:#2563eb}</style>"
             echo "<h1>logos-chat-ui doc-test reports</h1>"
-            echo "<p><strong>$BASE</strong> · commit <code>${GITHUB_SHA::7}</code></p><ul>"
+            echo "<p><strong>$BASE</strong> · commit <code>${TESTED_SHA::7}</code></p><ul>"
             for os in ubuntu-latest macos-latest; do
               if [ -d "site/$BASE/$os" ]; then
                 echo "<li><a href=\"./$os/\">$os</a></li>"
@@ -225,11 +264,11 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
           keep_files: true          # don't wipe other PRs' directories
-          commit_message: "Publish doc-test reports for ${{ steps.arrange.outputs.base }} (${{ github.sha }})"
+          commit_message: "Publish doc-test reports for ${{ steps.arrange.outputs.base }} (${{ env.TESTED_SHA }})"
 
       - name: Comment on PR with report links
         if: ${{ github.event_name == 'pull_request' && steps.arrange.outputs.found != '' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const base = "${{ steps.arrange.outputs.base }}";
@@ -237,16 +276,16 @@ jobs:
             const repo = context.repo.repo;
             const root = `https://${owner}.github.io/${repo}/${base}`;
             const oses = "${{ steps.arrange.outputs.found }}".trim().split(/\s+/).filter(Boolean);
+            const sha = process.env.TESTED_SHA.slice(0, 7);
 
             const links = oses.map(os => `- [\`${os}\` report](${root}/${os}/)`).join("\n");
             const marker = "<!-- chat-ui-doctest-report-links -->";
             const body =
               `${marker}\n` +
               `### 📊 Doc-test report\n\n` +
-              `The chat UI built against this commit, driven headless to connect ` +
-              `and share its address, rendered alongside the commands ` +
-              `actually run and their output ` +
-              `(updated each run, commit \`${context.sha.slice(0,7)}\`):\n\n` +
+              `The chat UI built against this commit and driven headless through ` +
+              `the doc-test tutorials, rendered alongside the commands actually ` +
+              `run and their output (updated each run, commit \`${sha}\`):\n\n` +
               `${links}\n\n` +
               `_Pages can take a minute to update after the run finishes._`;
 
