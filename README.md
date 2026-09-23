@@ -121,6 +121,17 @@ nix develop .#tests  # the Qt and tools the CI checks run on
 nix run .#scenes -- out  # render the view's scene catalog to out/ (Linux)
 ```
 
+The Windows package is cross-built on an x86_64 Linux builder (or a Linux
+remote builder), then installed on Windows:
+
+```bash
+nix build .#packages.x86_64-windows.lgx-portable
+```
+
+Windows CI checks the plugin DLL and the portable `.lgx` payload. The
+`chat_module` input is pinned to the Windows-capable revision from
+[chat-module PR #66](https://github.com/logos-co/logos-chat-module/pull/66).
+
 ## Documentation
 
 - [Two-instance message exchange](docs/two-instance-exchange.md) — two windows

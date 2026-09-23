@@ -1,0 +1,20 @@
+name: Windows
+
+# Cross-build the UI backend and portable package on Linux, then verify the
+# plugin's PE imports and the Windows payload on a native Windows runner.
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  windows:
+    uses: logos-co/logos-windows-ci/.github/workflows/windows-ci.yml@v1
+    secrets: inherit
+    with:
+      targets: default lgx-portable
+      lgx-variant: true
+      # The UI build includes the cross-built chat and delivery modules.
+      cold-derivation-budget: 120
+      timeout-minutes: 90
