@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core RemoteObjects Test)
+find_package(Qt6 REQUIRED COMPONENTS Core Qml RemoteObjects Test)
 enable_testing()
 
 add_executable(tst_sessionlogfiles
@@ -54,3 +54,13 @@ qt6_add_repc_sources(tst_chatbackend ../../src/ChatBackend.rep)
 target_include_directories(tst_chatbackend PRIVATE fakes ../../src ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(tst_chatbackend PRIVATE Qt6::Core Qt6::RemoteObjects Qt6::Test)
 add_test(NAME chatbackend COMMAND tst_chatbackend)
+
+add_executable(tst_scenemock tst_scenemock.cpp)
+qt6_add_repc_replicas(tst_scenemock ../../src/ChatBackend.rep)
+target_include_directories(tst_scenemock PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_compile_definitions(tst_scenemock PRIVATE SCENE_MOCKS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../scenes/mocks")
+target_link_libraries(tst_scenemock PRIVATE Qt6::Qml Qt6::RemoteObjects Qt6::Test)
+add_test(NAME scenemock COMMAND tst_scenemock)
+# nixpkgs' Qt is unwrapped here, so its own QML modules come from the tests
+# shell's QT_QML_DIR; an ordinary Qt install finds them without it.
+set_tests_properties(scenemock PROPERTIES ENVIRONMENT "QML_IMPORT_PATH=$ENV{QT_QML_DIR}")
