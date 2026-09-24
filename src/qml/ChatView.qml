@@ -167,6 +167,7 @@ Rectangle {
                 }
 
                 MembersPane {
+                    id: membersPane
                     visible: root.selectedIsGroup
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -175,6 +176,13 @@ Rectangle {
                     online: store.online
                     ready: root.selectionLoaded
                     onAddMemberRequested: addMemberDialog.open()
+                }
+
+                // A column with nothing filling it centres what it holds, so
+                // this takes the slack when no roster follows the details.
+                Item {
+                    visible: !membersPane.visible
+                    Layout.fillHeight: true
                 }
             }
         }
