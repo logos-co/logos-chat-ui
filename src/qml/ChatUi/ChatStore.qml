@@ -32,6 +32,9 @@ QtObject {
     readonly property int memberCount: backend ? backend.memberCount : 0
     readonly property int pendingMemberCount: backend ? backend.pendingMemberCount : 0
     readonly property string currentPeerAddress: backend ? backend.currentPeerAddress : ""
+    // The current conversation is from a previous session, kept for its
+    // history only.
+    readonly property bool currentHistoryOnly: backend ? backend.currentHistoryOnly : false
     // This account's own address, empty until the module has initialised, and
     // its short form.
     readonly property string myAddress: backend ? backend.myAddress : ""

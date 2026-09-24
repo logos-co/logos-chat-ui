@@ -29,6 +29,7 @@ Item {
                 lastActivityDisplay: "12:44"
                 preview: "Sounds good, talk soon"
                 description: ""
+                historyOnly: false
             }
             ListElement {
                 conversationId: "c2"
@@ -40,6 +41,7 @@ Item {
                 lastActivityDisplay: "Mon"
                 preview: "Did the build go through?"
                 description: ""
+                historyOnly: false
             }
         }
         // Newest first: the thread is bottom-anchored.

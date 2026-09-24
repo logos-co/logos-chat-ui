@@ -34,6 +34,7 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     case DescriptionRole:         return item.description;
     case AvatarInitialsRole:      return Identity::initials(item.conversationId);
     case AvatarRampRole:          return Identity::avatarRamp(Identity::shortLabel(item.conversationId));
+    case HistoryOnlyRole:         return item.historyOnly;
     default:                      return {};
     }
 }
@@ -50,18 +51,19 @@ QHash<int, QByteArray> ConversationListModel::roleNames() const
         { PreviewRole,             "preview" },
         { DescriptionRole,         "description" },
         { AvatarInitialsRole,      "avatarInitials" },
-        { AvatarRampRole,          "avatarRamp" }
+        { AvatarRampRole,          "avatarRamp" },
+        { HistoryOnlyRole,         "historyOnly" }
     };
 }
 
 void ConversationListModel::addConversation(const QString& id, const QString& displayName,
                                             const QString& description, const QDateTime& lastActivity,
-                                            bool isGroup, const QString& preview)
+                                            bool isGroup, const QString& preview, bool historyOnly)
 {
     if (contains(id)) return;
 
     beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
-    m_items.append({ id, displayName, description, lastActivity, 0, isGroup, preview });
+    m_items.append({ id, displayName, description, lastActivity, 0, isGroup, preview, historyOnly });
     endInsertRows();
 }
 
@@ -191,6 +193,12 @@ bool ConversationListModel::isGroupFor(const QString& id) const
 {
     const int idx = indexOf(id);
     return idx >= 0 && m_items.at(idx).isGroup;
+}
+
+bool ConversationListModel::historyOnlyFor(const QString& id) const
+{
+    const int idx = indexOf(id);
+    return idx >= 0 && m_items.at(idx).historyOnly;
 }
 
 QString ConversationListModel::formatLastActivity(const QDateTime& lastActivity) const

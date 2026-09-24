@@ -25,6 +25,8 @@ LogosItemDelegate {
     // The group's shared description, carried so a selection can be rendered
     // from the row itself.
     required property string description
+    // From a previous session, kept for its history only.
+    required property bool historyOnly
     // The open conversation, so this row highlights when it is the current one.
     property string currentConversationId: ""
 
@@ -40,7 +42,8 @@ LogosItemDelegate {
             description: root.description,
             isGroup: root.isGroup,
             avatarInitials: root.avatarInitials,
-            avatarRamp: root.avatarRamp
+            avatarRamp: root.avatarRamp,
+            historyOnly: root.historyOnly
         })
 
     readonly property bool unread: root.unreadCount > 0
@@ -61,6 +64,8 @@ LogosItemDelegate {
     Accessible.role: Accessible.ListItem
     Accessible.name: {
         const base = isGroup ? qsTr("Group %1").arg(displayName) : displayName;
+        if (historyOnly)
+            return qsTr("%1, from a previous session").arg(base);
         return unreadCount > 0 ? qsTr("%1, %2 unread").arg(base).arg(unreadCount) : base;
     }
     Accessible.selected: highlighted
@@ -74,6 +79,8 @@ LogosItemDelegate {
             initials: root.avatarInitials
             ramp: root.avatarRamp
             isGroup: root.isGroup
+            // Faded with the name, so a previous session's rows read as history.
+            opacity: root.historyOnly ? 0.5 : 1
             Layout.alignment: Qt.AlignVCenter
         }
 
@@ -84,7 +91,7 @@ LogosItemDelegate {
             LogosText {
                 text: root.displayName
                 textFormat: Text.PlainText
-                color: Theme.palette.text
+                color: root.historyOnly ? Theme.palette.textSecondary : Theme.palette.text
                 font.pixelSize: Theme.typography.primaryText
                 // An unread row leans on weight rather than on colour, so the
                 // list still reads as one column of names.

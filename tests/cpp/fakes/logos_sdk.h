@@ -44,6 +44,7 @@ public:
         std::optional<QString> name{};
         std::optional<QString> description{};
         std::optional<QString> preview{};
+        bool history_only{};
     };
     struct Message {
         bool from_self{};
@@ -78,6 +79,8 @@ public:
     // reply in a nested event loop, which is where an event pushed meanwhile
     // is dispatched.
     std::function<void()> whileListingConversations;
+    // What list_conversations answers.
+    QList<Conversation> conversations;
 
     void goOnline()
     {
@@ -108,7 +111,7 @@ public:
     {
         if (whileListingConversations)
             whileListingConversations();
-        return {};
+        return conversations;
     }
     Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString(), deliveryAdopted}; }
     void healthAsync(std::function<void(bool)>, Timeout = Timeout()) {}

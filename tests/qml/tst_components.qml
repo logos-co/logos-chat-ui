@@ -30,6 +30,7 @@ Item {
             lastActivityDisplay: "12:34"
             preview: "See you tomorrow"
             description: ""
+            historyOnly: false
         }
         ListElement {
             conversationId: "c2"
@@ -41,6 +42,47 @@ Item {
             lastActivityDisplay: "12:34"
             preview: "Alice: shipping the new theme"
             description: "Shipping the new theme"
+            historyOnly: false
+        }
+    }
+    // This session's conversations, then two kept from a previous session.
+    ListModel {
+        id: historyConversationsMock
+        ListElement {
+            conversationId: "c1"
+            displayName: "Raya"
+            isGroup: false
+            avatarInitials: "c1"
+            avatarRamp: 1
+            unreadCount: 0
+            lastActivityDisplay: "14:02"
+            preview: "Here's my new address"
+            description: ""
+            historyOnly: false
+        }
+        ListElement {
+            conversationId: "c2"
+            displayName: "Saro"
+            isGroup: false
+            avatarInitials: "c2"
+            avatarRamp: 0
+            unreadCount: 0
+            lastActivityDisplay: "Mon"
+            preview: "Sounds good, talk soon"
+            description: ""
+            historyOnly: true
+        }
+        ListElement {
+            conversationId: "c3"
+            displayName: "Release crew"
+            isGroup: true
+            avatarInitials: "c3"
+            avatarRamp: 2
+            unreadCount: 0
+            lastActivityDisplay: "12 Sep"
+            preview: "Pax: notes are up for review"
+            description: ""
+            historyOnly: true
         }
     }
     ListModel {
@@ -328,6 +370,7 @@ Item {
             lastActivityDisplay: "12:34"
             preview: "See you tomorrow"
             description: "Ship it"
+            historyOnly: false
             currentConversationId: "c1"
         }
     }
@@ -657,6 +700,27 @@ Item {
             compare(conversation.description, "Shipping the new theme", "its description");
             compare(conversation.avatarInitials, "c2", "and the avatar identity the header needs");
             compare(conversation.avatarRamp, 3, "with its colour");
+            compare(conversation.historyOnly, false, "and whether it takes replies");
+        }
+
+        // The conversations kept from a previous session sit under one heading,
+        // and this session's under none.
+        function test_conversationsPaneHeadsPreviousSessions() {
+            const pane = createTemporaryObject(conversationsPaneC, testRoot, {
+                conversationModel: historyConversationsMock
+            });
+            verify(pane, "the sidebar must instantiate");
+            pane.width = 260;
+            pane.height = 400;
+
+            const list = findField(pane, "conversationList");
+            verify(list, "the conversation list must be reachable");
+            tryVerify(() => list.itemAtIndex(2) !== null, 2000, "every row must be realised");
+            const headings = collectFields(list, "previousSessionsHeading", []).filter(h => h.visible);
+            compare(headings.length, 1, "one heading for both kept rows");
+            const top = headings[0].mapToItem(list.contentItem, 0, 0).y;
+            verify(top > list.itemAtIndex(0).y, "below this session's row");
+            verify(top < list.itemAtIndex(1).y, "above the kept ones");
         }
 
         // A closed composer names why it is closed, so a connected app with
@@ -672,6 +736,25 @@ Item {
 
             pane.online = false;
             compare(composer.disabledPlaceholder, "Chat not connected", "offline");
+        }
+
+        // A conversation kept from a previous session reads back but takes no
+        // reply: a notice stands where the composer was.
+        function test_threadPaneHistoryOnly() {
+            const pane = createTemporaryObject(messageThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const composer = findField(pane, "composer");
+            const notice = findField(pane, "historyNotice");
+            verify(composer && notice, "the composer and the notice must be reachable");
+            verify(composer.visible, "a live conversation has its composer");
+            verify(!notice.visible, "and no notice");
+
+            pane.historyOnly = true;
+            verify(!composer.visible, "a kept conversation has no composer");
+            verify(notice.visible, "the notice says why");
+            verify(findField(pane, "threadList").visible, "its messages still show");
         }
 
         // A refused message comes back to the composer, and a composer the user
@@ -871,6 +954,22 @@ Item {
             compare(panel.memberSummary, "3 joined, 1 invited", "an outstanding invitation");
             panel.pendingMemberCount = 2;
             compare(panel.memberSummary, "3 joined, 2 invited", "several outstanding invitations");
+        }
+
+        // A kept group's details name the session it is from, and count no
+        // roster, since it keeps none.
+        function test_detailsPanelHistoryOnly() {
+            const panel = createTemporaryObject(detailsPanelC, testRoot);
+            verify(panel, "the details panel must instantiate");
+            const session = findField(panel, "sessionRow");
+            const members = findField(panel, "membersRow");
+            verify(session && members, "both rows must be reachable");
+            verify(!session.visible, "a live group names no session");
+            verify(members.visible, "and counts its members");
+
+            panel.historyOnly = true;
+            verify(session.visible, "a kept group names its session");
+            verify(!members.visible, "and counts no members");
         }
 
         // The header's New menu offers both kinds of conversation, and picking

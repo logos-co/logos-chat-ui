@@ -2,6 +2,7 @@
 #include <QTest>
 
 #include "ChatBackend.h"
+#include "ConversationListModel.h"
 #include "logos_sdk.h"
 
 class TestChatBackend : public QObject
@@ -13,6 +14,8 @@ private slots:
     void showsTheAddressWhenDeliveryComesUpDuringTheFirstSnapshot();
     void reportsTheNodeDeliveryCameUpOn();
     void readsTheNodeFromStatusWhenAlreadyOnline();
+    void marksAConversationFromAPreviousSession();
+    void listsAPreviousSessionAfterThisOne();
 
 private:
     QTemporaryDir m_logs;
@@ -80,6 +83,65 @@ void TestChatBackend::readsTheNodeFromStatusWhenAlreadyOnline()
     backend._logosCoreSetLogosModulesPtr_(&modules);
 
     QCOMPARE(backend.deliveryAdopted(), true);
+}
+
+// The module keeps earlier sessions' conversations for their history, and the
+// view has to tell them from the ones it can send into.
+void TestChatBackend::marksAConversationFromAPreviousSession()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation live;
+    live.convo_id = QStringLiteral("live");
+    live.kind = QStringLiteral("direct");
+    live.last_activity_ms = 2000;
+    ChatModule::Conversation kept;
+    kept.convo_id = QStringLiteral("kept");
+    kept.kind = QStringLiteral("group");
+    kept.last_activity_ms = 1000;
+    kept.history_only = true;
+    modules.chat_module.conversations = { live, kept };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+
+    const QAbstractItemModel* model = backend.conversationModel();
+    QCOMPARE(model->rowCount(), 2);
+    const auto historyOnly = [model](int row) {
+        return model->data(model->index(row, 0), ConversationListModel::HistoryOnlyRole).toBool();
+    };
+    QCOMPARE(historyOnly(0), false);
+    QCOMPARE(historyOnly(1), true);
+
+    backend.selectConversation(QStringLiteral("kept"));
+    QCOMPARE(backend.currentHistoryOnly(), true);
+    backend.selectConversation(QStringLiteral("live"));
+    QCOMPARE(backend.currentHistoryOnly(), false);
+}
+
+// A kept conversation without messages has no activity to sort by, and still
+// lists after this session's, under the one heading the view gives them.
+void TestChatBackend::listsAPreviousSessionAfterThisOne()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation live;
+    live.convo_id = QStringLiteral("live");
+    live.kind = QStringLiteral("direct");
+    live.last_activity_ms = 2000;
+    ChatModule::Conversation kept;
+    kept.convo_id = QStringLiteral("kept");
+    kept.kind = QStringLiteral("group");
+    kept.history_only = true;
+    modules.chat_module.conversations = { kept, live };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+
+    const QAbstractItemModel* model = backend.conversationModel();
+    QCOMPARE(model->rowCount(), 2);
+    QCOMPARE(model->data(model->index(0, 0), ConversationListModel::ConversationIdRole).toString(), QStringLiteral("live"));
+    QCOMPARE(model->data(model->index(1, 0), ConversationListModel::ConversationIdRole).toString(), QStringLiteral("kept"));
 }
 
 QTEST_MAIN(TestChatBackend)

@@ -16,6 +16,8 @@ struct ConversationItem {
     bool isGroup = false;
     // Truncated last-message content shown as a list preview.
     QString preview;
+    // From a previous session, kept for its history only.
+    bool historyOnly = false;
 };
 
 class ConversationListModel : public QAbstractListModel
@@ -41,7 +43,9 @@ public:
         // display name: a direct conversation's name is generated from that id
         // too, and a group's avatar carries a glyph instead of initials.
         AvatarInitialsRole,
-        AvatarRampRole
+        AvatarRampRole,
+        // From a previous session, kept for its history only.
+        HistoryOnlyRole
     };
 
     explicit ConversationListModel(QObject* parent = nullptr);
@@ -52,7 +56,7 @@ public:
 
     void addConversation(const QString& id, const QString& displayName,
                          const QString& description, const QDateTime& lastActivity, bool isGroup,
-                         const QString& preview);
+                         const QString& preview, bool historyOnly);
     void updateDisplayName(const QString& id, const QString& displayName);
     void updateDescription(const QString& id, const QString& description);
     void updatePreview(const QString& id, const QString& preview);
@@ -77,6 +81,10 @@ public:
 
     // Whether a conversation is a group; false for a direct or unknown id.
     Q_INVOKABLE bool isGroupFor(const QString& id) const;
+
+    // Whether a conversation is from a previous session; false for one of
+    // this session or an unknown id.
+    bool historyOnlyFor(const QString& id) const;
 
 private:
     // Relative label for the last-activity timestamp (see LastActivityDisplayRole).
