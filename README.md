@@ -129,8 +129,8 @@ nix build .#packages.x86_64-windows.lgx-portable
 ```
 
 Windows CI checks the plugin DLL and the portable `.lgx` payload. The
-`chat_module` input is pinned to the Windows-capable revision from
-[chat-module PR #66](https://github.com/logos-co/logos-chat-module/pull/66).
+`chat_module` input is pinned to a Windows-capable revision; Windows support
+arrived in [chat-module PR #66](https://github.com/logos-co/logos-chat-module/pull/66).
 
 ## Documentation
 

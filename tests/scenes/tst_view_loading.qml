@@ -28,6 +28,7 @@ Item {
                 lastActivityDisplay: "12:44"
                 preview: "Did you get a chance to look?"
                 description: ""
+                historyOnly: false
             }
         }
     }

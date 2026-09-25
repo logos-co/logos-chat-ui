@@ -118,6 +118,32 @@ Rectangle {
 
             ScrollBar.vertical: LogosScrollBar {}
 
+            // The backend lists a previous session's conversations after this
+            // session's, so one heading covers them all.
+            section.property: "historyOnly"
+            section.delegate: Item {
+                id: sectionHeading
+
+                required property string section
+
+                width: convList.width
+                height: sectionHeading.section === "true" ? 40 : 0
+
+                // On the heading, not the section item, whose visibility the
+                // list sets itself.
+                PanelHeader {
+                    objectName: "previousSessionsHeading"
+                    visible: sectionHeading.section === "true"
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.leftMargin: Theme.spacing.small
+                    anchors.bottomMargin: Theme.spacing.tiny
+                    //: Heads the conversations kept from previous sessions, which can be read but not replied to
+                    title: qsTr("Previous sessions")
+                }
+            }
+
             delegate: ConversationDelegate {
                 width: ListView.view.width
                 currentConversationId: root.currentConversationId

@@ -85,6 +85,26 @@ void appendRuns(QVariantList& published, const QString& writer, const QString& a
     }
 }
 
+// Sorted descending, it lists this session's conversations before those kept
+// from a previous one, whatever their activity: a ListView heads a section only
+// over rows grouped together, and a kept conversation with no messages counts
+// as active now.
+class ConversationOrderProxy : public QSortFilterProxyModel
+{
+public:
+    using QSortFilterProxyModel::QSortFilterProxyModel;
+
+protected:
+    bool lessThan(const QModelIndex& left, const QModelIndex& right) const override
+    {
+        const bool leftKept = left.data(ConversationListModel::HistoryOnlyRole).toBool();
+        const bool rightKept = right.data(ConversationListModel::HistoryOnlyRole).toBool();
+        if (leftKept != rightKept)
+            return leftKept;
+        return QSortFilterProxyModel::lessThan(left, right);
+    }
+};
+
 } // namespace
 
 // QtCore Settings (QSettings) persists only when the application has an
@@ -102,7 +122,7 @@ Q_COREAPP_STARTUP_FUNCTION(ensureApplicationIdentity)
 ChatBackend::ChatBackend(QObject* parent)
     : ChatBackendSimpleSource(parent)
     , m_conversationModel(new ConversationListModel(this))
-    , m_conversationProxy(new QSortFilterProxyModel(this))
+    , m_conversationProxy(new ConversationOrderProxy(this))
     , m_messageModel(new MessageListModel(this))
     , m_memberModel(new MemberListModel(this))
 {
@@ -322,7 +342,8 @@ void ChatBackend::rehydrateConversations()
             : !name.isEmpty()                           ? name
                                                         : fallbackDisplayName(convoId, QString(), isGroup);
         m_conversationModel->addConversation(convoId, displayName, description,
-                                             msToDateTime(lastActivity), isGroup, preview);
+                                             msToDateTime(lastActivity), isGroup, preview,
+                                             convo.history_only);
     }
     m_conversationModel->restoreUnreadCounts(unread);
     // The rebuilt list may now know the current conversation's kind/name.
@@ -354,6 +375,7 @@ void ChatBackend::syncCurrentConversationMeta()
     setCurrentIsGroup(m_conversationModel->isGroupFor(id));
     setCurrentDisplayName(m_conversationModel->displayNameFor(id));
     setCurrentDescription(m_conversationModel->descriptionFor(id));
+    setCurrentHistoryOnly(m_conversationModel->historyOnlyFor(id));
     setCurrentAvatarInitials(Identity::initials(id));
     setCurrentAvatarRamp(Identity::avatarRamp(Identity::shortLabel(id)));
 }
@@ -623,7 +645,7 @@ void ChatBackend::applyMessageReceived(const QVariantList& args)
         // Defensive: ConversationStarted normally lands first with the kind.
         // Add it now and backfill the kind by re-reading the list (deferred:
         // this runs inside a module event callback, see deferToEventLoop).
-        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), QString(), when, false, preview);
+        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), QString(), when, false, preview, false);
         deferToEventLoop([this] { rehydrateConversations(); });
     } else {
         m_conversationModel->updateLastActivity(convoId, when);
@@ -651,7 +673,7 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
     const QString preview = content.left(kPreviewMaxChars);
 
     if (!m_conversationModel->contains(convoId)) {
-        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), QString(), when, false, preview);
+        m_conversationModel->addConversation(convoId, fallbackDisplayName(convoId), QString(), when, false, preview, false);
     } else {
         m_conversationModel->updateLastActivity(convoId, when);
     }
@@ -675,7 +697,7 @@ void ChatBackend::applyConversationCreated(const QVariantList& args)
     const QDateTime now = QDateTime::currentDateTime();
 
     if (!m_conversationModel->contains(convoId)) {
-        m_conversationModel->addConversation(convoId, displayName, description, now, isGroup, QString());
+        m_conversationModel->addConversation(convoId, displayName, description, now, isGroup, QString(), false);
     } else {
         m_conversationModel->updateDisplayName(convoId, displayName);
         m_conversationModel->updateDescription(convoId, description);

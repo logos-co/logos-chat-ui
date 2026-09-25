@@ -21,6 +21,8 @@ Rectangle {
     property int memberCount: 0
     // Members invited but not yet on the roster.
     property int pendingMemberCount: 0
+    // From a previous session, kept for its history only.
+    property bool historyOnly: false
 
     signal closeRequested
 
@@ -100,8 +102,19 @@ Rectangle {
         }
 
         DetailRow {
+            objectName: "sessionRow"
             Layout.fillWidth: true
-            visible: root.isGroup
+            visible: root.historyOnly
+            //: Which session the conversation is from
+            key: qsTr("Session")
+            value: qsTr("Previous, read only")
+        }
+
+        DetailRow {
+            objectName: "membersRow"
+            Layout.fillWidth: true
+            // A previous session's group keeps no roster to count.
+            visible: root.isGroup && !root.historyOnly
             key: qsTr("Members")
             value: root.memberSummary
         }

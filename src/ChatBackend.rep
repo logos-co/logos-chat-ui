@@ -47,6 +47,9 @@ class ChatBackend
     // The other participant's address in the current direct conversation, empty
     // for a group or while the roster is unknown.
     PROP(QString currentPeerAddress READONLY)
+    // The current conversation is from a previous session, kept for its
+    // history only: it can be read, but not sent into or invited to.
+    PROP(bool currentHistoryOnly READONLY)
     // The directory this run's logs are in — the chat module's instance
     // directory, which this view borrows for want of one of its own. Empty when
     // no log was opened, which is what leaves the view with none to offer.

@@ -30,8 +30,12 @@ Rectangle {
     readonly property bool selectedIsGroup: root.optimisticSelection ? root.optimisticSelection.isGroup : store.currentIsGroup
     readonly property string selectedAvatarInitials: root.optimisticSelection ? root.optimisticSelection.avatarInitials : store.currentAvatarInitials
     readonly property int selectedAvatarRamp: root.optimisticSelection ? root.optimisticSelection.avatarRamp : store.currentAvatarRamp
+    readonly property bool selectedHistoryOnly: root.optimisticSelection ? root.optimisticSelection.historyOnly : store.currentHistoryOnly
     // Whether the models hold the selected conversation's data.
     readonly property bool selectionLoaded: store.loadedConversationId === root.selectedConversationId
+    // A group's roster, which a conversation from a previous session does not
+    // have.
+    readonly property bool rosterShown: root.selectedIsGroup && !root.selectedHistoryOnly
 
     // Whether the conversation's details panel is showing, toggled from the
     // thread header and left as the user last set it.
@@ -140,6 +144,7 @@ Rectangle {
                 hasConversations: conversationsPane.count > 0
                 online: store.online
                 ready: root.selectionLoaded
+                historyOnly: root.selectedHistoryOnly
                 onMessageSubmitted: function (text) {
                     store.sendMessage(text);
                 }
@@ -147,7 +152,7 @@ Rectangle {
             }
 
             ColumnLayout {
-                visible: root.selectedConversationId !== "" && (root.selectedIsGroup || root.detailsShown)
+                visible: root.selectedConversationId !== "" && (root.rosterShown || root.detailsShown)
                 Layout.fillWidth: false
                 Layout.preferredWidth: 280
                 Layout.fillHeight: true
@@ -163,11 +168,13 @@ Rectangle {
                     peerAddress: store.currentPeerAddress
                     memberCount: store.memberCount
                     pendingMemberCount: store.pendingMemberCount
+                    historyOnly: root.selectedHistoryOnly
                     onCloseRequested: root.detailsShown = false
                 }
 
                 MembersPane {
-                    visible: root.selectedIsGroup
+                    id: membersPane
+                    visible: root.rosterShown
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     memberModel: store.memberModel
@@ -175,6 +182,13 @@ Rectangle {
                     online: store.online
                     ready: root.selectionLoaded
                     onAddMemberRequested: addMemberDialog.open()
+                }
+
+                // A column with nothing filling it centres what it holds, so
+                // this takes the slack when no roster follows the details.
+                Item {
+                    visible: !membersPane.visible
+                    Layout.fillHeight: true
                 }
             }
         }

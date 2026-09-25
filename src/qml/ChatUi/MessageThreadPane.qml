@@ -8,8 +8,9 @@ import Logos.Theme
 import Logos.Controls
 
 // The message thread: a header naming the conversation, the message list (newest
-// at the bottom, natively bottom-anchored) and the composer. Data in via
-// properties, the composed message out via messageSubmitted.
+// at the bottom, natively bottom-anchored) and the composer, or a notice in its
+// place for a conversation that cannot be sent into. Data in via properties,
+// the composed message out via messageSubmitted.
 Rectangle {
     id: root
 
@@ -38,6 +39,8 @@ Rectangle {
     // in the model meanwhile are the ones left behind by the previous
     // conversation.
     required property bool ready
+    // From a previous session: it reads back, but nothing can be sent into it.
+    property bool historyOnly: false
 
     signal messageSubmitted(string text)
     // Requests the conversation's details; emitted from the header's toggle.
@@ -189,6 +192,7 @@ Rectangle {
         MessageComposer {
             id: composer
             objectName: "composer"
+            visible: !root.historyOnly
             Layout.fillWidth: true
             Layout.leftMargin: Theme.spacing.xlarge
             Layout.rightMargin: Theme.spacing.xlarge
@@ -207,6 +211,20 @@ Rectangle {
             // field empties) against the current conversation.
             onTextChanged: if (root.conversationId !== "")
                 root._drafts[root.conversationId] = composer.text
+        }
+
+        LogosNotice {
+            objectName: "historyNotice"
+            shown: root.historyOnly
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.spacing.xlarge
+            Layout.rightMargin: Theme.spacing.xlarge
+            Layout.topMargin: Theme.spacing.medium
+            Layout.bottomMargin: Theme.spacing.large
+            severity: LogosNotice.Info
+            //: Title of the notice standing in for the composer in a conversation kept from a previous session
+            title: qsTr("From a previous session")
+            message: qsTr("Chat started as a new installation, so you can read this conversation but not reply. Restoring conversations is being worked on.")
         }
     }
 }

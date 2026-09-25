@@ -5,7 +5,8 @@ import ChatUiScenes
 
 import "../../src/qml"
 
-// A direct conversation open on a short exchange, its details hidden.
+// A direct conversation open on a short exchange, with its details beside it
+// and no roster below them.
 Item {
     id: stage
     width: 1024
@@ -101,10 +102,11 @@ Item {
 
     ChatView {
         anchors.fill: parent
+        detailsShown: true
     }
 
     Shot {
-        name: "view-direct"
+        name: "view-direct-details"
         target: stage
         setup: () => {
             const b = stage.logos.backend;
