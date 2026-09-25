@@ -3,7 +3,10 @@
   "scenes": [
     "view-adopted",
     "view-direct",
+    "view-direct-details",
     "view-group-pending",
+    "view-history-direct",
+    "view-history-group",
     "view-initialising",
     "view-loading",
     "view-logs-dialog",
