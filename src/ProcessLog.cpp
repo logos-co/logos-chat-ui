@@ -63,7 +63,9 @@ QString lineFor(QtMsgType type, const QMessageLogContext& context, const QString
 
 void handle(QtMsgType type, const QMessageLogContext& context, const QString& message)
 {
-    {
+    // Debug lines stay out of the file: the SDK logs at that level, with the
+    // capability tokens it is handed, and they would be most of a run's lines.
+    if (type != QtDebugMsg) {
         QMutexLocker locker(&mutex);
         // A line raised by the writer's own failure is not one the writer can
         // take; it goes to the previous handler and no further.

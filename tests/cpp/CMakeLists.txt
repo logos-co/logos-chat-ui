@@ -29,6 +29,16 @@ target_include_directories(tst_runlog PRIVATE ../../src)
 target_link_libraries(tst_runlog PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME runlog COMMAND tst_runlog)
 
+add_executable(tst_processlog
+    tst_processlog.cpp
+    ../../src/ProcessLog.cpp
+    ../../src/RunLog.cpp
+    ../../src/SessionLogFiles.cpp
+)
+target_include_directories(tst_processlog PRIVATE ../../src)
+target_link_libraries(tst_processlog PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME processlog COMMAND tst_processlog)
+
 add_executable(tst_errorlog
     tst_errorlog.cpp
     ../../src/ErrorLog.cpp
