@@ -16,6 +16,7 @@ private slots:
     void readsTheNodeFromStatusWhenAlreadyOnline();
     void marksAConversationFromAPreviousSession();
     void listsAPreviousSessionAfterThisOne();
+    void leavesTheModuleRunningWhenTheViewCloses();
 
 private:
     QTemporaryDir m_logs;
@@ -142,6 +143,21 @@ void TestChatBackend::listsAPreviousSessionAfterThisOne()
     QCOMPARE(model->rowCount(), 2);
     QCOMPARE(model->data(model->index(0, 0), ConversationListModel::ConversationIdRole).toString(), QStringLiteral("live"));
     QCOMPARE(model->data(model->index(1, 0), ConversationListModel::ConversationIdRole).toString(), QStringLiteral("kept"));
+}
+
+// A host closing the view, as basecamp does with its tab, leaves the module
+// running on the same account for the view it opens next.
+void TestChatBackend::leavesTheModuleRunningWhenTheViewCloses()
+{
+    LogosModules modules;
+    place(modules);
+    {
+        ChatBackend backend;
+        backend._logosCoreSetLogosModulesPtr_(&modules);
+        QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    }
+
+    QCOMPARE(modules.chat_module.get_address(), modules.chat_module.address);
 }
 
 QTEST_MAIN(TestChatBackend)
