@@ -36,7 +36,8 @@ public:
         // yesterday's label until the next activity or a rehydrate; there is no
         // day-tick timer.
         LastActivityDisplayRole,
-        // Truncated last-message content for the list preview.
+        // Truncated last-message content for the list preview, on one line: its
+        // whitespace, line breaks included, reads as single spaces.
         PreviewRole,
         DescriptionRole,
         // Avatar identity, derived from the conversation id rather than the
