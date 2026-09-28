@@ -20,6 +20,7 @@ private slots:
     void previewsAMultiLineMessageOnOneLine();
     void namesAGroupOnOneLine();
     void reportsAMultiLineFailureOnOneLine();
+    void countsANewConversationsFirstMessageOnce();
     void leavesTheModuleRunningWhenTheViewCloses();
 
 private:
@@ -211,6 +212,30 @@ void TestChatBackend::reportsAMultiLineFailureOnOneLine()
     QCOMPARE(reported.count(), 1);
     QCOMPARE(reported.first().first().toString(), line);
     QCOMPARE(backend.errors().first().toMap().value(QStringLiteral("message")).toString(), line);
+}
+
+// Being invited marks a new conversation unread, and the message the invite
+// carries is that same unread one.
+void TestChatBackend::countsANewConversationsFirstMessageOnce()
+{
+    LogosModules modules;
+    place(modules);
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    const QAbstractItemModel* model = backend.conversationModel();
+    const auto unread = [model] {
+        return model->data(model->index(0, 0), ConversationListModel::UnreadCountRole).toInt();
+    };
+
+    modules.chat_module.emitEvent(QStringLiteral("conversation_created"),
+                                  { QStringLiteral("dm"), false, QStringLiteral("peer"), QStringLiteral("direct") });
+    QCOMPARE(unread(), 1);
+    modules.chat_module.emitEvent(QStringLiteral("message_received"),
+                                  { QStringLiteral("dm"), QStringLiteral("hello"), 1000, QStringLiteral("peer") });
+    QCOMPARE(unread(), 1);
+    modules.chat_module.emitEvent(QStringLiteral("message_received"),
+                                  { QStringLiteral("dm"), QStringLiteral("again"), 2000, QStringLiteral("peer") });
+    QCOMPARE(unread(), 2);
 }
 
 // A host closing the view, as basecamp does with its tab, leaves the module

@@ -18,6 +18,8 @@ struct ConversationItem {
     QString preview;
     // From a previous session, kept for its history only.
     bool historyOnly = false;
+    // The unread count stands for the invite alone, until a message takes it over.
+    bool unreadForInvite = false;
 };
 
 class ConversationListModel : public QAbstractListModel
@@ -64,11 +66,18 @@ public:
     void updatePreview(const QString& id, const QString& preview);
     void updateLastActivity(const QString& id, const QDateTime& lastActivity);
     void incrementUnread(const QString& id);
+    // Marks a row unread for being new; its first message counts as that one
+    // rather than a second.
+    void markInvited(const QString& id);
     void clearUnread(const QString& id);
+    struct Unread {
+        int count = 0;
+        bool forInvite = false;
+    };
     // Unread counts by conversation id, and their restoration onto a rebuilt
     // list: the module does not track them, so a rebuild would drop them.
-    QHash<QString, int> unreadCounts() const;
-    void restoreUnreadCounts(const QHash<QString, int>& counts);
+    QHash<QString, Unread> unreadCounts() const;
+    void restoreUnreadCounts(const QHash<QString, Unread>& counts);
     void removeConversation(const QString& id);
     void clear();
     bool contains(const QString& id) const;

@@ -103,6 +103,12 @@ public:
         m_handlers.insert(name, std::move(cb));
         return true;
     }
+    // Delivers an event as the module pushes it.
+    void emitEvent(const QString& name, const QVariantList& args)
+    {
+        if (auto handler = m_handlers.value(name))
+            handler(args);
+    }
 
     LogosResult init(const ChatConfig&, logos::CallError* = nullptr)
     {

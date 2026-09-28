@@ -337,7 +337,7 @@ void ChatBackend::rehydrateConversations()
 
     const QList<ChatModule::Conversation> convos = modules().chat_module.list_conversations();
     // Unread counts live only here, so carry them across the rebuild.
-    const QHash<QString, int> unread = m_conversationModel->unreadCounts();
+    const auto unread = m_conversationModel->unreadCounts();
     m_conversationModel->clear();
     for (const ChatModule::Conversation& convo : convos) {
         const QString& convoId = convo.convo_id;
@@ -723,7 +723,7 @@ void ChatBackend::applyConversationCreated(const QVariantList& args)
     } else if (convoId != currentConversationId()) {
         // Being invited comes with no message of its own, so the unread badge is
         // the only thing marking the new row as unseen.
-        m_conversationModel->incrementUnread(convoId);
+        m_conversationModel->markInvited(convoId);
     }
 }
 
