@@ -63,6 +63,7 @@ Item {
 
     LogosText {
         id: senderLabel
+        objectName: "senderLabel"
         y: daySeparator.height
         visible: root.showSender
         anchors.left: parent.left
@@ -71,7 +72,7 @@ Item {
         textFormat: Text.PlainText
         // The sender's own colour, taken from the ramp their avatar is drawn in,
         // so a name and a face read as the same person.
-        color: ChatTheme.avatarRamps[root.avatarRamp].stops[0].color
+        color: ChatTheme.avatarRampLeads[root.avatarRamp]
         font.family: Theme.typography.mono
         font.pixelSize: Theme.typography.secondaryText
         font.weight: Theme.typography.weightMedium

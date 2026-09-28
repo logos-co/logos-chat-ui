@@ -1191,6 +1191,19 @@ Item {
             verify(longBox.height > shortBox.height, "wrapped content makes a taller bubble");
         }
 
+        // A sender's name takes the first colour of the ramp their avatar is
+        // drawn in, through a binding that sees the ramp change.
+        function test_messageDelegateSenderColour() {
+            failOnWarning(/depends on non-bindable properties/);
+            const row = createTemporaryObject(messageDelegateC, testRoot);
+            verify(row, "the delegate must instantiate");
+            const label = findField(row, "senderLabel");
+            verify(label, "the sender label must be reachable");
+            compare(label.color, ChatTheme.avatarRamps[2].stops[0].color, "the name wears its ramp's first colour");
+            row.avatarRamp = 4;
+            compare(label.color, ChatTheme.avatarRamps[4].stops[0].color, "and follows a change of ramp");
+        }
+
         // A reused row changes sides whenever the list hands it a message from
         // the other sender, and its bubble has to follow at its own width.
         function test_messageDelegateKeepsItsSide() {

@@ -26,6 +26,10 @@ QtObject {
     readonly property color bubbleOwnSelection: "#000000"
     readonly property color bubbleOwnSelectedText: Theme.palette.primary
 
+    // The first colour of each avatar ramp, bound from here by the ramps and by
+    // anything drawn in a ramp's colour: a gradient's stops notify no change.
+    readonly property list<color> avatarRampLeads: [Theme.palette.accentYellowSoft, Theme.palette.info, Theme.palette.successHover, Theme.palette.warning, Theme.palette.primarySoft]
+
     // Avatar gradients, indexed by a model's avatarRamp role. There are exactly
     // as many as Identity::kAvatarRampCount in the backend, which is what
     // spreads identities across them.
@@ -33,7 +37,7 @@ QtObject {
         Gradient {
             GradientStop {
                 position: 0
-                color: Theme.palette.accentYellowSoft
+                color: root.avatarRampLeads[0]
             }
             GradientStop {
                 position: 1
@@ -43,7 +47,7 @@ QtObject {
         Gradient {
             GradientStop {
                 position: 0
-                color: Theme.palette.info
+                color: root.avatarRampLeads[1]
             }
             GradientStop {
                 position: 1
@@ -53,7 +57,7 @@ QtObject {
         Gradient {
             GradientStop {
                 position: 0
-                color: Theme.palette.successHover
+                color: root.avatarRampLeads[2]
             }
             GradientStop {
                 position: 1
@@ -63,7 +67,7 @@ QtObject {
         Gradient {
             GradientStop {
                 position: 0
-                color: Theme.palette.warning
+                color: root.avatarRampLeads[3]
             }
             GradientStop {
                 position: 1
@@ -73,7 +77,7 @@ QtObject {
         Gradient {
             GradientStop {
                 position: 0
-                color: Theme.palette.primarySoft
+                color: root.avatarRampLeads[4]
             }
             GradientStop {
                 position: 1
