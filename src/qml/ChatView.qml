@@ -145,8 +145,10 @@ Rectangle {
                 online: store.online
                 ready: root.selectionLoaded
                 historyOnly: root.selectedHistoryOnly
+                // To the conversation on screen, which the backend may not have
+                // switched to yet.
                 onMessageSubmitted: function (text) {
-                    store.sendMessage(text);
+                    store.sendMessage(root.selectedConversationId, text);
                 }
                 onDetailsRequested: root.detailsShown = !root.detailsShown
             }
@@ -243,8 +245,9 @@ Rectangle {
         onAddressEntered: function (address) {
             // First member add: explain the async commit delay first, then invite.
             if (chatPrefs.memberAddExplained) {
-                store.addMember(address);
+                store.addMember(root.selectedConversationId, address);
             } else {
+                memberAddInfoDialog.pendingConversationId = root.selectedConversationId;
                 memberAddInfoDialog.pendingAddress = address;
                 memberAddInfoDialog.open();
             }
@@ -253,13 +256,15 @@ Rectangle {
 
     MemberAddInfoDialog {
         id: memberAddInfoDialog
-        // The address whose add opened the explainer, applied once confirmed.
+        // The add that opened the explainer, applied once confirmed.
+        property string pendingConversationId: ""
         property string pendingAddress: ""
         onConfirmed: function (dontShowAgain) {
             if (dontShowAgain)
                 chatPrefs.memberAddExplained = true;
             if (pendingAddress !== "")
-                store.addMember(pendingAddress);
+                store.addMember(pendingConversationId, pendingAddress);
+            pendingConversationId = "";
             pendingAddress = "";
         }
     }
