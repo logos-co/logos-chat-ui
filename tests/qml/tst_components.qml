@@ -814,6 +814,53 @@ Item {
             tryVerify(() => list.atYEnd, 1000, "the sent message is in view");
         }
 
+        // The newest message stays in view when the thread gets shorter, as it
+        // does a line at a time while the composer grows.
+        function test_threadPaneKeepsTheNewestInViewWhenShorter() {
+            longThreadMock.clear();
+            for (let i = 0; i < 40; ++i)
+                longThreadMock.append(threadRow("message " + i, false));
+            const pane = createTemporaryObject(longThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const list = findField(pane, "threadList");
+            verify(list, "the thread list must be reachable");
+            waitForItemPolished(list);
+            verify(list.atYEnd, "the thread opens at its newest message");
+
+            for (const step of [10, 17, 15]) {
+                pane.height -= step;
+                waitForItemPolished(list);
+                verify(list.atYEnd, `the newest message is in view at height ${pane.height}`);
+            }
+        }
+
+        // Dragging the scroll bar moves the thread, through rows of uneven
+        // height, whose estimate changes as the drag reaches them.
+        function test_threadScrollBarDragsTheThread() {
+            failOnWarning(/Binding loop/);
+            longThreadMock.clear();
+            for (let i = 0; i < 40; ++i)
+                longThreadMock.append(threadRow(i % 3 === 0 ? "a message long enough to wrap over more than one line of the bubble, message " + i : "message " + i, i % 2 === 0));
+            const pane = createTemporaryObject(longThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const list = findField(pane, "threadList");
+            const bar = findField(pane, "threadScrollBar");
+            verify(list && bar, "the thread list and its scroll bar must be reachable");
+            waitForItemPolished(list);
+
+            const handleY = (bar.position + bar.size / 2) * bar.height;
+            mousePress(bar, bar.width / 2, handleY);
+            for (let i = 1; i <= 10; ++i)
+                mouseMove(bar, bar.width / 2, handleY - i * 15);
+            mouseRelease(bar, bar.width / 2, handleY - 150);
+            verify(!list.atYEnd, "the drag moved the thread back into history");
+            tryCompare(bar, "position", list.visibleArea.yPosition, 1000, "the bar sits where the thread is");
+        }
+
         // A refused message comes back to the composer, and a composer the user
         // has already typed into is left alone.
         function test_threadPaneRestoresFailedSend() {

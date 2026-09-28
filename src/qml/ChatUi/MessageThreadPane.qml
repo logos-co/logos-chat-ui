@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 
 import Logos.Theme
@@ -165,8 +164,6 @@ Rectangle {
                     height: Theme.spacing.medium
                 }
 
-                ScrollBar.vertical: LogosScrollBar {}
-
                 delegate: MessageDelegate {
                     width: ListView.view.width
                     groupContext: root.currentIsGroup
@@ -175,6 +172,35 @@ Rectangle {
                         messageMenu.popup();
                     }
                 }
+            }
+
+            // Beside the list, not attached: the list keeps its newest message in
+            // place when it gets shorter, and an attached bar moves it back,
+            // measuring the list at its height from before.
+            LogosScrollBar {
+                id: threadScrollBar
+                objectName: "threadScrollBar"
+                anchors.top: threadList.top
+                anchors.right: threadList.right
+                anchors.bottom: threadList.bottom
+                visible: threadList.visible
+                orientation: Qt.Vertical
+                size: threadList.visibleArea.heightRatio
+                // Only a drag moves the list; otherwise the bar follows it.
+                onPositionChanged: {
+                    if (pressed)
+                        threadList.contentY = threadList.originY + position * threadList.contentHeight;
+                }
+            }
+
+            // Let go while dragged, or the list's answer to the drag would feed
+            // back into the bar mid-move.
+            Binding {
+                target: threadScrollBar
+                property: "position"
+                value: threadList.visibleArea.yPosition
+                when: !threadScrollBar.pressed
+                restoreMode: Binding.RestoreNone
             }
 
             MessageSkeleton {
