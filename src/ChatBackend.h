@@ -66,9 +66,10 @@ private:
     // a module that died is indistinguishable from an idle one, and the app goes
     // on looking connected until the next thing the user does times out.
     void startHealthProbe();
-    // One probe's answer. False is the call failing, not the module saying so:
-    // health() has no other return.
-    void onHealthAnswer(bool answered);
+    // One probe's answer. Unanswered is the call failing, not the module saying
+    // so: health() has no other return. Unreachable is nothing listening at the
+    // module's address.
+    void onHealthAnswer(bool answered, bool unreachable);
     void subscribeToEvents();
     void rehydrateConversations();
     // Reads this account's own address into the myAddress property. A

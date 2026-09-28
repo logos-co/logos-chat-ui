@@ -228,26 +228,41 @@ void ChatBackend::startHealthProbe()
         // Guarded rather than captured raw: the reply arrives on a later turn of
         // the event loop, by which time this backend may be gone.
         QPointer<ChatBackend> self(this);
-        modules().chat_module.healthAsync([self](bool answered) {
+        modules().chat_module.healthAsyncResult([self](const logos::AsyncResult<bool>& answer) {
             if (self)
-                self->onHealthAnswer(answered);
+                self->onHealthAnswer(answer.ok(), answer.error.code == "object_unavailable");
         }, Timeout(kHealthTimeoutMs));
     });
     m_healthProbe->start();
 }
 
-void ChatBackend::onHealthAnswer(bool answered)
+void ChatBackend::onHealthAnswer(bool answered, bool unreachable)
 {
+    const bool gone = m_healthMisses >= kHealthMissesBeforeGone;
     if (answered) {
         m_healthMisses = 0;
+        // It was only busy past the probes, on a slow registry lookup say, and
+        // its events kept arriving meanwhile: reading its state back is the
+        // whole recovery. Deferred, since status() is a synchronous read.
+        if (gone) {
+            deferToEventLoop([this] {
+                const ChatModule::Status status = modules().chat_module.status();
+                applyDeliveryState(status.delivery_state, status.detail, status.delivery_adopted);
+            });
+        }
         return;
     }
-    if (++m_healthMisses < kHealthMissesBeforeGone)
+    if (!gone && ++m_healthMisses < kHealthMissesBeforeGone)
         return;
 
-    // Nothing brings the module back inside this process, so asking again would
-    // only spend the acquire timeout on every tick for the rest of the run.
-    m_healthProbe->stop();
+    // A busy module answers again, while an unreachable one has no process left
+    // to answer: asking it again would spend the acquire timeout on every tick
+    // for the rest of the run.
+    if (unreachable)
+        m_healthProbe->stop();
+    if (gone)
+        return;
+
     setChatStatus(ChatBackendSimpleSource::Error);
     report(QStringLiteral("The chat module stopped responding and has probably crashed. "
                           "Its log for this run is where the reason will be."));

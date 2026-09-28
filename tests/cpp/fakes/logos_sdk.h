@@ -22,9 +22,16 @@ struct LogosResult {
 
 namespace logos {
 struct CallError {
-    int code = 0;
+    std::string code;
     std::string message;
-    bool ok() const { return code == 0; }
+    bool ok() const { return code.empty(); }
+};
+
+template <typename T>
+struct AsyncResult {
+    T value{};
+    CallError error;
+    bool ok() const { return error.ok(); }
 };
 } // namespace logos
 
@@ -116,7 +123,7 @@ public:
         return conversations;
     }
     Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString(), deliveryAdopted}; }
-    void healthAsync(std::function<void(bool)>, Timeout = Timeout()) {}
+    void healthAsyncResult(std::function<void(logos::AsyncResult<bool>)>, Timeout = Timeout()) {}
     QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return {}; }
     QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return {}; }
     LogosResult create_conversation(const QString&, logos::CallError* = nullptr)
