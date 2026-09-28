@@ -103,6 +103,10 @@ Item {
     ListModel {
         id: emptyMessagesMock
     }
+    // Filled by the test that needs more messages than the thread shows at once.
+    ListModel {
+        id: longThreadMock
+    }
     ListModel {
         id: emptyMembersMock
     }
@@ -133,6 +137,18 @@ Item {
             messageModel: messagesMock
             currentIsGroup: false
             title: "Alice"
+            conversationId: "c1"
+            hasConversation: true
+            online: true
+            ready: true
+        }
+    }
+    Component {
+        id: longThreadPaneC
+        MessageThreadPane {
+            messageModel: longThreadMock
+            currentIsGroup: false
+            title: "Raya"
             conversationId: "c1"
             hasConversation: true
             online: true
@@ -518,6 +534,21 @@ Item {
             return found;
         }
 
+        // A row of longThreadMock.
+        function threadRow(content, isMe) {
+            return {
+                sender: "Raya",
+                avatarInitials: "ra",
+                avatarRamp: 1,
+                content: content,
+                timeDisplay: "12:34",
+                isMe: isMe,
+                sameSenderAsPrevious: false,
+                showDaySeparator: false,
+                dayLabel: "Today"
+            };
+        }
+
         function test_panesInstantiate() {
             instantiate(conversationsPaneC);
             instantiate(messageThreadPaneC);
@@ -756,6 +787,31 @@ Item {
             verify(!composer.visible, "a kept conversation has no composer");
             verify(notice.visible, "the notice says why");
             verify(findField(pane, "threadList").visible, "its messages still show");
+        }
+
+        // A sent message comes into view from wherever the thread had been
+        // scrolled to.
+        function test_threadPaneShowsAnOwnSend() {
+            longThreadMock.clear();
+            for (let i = 0; i < 40; ++i)
+                longThreadMock.append(threadRow("message " + i, false));
+            const pane = createTemporaryObject(longThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const list = findField(pane, "threadList");
+            const composer = findField(pane, "composer");
+            const send = findField(pane, "sendButton");
+            verify(list && composer && send, "the thread parts must be reachable");
+            waitForItemPolished(list);
+            verify(list.atYEnd, "the thread opens at its newest message");
+            list.positionViewAtIndex(30, ListView.Center);
+            verify(!list.atYEnd, "the user scrolls back into history");
+
+            composer.text = "on its way";
+            send.clicked();
+            longThreadMock.insert(0, threadRow("on its way", true));
+            tryVerify(() => list.atYEnd, 1000, "the sent message is in view");
         }
 
         // A refused message comes back to the composer, and a composer the user

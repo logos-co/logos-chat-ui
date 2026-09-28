@@ -4,12 +4,12 @@ project(ChatUiBackendTests LANGUAGES CXX)
 # Standalone on purpose: the plugin itself is built by the module builder's
 # macro against the Logos SDK, which a test run has no use for. The backend is
 # built against doubles of the SDK headers it includes (fakes/), so everything
-# under test here depends on Qt alone.
+# under test here builds against Qt alone.
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Qml RemoteObjects Test)
+find_package(Qt6 REQUIRED COMPONENTS Core Qml Quick RemoteObjects Test)
 enable_testing()
 
 add_executable(tst_sessionlogfiles
@@ -64,3 +64,19 @@ add_test(NAME scenemock COMMAND tst_scenemock)
 # nixpkgs' Qt is unwrapped here, so its own QML modules come from the tests
 # shell's QT_QML_DIR; an ordinary Qt install finds them without it.
 set_tests_properties(scenemock PROPERTIES ENVIRONMENT "QML_IMPORT_PATH=$ENV{QT_QML_DIR}")
+
+add_executable(tst_threadpane
+    tst_threadpane.cpp
+    ../../src/Identity.cpp
+    ../../src/MessageListModel.cpp
+    ../../src/TimeFormat.cpp
+)
+target_include_directories(tst_threadpane PRIVATE ../../src)
+# The pane's QML imports the design system, whose source tree the tests shell
+# exports as LOGOS_DESIGN_SYSTEM_QML.
+target_compile_definitions(tst_threadpane PRIVATE
+    CHAT_UI_QML_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../src/qml"
+    DESIGN_SYSTEM_QML_DIR="$ENV{LOGOS_DESIGN_SYSTEM_QML}")
+target_link_libraries(tst_threadpane PRIVATE Qt6::Quick Qt6::Test)
+add_test(NAME threadpane COMMAND tst_threadpane)
+set_tests_properties(threadpane PROPERTIES ENVIRONMENT "QML_IMPORT_PATH=$ENV{QT_QML_DIR};QT_QPA_PLATFORM=offscreen")

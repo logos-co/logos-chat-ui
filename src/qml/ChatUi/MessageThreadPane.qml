@@ -150,6 +150,9 @@ Rectangle {
                 anchors.fill: parent
                 clip: true
                 reuseItems: true
+                // No row is current. After a reset the list lands on its current
+                // row, and each new message would move that one row further back.
+                currentIndex: -1
                 model: root.messageModel
                 spacing: Theme.spacing.tiny
                 verticalLayoutDirection: ListView.BottomToTop
@@ -205,6 +208,9 @@ Rectangle {
             disabledPlaceholder: root.online ? qsTr("Select a conversation to start chatting") : qsTr("Chat not connected")
             submitEnabled: root.online && root.hasConversation
             onSubmitted: function (text) {
+                // From wherever the user had scrolled to: at the newest end, the
+                // list keeps the sent message in view when it lands.
+                threadList.positionViewAtBeginning();
                 root.messageSubmitted(text);
             }
             // Persist the in-progress text (and clear it after a send, when the
