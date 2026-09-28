@@ -158,12 +158,6 @@ void ChatBackend::onContextReady()
     initialiseModule();
 }
 
-ChatBackend::~ChatBackend()
-{
-    if (isContextReady())
-        modules().chat_module.shutdown();
-}
-
 QAbstractItemModel* ChatBackend::conversationModel() const
 {
     return m_conversationProxy;

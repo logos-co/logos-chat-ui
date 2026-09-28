@@ -199,7 +199,7 @@ view module.
 | `Identity` | Derives a row's initials and colour ramp from an address, in one place, so an account keeps its avatar across every list |
 | `TimeFormat` | The single formatter for clock times and day labels, so no view formats its own |
 | `ErrorLog` | Every failure the run reported, newest first, consecutive repeats collapsed to one row with a count |
-| `RunLog` / `ProcessLog` | This view's own log: `ProcessLog` catches everything Qt logs and holds it until a directory is known, `RunLog` writes, rotates and prunes it |
+| `RunLog` / `ProcessLog` | This view's own log: `ProcessLog` catches everything Qt logs above debug level and holds it until a directory is known, `RunLog` writes, rotates and prunes it |
 | `SessionLogFiles` | Groups a log directory into runs by the stem of the announced file, which is what lets two writers share one directory |
 
 ## Logs

@@ -27,7 +27,6 @@ class ChatBackend : public ChatBackendSimpleSource,
 
 public:
     explicit ChatBackend(QObject* parent = nullptr);
-    ~ChatBackend() override;
 
     QAbstractItemModel* conversationModel() const;
     MessageListModel* messageModel() const;

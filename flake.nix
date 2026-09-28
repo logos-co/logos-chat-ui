@@ -11,8 +11,9 @@
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
     # chat_module master includes the Windows target and a Windows-capable
-    # delivery module. The lockfile pins the tested PR #82 merge commit, which
-    # lists conversations kept from a previous session as history_only.
+    # delivery module. The lockfile pins the tested PR #85 merge commit, which
+    # takes libchat's fixes for aborts and lost messages and reports errors in
+    # readable form.
     chat_module.url = "github:logos-co/logos-chat-module";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.

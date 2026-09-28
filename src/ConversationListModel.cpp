@@ -30,7 +30,7 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     case LastActivityDisplayRole: return formatLastActivity(item.lastActivity);
     case UnreadCountRole:         return item.unreadCount;
     case IsGroupRole:             return item.isGroup;
-    case PreviewRole:             return item.preview;
+    case PreviewRole:             return item.preview.simplified();
     case DescriptionRole:         return item.description;
     case AvatarInitialsRole:      return Identity::initials(item.conversationId);
     case AvatarRampRole:          return Identity::avatarRamp(Identity::shortLabel(item.conversationId));

@@ -16,6 +16,8 @@ private slots:
     void readsTheNodeFromStatusWhenAlreadyOnline();
     void marksAConversationFromAPreviousSession();
     void listsAPreviousSessionAfterThisOne();
+    void previewsAMultiLineMessageOnOneLine();
+    void leavesTheModuleRunningWhenTheViewCloses();
 
 private:
     QTemporaryDir m_logs;
@@ -142,6 +144,41 @@ void TestChatBackend::listsAPreviousSessionAfterThisOne()
     QCOMPARE(model->rowCount(), 2);
     QCOMPARE(model->data(model->index(0, 0), ConversationListModel::ConversationIdRole).toString(), QStringLiteral("live"));
     QCOMPARE(model->data(model->index(1, 0), ConversationListModel::ConversationIdRole).toString(), QStringLiteral("kept"));
+}
+
+// A last message written over several lines previews on one line, so it stays
+// inside its row.
+void TestChatBackend::previewsAMultiLineMessageOnOneLine()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation convo;
+    convo.convo_id = QStringLiteral("multi");
+    convo.kind = QStringLiteral("direct");
+    convo.preview = QStringLiteral("first\nline 1\r\nline 2\u2028line 3");
+    modules.chat_module.conversations = { convo };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+
+    const QAbstractItemModel* model = backend.conversationModel();
+    QCOMPARE(model->data(model->index(0, 0), ConversationListModel::PreviewRole).toString(),
+             QStringLiteral("first line 1 line 2 line 3"));
+}
+
+// A host closing the view, as basecamp does with its tab, leaves the module
+// running on the same account for the view it opens next.
+void TestChatBackend::leavesTheModuleRunningWhenTheViewCloses()
+{
+    LogosModules modules;
+    place(modules);
+    {
+        ChatBackend backend;
+        backend._logosCoreSetLogosModulesPtr_(&modules);
+        QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    }
+
+    QCOMPARE(modules.chat_module.get_address(), modules.chat_module.address);
 }
 
 QTEST_MAIN(TestChatBackend)

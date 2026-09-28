@@ -45,8 +45,8 @@ jobs:
           attic-token-public: ${{ secrets.ATTIC_TOKEN_PUBLIC }}
 
       # tests/cpp is a standalone CMake project over the backend, built against
-      # doubles of the Logos SDK headers it includes, so it needs nothing but Qt
-      # and builds without the SDK the plugin itself is compiled against.
+      # doubles of the Logos SDK headers it includes, so it builds against Qt
+      # alone, without the SDK the plugin itself is compiled against.
       - name: ctest
         shell: bash
         run: |

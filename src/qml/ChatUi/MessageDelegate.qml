@@ -63,6 +63,7 @@ Item {
 
     LogosText {
         id: senderLabel
+        objectName: "senderLabel"
         y: daySeparator.height
         visible: root.showSender
         anchors.left: parent.left
@@ -71,7 +72,7 @@ Item {
         textFormat: Text.PlainText
         // The sender's own colour, taken from the ramp their avatar is drawn in,
         // so a name and a face read as the same person.
-        color: ChatTheme.avatarRamps[root.avatarRamp].stops[0].color
+        color: ChatTheme.avatarRampLeads[root.avatarRamp]
         font.family: Theme.typography.mono
         font.pixelSize: Theme.typography.secondaryText
         font.weight: Theme.typography.weightMedium
@@ -92,10 +93,9 @@ Item {
         id: bubble
         objectName: "bubble"
         y: root.showSender ? senderLabel.y + senderLabel.height + Theme.spacing.tiny : daySeparator.height
-        anchors.left: root.isMe ? undefined : parent.left
-        anchors.right: root.isMe ? parent.right : undefined
-        anchors.leftMargin: Theme.spacing.xlarge + root.gutter
-        anchors.rightMargin: Theme.spacing.xlarge
+        // Placed by x, not anchors: a row reused for the other sender flips
+        // isMe, and anchors swapped by a binding leave the bubble stretched.
+        x: root.isMe ? root.width - width - Theme.spacing.xlarge : Theme.spacing.xlarge + root.gutter
 
         // Grow to the wider of the content and the timestamp (a short message
         // must not leave the time outside the bubble), capped at 70% of the row.

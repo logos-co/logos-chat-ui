@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtTest
 
+import Logos.Theme
 import ChatUi
 
 // Standalone-instantiability + behaviour tests for the ChatUi components. Run
@@ -102,6 +103,10 @@ Item {
     ListModel {
         id: emptyMessagesMock
     }
+    // Filled by the test that needs more messages than the thread shows at once.
+    ListModel {
+        id: longThreadMock
+    }
     ListModel {
         id: emptyMembersMock
     }
@@ -132,6 +137,18 @@ Item {
             messageModel: messagesMock
             currentIsGroup: false
             title: "Alice"
+            conversationId: "c1"
+            hasConversation: true
+            online: true
+            ready: true
+        }
+    }
+    Component {
+        id: longThreadPaneC
+        MessageThreadPane {
+            messageModel: longThreadMock
+            currentIsGroup: false
+            title: "Raya"
             conversationId: "c1"
             hasConversation: true
             online: true
@@ -517,6 +534,21 @@ Item {
             return found;
         }
 
+        // A row of longThreadMock.
+        function threadRow(content, isMe) {
+            return {
+                sender: "Raya",
+                avatarInitials: "ra",
+                avatarRamp: 1,
+                content: content,
+                timeDisplay: "12:34",
+                isMe: isMe,
+                sameSenderAsPrevious: false,
+                showDaySeparator: false,
+                dayLabel: "Today"
+            };
+        }
+
         function test_panesInstantiate() {
             instantiate(conversationsPaneC);
             instantiate(messageThreadPaneC);
@@ -755,6 +787,78 @@ Item {
             verify(!composer.visible, "a kept conversation has no composer");
             verify(notice.visible, "the notice says why");
             verify(findField(pane, "threadList").visible, "its messages still show");
+        }
+
+        // A sent message comes into view from wherever the thread had been
+        // scrolled to.
+        function test_threadPaneShowsAnOwnSend() {
+            longThreadMock.clear();
+            for (let i = 0; i < 40; ++i)
+                longThreadMock.append(threadRow("message " + i, false));
+            const pane = createTemporaryObject(longThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const list = findField(pane, "threadList");
+            const composer = findField(pane, "composer");
+            const send = findField(pane, "sendButton");
+            verify(list && composer && send, "the thread parts must be reachable");
+            waitForItemPolished(list);
+            verify(list.atYEnd, "the thread opens at its newest message");
+            list.positionViewAtIndex(30, ListView.Center);
+            verify(!list.atYEnd, "the user scrolls back into history");
+
+            composer.text = "on its way";
+            send.clicked();
+            longThreadMock.insert(0, threadRow("on its way", true));
+            tryVerify(() => list.atYEnd, 1000, "the sent message is in view");
+        }
+
+        // The newest message stays in view when the thread gets shorter, as it
+        // does a line at a time while the composer grows.
+        function test_threadPaneKeepsTheNewestInViewWhenShorter() {
+            longThreadMock.clear();
+            for (let i = 0; i < 40; ++i)
+                longThreadMock.append(threadRow("message " + i, false));
+            const pane = createTemporaryObject(longThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const list = findField(pane, "threadList");
+            verify(list, "the thread list must be reachable");
+            waitForItemPolished(list);
+            verify(list.atYEnd, "the thread opens at its newest message");
+
+            for (const step of [10, 17, 15]) {
+                pane.height -= step;
+                waitForItemPolished(list);
+                verify(list.atYEnd, `the newest message is in view at height ${pane.height}`);
+            }
+        }
+
+        // Dragging the scroll bar moves the thread, through rows of uneven
+        // height, whose estimate changes as the drag reaches them.
+        function test_threadScrollBarDragsTheThread() {
+            failOnWarning(/Binding loop/);
+            longThreadMock.clear();
+            for (let i = 0; i < 40; ++i)
+                longThreadMock.append(threadRow(i % 3 === 0 ? "a message long enough to wrap over more than one line of the bubble, message " + i : "message " + i, i % 2 === 0));
+            const pane = createTemporaryObject(longThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const list = findField(pane, "threadList");
+            const bar = findField(pane, "threadScrollBar");
+            verify(list && bar, "the thread list and its scroll bar must be reachable");
+            waitForItemPolished(list);
+
+            const handleY = (bar.position + bar.size / 2) * bar.height;
+            mousePress(bar, bar.width / 2, handleY);
+            for (let i = 1; i <= 10; ++i)
+                mouseMove(bar, bar.width / 2, handleY - i * 15);
+            mouseRelease(bar, bar.width / 2, handleY - 150);
+            verify(!list.atYEnd, "the drag moved the thread back into history");
+            tryCompare(bar, "position", list.visibleArea.yPosition, 1000, "the bar sits where the thread is");
         }
 
         // A refused message comes back to the composer, and a composer the user
@@ -1132,6 +1236,40 @@ Item {
             verify(shortBox.width < longBox.width, "a short message makes a narrower bubble");
             compare(longBox.width, 280, "a long message caps at 70% of the row");
             verify(longBox.height > shortBox.height, "wrapped content makes a taller bubble");
+        }
+
+        // A sender's name takes the first colour of the ramp their avatar is
+        // drawn in, through a binding that sees the ramp change.
+        function test_messageDelegateSenderColour() {
+            failOnWarning(/depends on non-bindable properties/);
+            const row = createTemporaryObject(messageDelegateC, testRoot);
+            verify(row, "the delegate must instantiate");
+            const label = findField(row, "senderLabel");
+            verify(label, "the sender label must be reachable");
+            compare(label.color, ChatTheme.avatarRamps[2].stops[0].color, "the name wears its ramp's first colour");
+            row.avatarRamp = 4;
+            compare(label.color, ChatTheme.avatarRamps[4].stops[0].color, "and follows a change of ramp");
+        }
+
+        // A reused row changes sides whenever the list hands it a message from
+        // the other sender, and its bubble has to follow at its own width.
+        function test_messageDelegateKeepsItsSide() {
+            const row = createTemporaryObject(messageDelegateC, testRoot);
+            verify(row, "the delegate must instantiate");
+            row.width = 400;
+            row.content = "Hi";
+            const box = findField(row, "bubble");
+            verify(box, "the bubble must be reachable");
+            const width = box.width;
+
+            for (const isMe of [true, false, true, false]) {
+                row.isMe = isMe;
+                compare(box.width, width, "the bubble keeps the width its content asks for");
+                if (isMe)
+                    compare(box.x + box.width, row.width - Theme.spacing.xlarge, "an own bubble sits against the right edge");
+                else
+                    compare(box.x, Theme.spacing.xlarge + row.gutter, "a peer's bubble sits against the left edge");
+            }
         }
 
         // The current conversation highlights; a different one does not.

@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 
 import Logos.Theme
@@ -150,6 +149,9 @@ Rectangle {
                 anchors.fill: parent
                 clip: true
                 reuseItems: true
+                // No row is current. After a reset the list lands on its current
+                // row, and each new message would move that one row further back.
+                currentIndex: -1
                 model: root.messageModel
                 spacing: Theme.spacing.tiny
                 verticalLayoutDirection: ListView.BottomToTop
@@ -162,8 +164,6 @@ Rectangle {
                     height: Theme.spacing.medium
                 }
 
-                ScrollBar.vertical: LogosScrollBar {}
-
                 delegate: MessageDelegate {
                     width: ListView.view.width
                     groupContext: root.currentIsGroup
@@ -172,6 +172,35 @@ Rectangle {
                         messageMenu.popup();
                     }
                 }
+            }
+
+            // Beside the list, not attached: the list keeps its newest message in
+            // place when it gets shorter, and an attached bar moves it back,
+            // measuring the list at its height from before.
+            LogosScrollBar {
+                id: threadScrollBar
+                objectName: "threadScrollBar"
+                anchors.top: threadList.top
+                anchors.right: threadList.right
+                anchors.bottom: threadList.bottom
+                visible: threadList.visible
+                orientation: Qt.Vertical
+                size: threadList.visibleArea.heightRatio
+                // Only a drag moves the list; otherwise the bar follows it.
+                onPositionChanged: {
+                    if (pressed)
+                        threadList.contentY = threadList.originY + position * threadList.contentHeight;
+                }
+            }
+
+            // Let go while dragged, or the list's answer to the drag would feed
+            // back into the bar mid-move.
+            Binding {
+                target: threadScrollBar
+                property: "position"
+                value: threadList.visibleArea.yPosition
+                when: !threadScrollBar.pressed
+                restoreMode: Binding.RestoreNone
             }
 
             MessageSkeleton {
@@ -205,6 +234,9 @@ Rectangle {
             disabledPlaceholder: root.online ? qsTr("Select a conversation to start chatting") : qsTr("Chat not connected")
             submitEnabled: root.online && root.hasConversation
             onSubmitted: function (text) {
+                // From wherever the user had scrolled to: at the newest end, the
+                // list keeps the sent message in view when it lands.
+                threadList.positionViewAtBeginning();
                 root.messageSubmitted(text);
             }
             // Persist the in-progress text (and clear it after a send, when the

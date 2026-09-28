@@ -3,7 +3,8 @@
 
 #include <QString>
 
-// Everything Qt logs in this process, written to a run log of its own.
+// Everything Qt logs in this process above debug level, written to a run log
+// of its own.
 //
 // Process-global, because a Qt message handler is. Installing one from a plugin
 // is safe here and nowhere else: a view module gets its own host process and this

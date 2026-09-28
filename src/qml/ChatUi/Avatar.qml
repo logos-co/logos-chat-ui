@@ -49,7 +49,7 @@ Rectangle {
     Image {
         anchors.centerIn: parent
         visible: root.isGroup
-        source: Qt.resolvedUrl("icons/group.png")
+        source: Qt.resolvedUrl("icons/group-ink.png")
         width: Math.round(root.size * 0.55)
         height: width
         sourceSize: Qt.size(width * 2, height * 2)
