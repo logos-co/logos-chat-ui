@@ -25,7 +25,7 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     const auto& item = m_items.at(index.row());
     switch (role) {
     case ConversationIdRole:      return item.conversationId;
-    case DisplayNameRole:         return item.displayName;
+    case DisplayNameRole:         return item.displayName.simplified();
     case LastActivityRole:        return item.lastActivity;
     case LastActivityDisplayRole: return formatLastActivity(item.lastActivity);
     case UnreadCountRole:         return item.unreadCount;
@@ -180,7 +180,7 @@ int ConversationListModel::indexOf(const QString& id) const
 QString ConversationListModel::displayNameFor(const QString& id) const
 {
     const int idx = indexOf(id);
-    return idx < 0 ? QString() : m_items.at(idx).displayName;
+    return idx < 0 ? QString() : m_items.at(idx).displayName.simplified();
 }
 
 QString ConversationListModel::descriptionFor(const QString& id) const

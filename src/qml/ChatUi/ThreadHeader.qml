@@ -67,6 +67,7 @@ Rectangle {
                 textFormat: Text.PlainText
                 color: Theme.palette.textTertiary
                 font.pixelSize: Theme.typography.secondaryText
+                maximumLineCount: 1
                 elide: Text.ElideRight
                 Layout.fillWidth: true
 

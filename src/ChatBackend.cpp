@@ -280,12 +280,14 @@ void ChatBackend::openRunLogs()
 
 void ChatBackend::report(const QString& message)
 {
-    m_errors.add(message, QDateTime::currentDateTime());
+    // A reason can come from a server's response body, line breaks and all.
+    const QString line = message.simplified();
+    m_errors.add(line, QDateTime::currentDateTime());
     setErrors(m_errors.published());
     // Through Qt's logging, so the line reaches this run's log by the same route
     // and in the same order as everything else the view writes.
-    qWarning().noquote() << "chat_ui:" << message;
-    emit error(message);
+    qWarning().noquote() << "chat_ui:" << line;
+    emit error(line);
 }
 
 void ChatBackend::reportFailure(const QString& action, const QString& reason)

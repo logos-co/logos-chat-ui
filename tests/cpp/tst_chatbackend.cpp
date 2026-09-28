@@ -1,3 +1,4 @@
+#include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -17,6 +18,8 @@ private slots:
     void marksAConversationFromAPreviousSession();
     void listsAPreviousSessionAfterThisOne();
     void previewsAMultiLineMessageOnOneLine();
+    void namesAGroupOnOneLine();
+    void reportsAMultiLineFailureOnOneLine();
     void leavesTheModuleRunningWhenTheViewCloses();
 
 private:
@@ -164,6 +167,50 @@ void TestChatBackend::previewsAMultiLineMessageOnOneLine()
     const QAbstractItemModel* model = backend.conversationModel();
     QCOMPARE(model->data(model->index(0, 0), ConversationListModel::PreviewRole).toString(),
              QStringLiteral("first line 1 line 2 line 3"));
+}
+
+// A group's name comes from whoever created it, and shows on one line wherever
+// the view names the conversation.
+void TestChatBackend::namesAGroupOnOneLine()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation convo;
+    convo.convo_id = QStringLiteral("group");
+    convo.kind = QStringLiteral("group");
+    convo.name = QStringLiteral("Book\nClub");
+    modules.chat_module.conversations = { convo };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.selectConversation(QStringLiteral("group"));
+
+    const QAbstractItemModel* model = backend.conversationModel();
+    QCOMPARE(model->data(model->index(0, 0), ConversationListModel::DisplayNameRole).toString(),
+             QStringLiteral("Book Club"));
+    QCOMPARE(backend.currentDisplayName(), QStringLiteral("Book Club"));
+}
+
+// A module failure can carry a server's response body, and reaches the status
+// bar and the Errors tab on one line.
+void TestChatBackend::reportsAMultiLineFailureOnOneLine()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+    modules.chat_module.createConversationError =
+        QStringLiteral("server returned status 503: <html>\n<body>busy</body>\n</html>");
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+    backend.createConversation(QStringLiteral("peer"));
+
+    const QString line =
+        QStringLiteral("Failed to create DM: server returned status 503: <html> <body>busy</body> </html>");
+    QCOMPARE(reported.count(), 1);
+    QCOMPARE(reported.first().first().toString(), line);
+    QCOMPARE(backend.errors().first().toMap().value(QStringLiteral("message")).toString(), line);
 }
 
 // A host closing the view, as basecamp does with its tab, leaves the module

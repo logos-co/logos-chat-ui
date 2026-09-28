@@ -81,6 +81,8 @@ public:
     std::function<void()> whileListingConversations;
     // What list_conversations answers.
     QList<Conversation> conversations;
+    // The reason create_conversation fails with; it succeeds while empty.
+    QString createConversationError;
 
     void goOnline()
     {
@@ -117,7 +119,12 @@ public:
     void healthAsync(std::function<void(bool)>, Timeout = Timeout()) {}
     QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return {}; }
     QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return {}; }
-    LogosResult create_conversation(const QString&, logos::CallError* = nullptr) { return {true, {}, {}}; }
+    LogosResult create_conversation(const QString&, logos::CallError* = nullptr)
+    {
+        if (!createConversationError.isEmpty())
+            return {false, {}, createConversationError};
+        return {true, {}, {}};
+    }
     LogosResult create_group_conversation(const QString&, const QString&, logos::CallError* = nullptr)
     {
         return {true, {}, {}};

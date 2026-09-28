@@ -27,6 +27,7 @@ class ConversationListModel : public QAbstractListModel
 public:
     enum Roles {
         ConversationIdRole = Qt::UserRole + 1,
+        // On one line, as PreviewRole.
         DisplayNameRole,
         LastActivityRole,
         UnreadCountRole,
@@ -74,7 +75,7 @@ public:
 
     int indexOf(const QString& id) const;
 
-    // Display name for a conversation id, or empty if unknown.
+    // Display name for a conversation id, on one line, or empty if unknown.
     Q_INVOKABLE QString displayNameFor(const QString& id) const;
 
     // Group description for a conversation id, or empty if unknown or unset.
