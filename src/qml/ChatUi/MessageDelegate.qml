@@ -92,10 +92,9 @@ Item {
         id: bubble
         objectName: "bubble"
         y: root.showSender ? senderLabel.y + senderLabel.height + Theme.spacing.tiny : daySeparator.height
-        anchors.left: root.isMe ? undefined : parent.left
-        anchors.right: root.isMe ? parent.right : undefined
-        anchors.leftMargin: Theme.spacing.xlarge + root.gutter
-        anchors.rightMargin: Theme.spacing.xlarge
+        // Placed by x, not anchors: a row reused for the other sender flips
+        // isMe, and anchors swapped by a binding leave the bubble stretched.
+        x: root.isMe ? root.width - width - Theme.spacing.xlarge : Theme.spacing.xlarge + root.gutter
 
         // Grow to the wider of the content and the timestamp (a short message
         // must not leave the time outside the bubble), capped at 70% of the row.

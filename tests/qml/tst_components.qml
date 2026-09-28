@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtTest
 
+import Logos.Theme
 import ChatUi
 
 // Standalone-instantiability + behaviour tests for the ChatUi components. Run
@@ -1132,6 +1133,27 @@ Item {
             verify(shortBox.width < longBox.width, "a short message makes a narrower bubble");
             compare(longBox.width, 280, "a long message caps at 70% of the row");
             verify(longBox.height > shortBox.height, "wrapped content makes a taller bubble");
+        }
+
+        // A reused row changes sides whenever the list hands it a message from
+        // the other sender, and its bubble has to follow at its own width.
+        function test_messageDelegateKeepsItsSide() {
+            const row = createTemporaryObject(messageDelegateC, testRoot);
+            verify(row, "the delegate must instantiate");
+            row.width = 400;
+            row.content = "Hi";
+            const box = findField(row, "bubble");
+            verify(box, "the bubble must be reachable");
+            const width = box.width;
+
+            for (const isMe of [true, false, true, false]) {
+                row.isMe = isMe;
+                compare(box.width, width, "the bubble keeps the width its content asks for");
+                if (isMe)
+                    compare(box.x + box.width, row.width - Theme.spacing.xlarge, "an own bubble sits against the right edge");
+                else
+                    compare(box.x, Theme.spacing.xlarge + row.gutter, "a peer's bubble sits against the left edge");
+            }
         }
 
         // The current conversation highlights; a different one does not.
