@@ -88,6 +88,7 @@ Item {
                 avatarRamp: 0
                 isSelf: true
                 pending: false
+                rejected: false
             }
             ListElement {
                 address: "a1b2c3d4e5f6"
@@ -96,6 +97,7 @@ Item {
                 avatarRamp: 0
                 isSelf: false
                 pending: false
+                rejected: false
             }
         }
     }

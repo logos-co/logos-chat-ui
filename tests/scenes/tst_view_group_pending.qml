@@ -5,8 +5,9 @@ import ChatUiScenes
 
 import "../../src/qml"
 
-// A group just opened, with its details, one member still waiting to join, a
-// thread spanning two days, and failures held on the status bar. Opening it is
+// A group just opened, with its details, one member still waiting to join and
+// one whose add failed, a thread spanning two days, and failures held on the
+// status bar. Opening it is
 // what hands the composer the caret.
 Item {
     id: stage
@@ -146,6 +147,7 @@ Item {
                 avatarRamp: 0
                 isSelf: true
                 pending: false
+                rejected: false
             }
             ListElement {
                 address: "0b2c3d4e5f60"
@@ -154,6 +156,7 @@ Item {
                 avatarRamp: 1
                 isSelf: false
                 pending: false
+                rejected: false
             }
             ListElement {
                 address: "a1b2c3d4e5f6"
@@ -162,6 +165,7 @@ Item {
                 avatarRamp: 0
                 isSelf: false
                 pending: false
+                rejected: false
             }
             ListElement {
                 address: "f6e5d4c3b2a1"
@@ -170,6 +174,16 @@ Item {
                 avatarRamp: 2
                 isSelf: false
                 pending: true
+                rejected: false
+            }
+            ListElement {
+                address: "9c8d7e6f5a4b"
+                label: "Mira"
+                avatarInitials: "mi"
+                avatarRamp: 4
+                isSelf: false
+                pending: false
+                rejected: true
             }
         }
     }

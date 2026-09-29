@@ -5,8 +5,9 @@ import Logos.Theme
 import Logos.Controls
 
 // A roster row: the member's avatar and identity, marked as this account where
-// it is, and told as waiting where the invitation has not committed yet. A
-// right-click asks for the row's actions; Return copies from the keyboard.
+// it is, told as waiting where the invitation has not committed yet, and as
+// failed where the group voted it down. A right-click asks for the row's
+// actions; Return copies from the keyboard.
 // Delegate roles bind by name.
 LogosItemDelegate {
     id: root
@@ -19,6 +20,8 @@ LogosItemDelegate {
     required property bool isSelf
     // Invited but not yet committed into the group's roster.
     required property bool pending
+    // Invited, and the group voted the invite down.
+    required property bool rejected
 
     // Asks for the row's actions, carrying the address they act on.
     signal contextMenuRequested(string address)
@@ -60,9 +63,9 @@ LogosItemDelegate {
             ramp: root.avatarRamp
             isSelf: root.isSelf
             size: 32
-            // A member who has not joined yet is drawn back, so the roster reads
-            // as the people actually in the group.
-            opacity: root.pending ? 0.5 : 1
+            // A member who has not joined is drawn back, so the roster reads as
+            // the people actually in the group.
+            opacity: root.pending || root.rejected ? 0.5 : 1
             Layout.alignment: Qt.AlignVCenter
         }
 
@@ -73,7 +76,7 @@ LogosItemDelegate {
             LogosText {
                 text: root.copiedFlashing ? qsTr("Copied to clipboard") : root.label
                 textFormat: Text.PlainText
-                color: root.copiedFlashing ? Theme.palette.success : root.pending ? Theme.palette.textTertiary : Theme.palette.text
+                color: root.copiedFlashing ? Theme.palette.success : root.pending || root.rejected ? Theme.palette.textTertiary : Theme.palette.text
                 font.family: root.copiedFlashing ? Theme.typography.publicSans : Theme.typography.mono
                 font.pixelSize: Theme.typography.secondaryText
                 font.weight: Theme.typography.weightMedium
@@ -103,6 +106,17 @@ LogosItemDelegate {
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
+            }
+
+            LogosText {
+                objectName: "addFailed"
+                visible: root.rejected
+                //: Said of a member whose invitation the group voted down; adding them again retries
+                text: qsTr("Add failed")
+                color: Theme.palette.error
+                font.pixelSize: Theme.typography.secondaryText
+                elide: Text.ElideRight
+                Layout.fillWidth: true
             }
         }
 

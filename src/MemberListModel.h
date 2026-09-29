@@ -13,6 +13,8 @@ struct MemberItem {
     bool isSelf = false;
     // A member invited but not yet committed into the group.
     bool pending = false;
+    // A member whose invite the group voted down.
+    bool rejected = false;
 };
 
 // A group's roster, replaced wholesale on each refresh. `label` is the short
@@ -28,6 +30,7 @@ public:
         LabelRole,
         IsSelfRole,
         PendingRole,
+        RejectedRole,
         // Avatar identity, derived from the address so one account keeps one
         // pair of initials and one colour wherever it is drawn.
         AvatarInitialsRole,
@@ -42,8 +45,8 @@ public:
 
     void setMembers(const QVector<MemberItem>& members);
     void clear();
-    // True when `address` is a committed member. A pending invite does not
-    // count: it cannot take part in the conversation until the group commits it.
+    // True when `address` is a committed member. An invite does not count, pending
+    // or rejected: it cannot take part in the conversation until the group commits it.
     bool contains(const QString& address) const;
 
 private:

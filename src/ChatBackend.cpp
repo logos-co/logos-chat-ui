@@ -488,7 +488,8 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
         return;
     }
     // The commit is async, so the peer joins the roster as a pending busy row;
-    // the members_changed event reconciles it once committed.
+    // the members_changed event reconciles it once the group commits the add or
+    // votes it down.
     if (conversationId == currentConversationId())
         refreshMembers();
 }
@@ -559,21 +560,24 @@ void ChatBackend::refreshMembers()
     QVector<MemberItem> rows;
     rows.reserve(members.size());
     int committed = 0;
+    int pending = 0;
     for (const ChatModule::GroupMember& member : members) {
         const QString& address = member.address;
         // An empty address is the roster's "no confirmed account" signal; keep
         // it — the model renders it as "unknown_account". Only a real account
         // address can be self.
-        rows.append({ address, !address.isEmpty() && address == myAddress(), member.pending });
-        if (!member.pending)
+        rows.append({ address, !address.isEmpty() && address == myAddress(), member.pending, member.rejected });
+        if (member.pending)
+            ++pending;
+        else if (!member.rejected)
             ++committed;
     }
 
     m_memberModel->setMembers(rows);
-    // Committed roster size only; pending invites appear in the list and are
-    // counted separately.
+    // Committed roster size only; invites appear in the list, and the pending
+    // ones are counted separately.
     setMemberCount(committed);
-    setPendingMemberCount(static_cast<int>(members.size()) - committed);
+    setPendingMemberCount(pending);
     // With our own address unknown every entry looks like the peer, so leave it
     // unset rather than guess.
     setCurrentPeerAddress(myAddress().isEmpty()
@@ -745,7 +749,8 @@ void ChatBackend::applyConversationUpdated(const QVariantList& args)
 void ChatBackend::applyMembersChanged(const QVariantList& args)
 {
     const QString convoId = args.value(0).toString();
-    // A commit changed this group's roster; refetch it if it is on screen.
+    // A commit changed this group's roster, or the group voted an invite down;
+    // refetch it if it is on screen.
     deferToEventLoop([this, convoId] {
         if (convoId == currentConversationId() && m_conversationModel->isGroupFor(convoId))
             refreshMembers();

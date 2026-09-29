@@ -111,6 +111,27 @@ Item {
         id: emptyMembersMock
     }
     ListModel {
+        id: failedAddMembersMock
+        ListElement {
+            address: "0xabc"
+            label: "Alice"
+            avatarInitials: "0x"
+            avatarRamp: 1
+            isSelf: false
+            pending: false
+            rejected: false
+        }
+        ListElement {
+            address: "0xcarol"
+            label: "Carol"
+            avatarInitials: "0x"
+            avatarRamp: 4
+            isSelf: false
+            pending: false
+            rejected: true
+        }
+    }
+    ListModel {
         id: membersMock
         ListElement {
             address: "0xabc"
@@ -119,6 +140,7 @@ Item {
             avatarRamp: 1
             isSelf: false
             pending: false
+            rejected: false
         }
     }
 
@@ -226,6 +248,13 @@ Item {
         Facepile {
             memberModel: membersMock
             memberCount: 5
+        }
+    }
+    Component {
+        id: failedAddFacepileC
+        Facepile {
+            memberModel: failedAddMembersMock
+            memberCount: 1
         }
     }
     Component {
@@ -419,6 +448,7 @@ Item {
             avatarRamp: 4
             isSelf: false
             pending: true
+            rejected: false
         }
     }
 
@@ -902,6 +932,19 @@ Item {
 
             pile.memberCount = 3;
             compare(pile.overflow, 0, "a roster that fits leaves no remainder");
+        }
+
+        // A member whose add failed is not in the conversation, so the pile
+        // leaves them out.
+        function test_facepileLeavesOutAFailedAdd() {
+            const pile = createTemporaryObject(failedAddFacepileC, testRoot);
+            verify(pile, "the facepile must instantiate");
+            let shown = 0;
+            for (let i = 0; i < pile.children.length; ++i) {
+                if (pile.children[i].objectName === "facepileTile" && pile.children[i].visible)
+                    ++shown;
+            }
+            compare(shown, 1, "only the member in the group is drawn");
         }
 
         // The heading counts what the card holds, and says nothing where there
@@ -1460,6 +1503,20 @@ Item {
             del.flashCopied();
             verify(del.copiedFlashing, "flashing right after a copy");
             tryCompare(del, "copiedFlashing", false, 3000, "the flash clears");
+        }
+
+        // A member whose invite the group voted down is told as failed, not as
+        // waiting to join. Parented into the shown root so effective visibility
+        // is meaningful.
+        function test_memberDelegateShowsAFailedAdd() {
+            const del = createTemporaryObject(memberDelegateC, testRoot);
+            verify(del, "the member delegate must instantiate");
+            const failed = findField(del, "addFailed");
+            verify(failed, "the failure line must be reachable");
+            verify(!failed.visible, "a pending invite has not failed");
+            del.pending = false;
+            del.rejected = true;
+            verify(failed.visible, "a rejected invite says the add failed");
         }
 
         // Confirming the explainer emits confirmed() so the caller can proceed

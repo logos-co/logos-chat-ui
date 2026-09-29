@@ -68,6 +68,7 @@ public:
     struct GroupMember {
         QString address{};
         bool pending{};
+        bool rejected{};
     };
     struct ChatConfig {
         std::optional<QString> delivery_preset{};
@@ -90,6 +91,8 @@ public:
     QList<Conversation> conversations;
     // The reason create_conversation fails with; it succeeds while empty.
     QString createConversationError;
+    // What list_group_members answers, for any conversation.
+    QList<GroupMember> groupMembers;
 
     void goOnline()
     {
@@ -131,7 +134,7 @@ public:
     Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString(), deliveryAdopted}; }
     void healthAsyncResult(std::function<void(logos::AsyncResult<bool>)>, Timeout = Timeout()) {}
     QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return {}; }
-    QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return {}; }
+    QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return groupMembers; }
     LogosResult create_conversation(const QString&, logos::CallError* = nullptr)
     {
         if (!createConversationError.isEmpty())
