@@ -1,6 +1,6 @@
 # logos-chat-ui
 
-A QML + C++ backend UI module for the [Logos](https://logos.co) platform that provides a private messaging interface built on top of [Logos Chat](https://github.com/logos-messaging/libchat).
+A QML + C++ backend UI module for the [Logos](https://logos.co) platform that provides a private messaging interface built on top of [Logos Chat](https://github.com/logos-messaging/logos-chat).
 
 The UI connects to [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) via the Logos Core module system for all chat operations — identity, conversations, and message exchange happen over the Logos network.
 
@@ -28,7 +28,7 @@ Core functionality:
 - **Messaging** — send and receive messages in real-time over the Logos network
 - **Chat lifecycle** — auto-initializes and starts on launch; the connection state shows on the account card
 
-Conversations are **ephemeral** — messages and identity exist only while the app is running.
+Conversations and their messages are kept across restarts, but each launch starts a new identity with a new address. Conversations from an earlier launch stay readable under **Previous sessions** and cannot be sent to: share your new address to talk again, and a group comes back once a member invites it.
 
 ### Group conversations
 
@@ -241,6 +241,6 @@ tab is there and says so.
 |---|---|
 | [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) | Chat backend — this UI's required dependency |
 | [`logos-delivery-module`](https://github.com/logos-co/logos-delivery-module) | Transport (Waku) — runtime dependency, pinned at v0.3.0-rc.3 |
-| [`libchat`](https://github.com/logos-messaging/libchat) | Chat engine embedded by `chat_module` (E2EE, sessions) |
+| [`logos-chat`](https://github.com/logos-messaging/logos-chat) | Chat engine (libchat) embedded by `chat_module` (E2EE, sessions) |
 | [`logos-module-builder`](https://github.com/logos-co/logos-module-builder) | Module build system |
 | [`logos-liblogos`](https://github.com/logos-co/logos-liblogos) | Logos Core platform |
