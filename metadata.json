@@ -9,7 +9,10 @@
   "main": "chat_ui_plugin",
   "view": "qml/ChatView.qml",
   "icon": "src/icons/messages-square.png",
-  "dependencies": ["chat_module", "delivery_module"],
+  "dependencies": [
+    { "name": "chat_module", "version": ">=0.3.0" },
+    { "name": "delivery_module", "version": ">=0.3.0" }
+  ],
   "codegen": {
     "rep": "src/ChatBackend.rep",
     "backend_class": "ChatBackend",
