@@ -233,14 +233,14 @@ tab is there and says so.
 | Qt6 Core, RemoteObjects, Declarative | UI framework + IPC |
 | [`logos-module-builder`](https://github.com/logos-co/logos-module-builder) | Build system (mkLogosQmlModule) |
 | [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) | Chat backend module |
-| [`logos-delivery-module`](https://github.com/logos-co/logos-delivery-module) | Transport (Waku) — runtime dependency, pinned at v0.1.3 |
+| [`logos-delivery-module`](https://github.com/logos-co/logos-delivery-module) | Transport (Waku) — runtime dependency, pinned at v0.3.0-rc.3 |
 
 ## Related Repositories
 
 | Repository | Role |
 |---|---|
 | [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) | Chat backend — this UI's required dependency |
-| [`logos-delivery-module`](https://github.com/logos-co/logos-delivery-module) | Transport (Waku) — runtime dependency, pinned at v0.1.3 |
+| [`logos-delivery-module`](https://github.com/logos-co/logos-delivery-module) | Transport (Waku) — runtime dependency, pinned at v0.3.0-rc.3 |
 | [`libchat`](https://github.com/logos-messaging/libchat) | Chat engine embedded by `chat_module` (E2EE, sessions) |
 | [`logos-module-builder`](https://github.com/logos-co/logos-module-builder) | Module build system |
 | [`logos-liblogos`](https://github.com/logos-co/logos-liblogos) | Logos Core platform |
