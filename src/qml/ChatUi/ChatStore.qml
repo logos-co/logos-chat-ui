@@ -75,9 +75,9 @@ QtObject {
         if (backend)
             backend.selectConversation(conversationId);
     }
-    function sendMessage(text) {
-        if (backend && currentConversationId !== "")
-            backend.sendMessage(currentConversationId, text);
+    function sendMessage(conversationId, text) {
+        if (backend && conversationId !== "")
+            backend.sendMessage(conversationId, text);
     }
     function createConversation(address) {
         if (backend)
@@ -87,9 +87,9 @@ QtObject {
         if (backend)
             backend.createGroupConversation(name, description);
     }
-    function addMember(address) {
-        if (backend && currentConversationId !== "")
-            backend.addGroupMember(currentConversationId, address);
+    function addMember(conversationId, address) {
+        if (backend && conversationId !== "")
+            backend.addGroupMember(conversationId, address);
     }
     function refreshLogRuns() {
         if (backend)

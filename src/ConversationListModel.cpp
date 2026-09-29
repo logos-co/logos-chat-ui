@@ -6,6 +6,8 @@
 #include <QDate>
 #include <QLocale>
 
+#include <utility>
+
 ConversationListModel::ConversationListModel(QObject* parent)
     : QAbstractListModel(parent)
 {
@@ -25,7 +27,7 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     const auto& item = m_items.at(index.row());
     switch (role) {
     case ConversationIdRole:      return item.conversationId;
-    case DisplayNameRole:         return item.displayName;
+    case DisplayNameRole:         return item.displayName.simplified();
     case LastActivityRole:        return item.lastActivity;
     case LastActivityDisplayRole: return formatLastActivity(item.lastActivity);
     case UnreadCountRole:         return item.unreadCount;
@@ -111,7 +113,19 @@ void ConversationListModel::incrementUnread(const QString& id)
     int idx = indexOf(id);
     if (idx < 0) return;
 
+    if (std::exchange(m_items[idx].unreadForInvite, false)) return;
     m_items[idx].unreadCount++;
+    emit dataChanged(index(idx), index(idx), { UnreadCountRole });
+}
+
+void ConversationListModel::markInvited(const QString& id)
+{
+    int idx = indexOf(id);
+    if (idx < 0) return;
+
+    if (m_items[idx].unreadCount > 0) return;
+    m_items[idx].unreadCount = 1;
+    m_items[idx].unreadForInvite = true;
     emit dataChanged(index(idx), index(idx), { UnreadCountRole });
 }
 
@@ -120,27 +134,29 @@ void ConversationListModel::clearUnread(const QString& id)
     int idx = indexOf(id);
     if (idx < 0) return;
 
+    m_items[idx].unreadForInvite = false;
     if (m_items[idx].unreadCount == 0) return;
     m_items[idx].unreadCount = 0;
     emit dataChanged(index(idx), index(idx), { UnreadCountRole });
 }
 
-QHash<QString, int> ConversationListModel::unreadCounts() const
+QHash<QString, ConversationListModel::Unread> ConversationListModel::unreadCounts() const
 {
-    QHash<QString, int> counts;
+    QHash<QString, Unread> counts;
     for (const auto& item : m_items) {
         if (item.unreadCount > 0)
-            counts.insert(item.conversationId, item.unreadCount);
+            counts.insert(item.conversationId, { item.unreadCount, item.unreadForInvite });
     }
     return counts;
 }
 
-void ConversationListModel::restoreUnreadCounts(const QHash<QString, int>& counts)
+void ConversationListModel::restoreUnreadCounts(const QHash<QString, Unread>& counts)
 {
     for (int i = 0; i < m_items.size(); ++i) {
-        const int count = counts.value(m_items.at(i).conversationId, 0);
-        if (count == 0 || m_items[i].unreadCount == count) continue;
-        m_items[i].unreadCount = count;
+        const Unread unread = counts.value(m_items.at(i).conversationId);
+        m_items[i].unreadForInvite = unread.forInvite;
+        if (unread.count == 0 || m_items[i].unreadCount == unread.count) continue;
+        m_items[i].unreadCount = unread.count;
         emit dataChanged(index(i), index(i), { UnreadCountRole });
     }
 }
@@ -180,7 +196,7 @@ int ConversationListModel::indexOf(const QString& id) const
 QString ConversationListModel::displayNameFor(const QString& id) const
 {
     const int idx = indexOf(id);
-    return idx < 0 ? QString() : m_items.at(idx).displayName;
+    return idx < 0 ? QString() : m_items.at(idx).displayName.simplified();
 }
 
 QString ConversationListModel::descriptionFor(const QString& id) const

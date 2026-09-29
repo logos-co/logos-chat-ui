@@ -228,26 +228,41 @@ void ChatBackend::startHealthProbe()
         // Guarded rather than captured raw: the reply arrives on a later turn of
         // the event loop, by which time this backend may be gone.
         QPointer<ChatBackend> self(this);
-        modules().chat_module.healthAsync([self](bool answered) {
+        modules().chat_module.healthAsyncResult([self](const logos::AsyncResult<bool>& answer) {
             if (self)
-                self->onHealthAnswer(answered);
+                self->onHealthAnswer(answer.ok(), answer.error.code == "object_unavailable");
         }, Timeout(kHealthTimeoutMs));
     });
     m_healthProbe->start();
 }
 
-void ChatBackend::onHealthAnswer(bool answered)
+void ChatBackend::onHealthAnswer(bool answered, bool unreachable)
 {
+    const bool gone = m_healthMisses >= kHealthMissesBeforeGone;
     if (answered) {
         m_healthMisses = 0;
+        // It was only busy past the probes, on a slow registry lookup say, and
+        // its events kept arriving meanwhile: reading its state back is the
+        // whole recovery. Deferred, since status() is a synchronous read.
+        if (gone) {
+            deferToEventLoop([this] {
+                const ChatModule::Status status = modules().chat_module.status();
+                applyDeliveryState(status.delivery_state, status.detail, status.delivery_adopted);
+            });
+        }
         return;
     }
-    if (++m_healthMisses < kHealthMissesBeforeGone)
+    if (!gone && ++m_healthMisses < kHealthMissesBeforeGone)
         return;
 
-    // Nothing brings the module back inside this process, so asking again would
-    // only spend the acquire timeout on every tick for the rest of the run.
-    m_healthProbe->stop();
+    // A busy module answers again, while an unreachable one has no process left
+    // to answer: asking it again would spend the acquire timeout on every tick
+    // for the rest of the run.
+    if (unreachable)
+        m_healthProbe->stop();
+    if (gone)
+        return;
+
     setChatStatus(ChatBackendSimpleSource::Error);
     report(QStringLiteral("The chat module stopped responding and has probably crashed. "
                           "Its log for this run is where the reason will be."));
@@ -280,12 +295,14 @@ void ChatBackend::openRunLogs()
 
 void ChatBackend::report(const QString& message)
 {
-    m_errors.add(message, QDateTime::currentDateTime());
+    // A reason can come from a server's response body, line breaks and all.
+    const QString line = message.simplified();
+    m_errors.add(line, QDateTime::currentDateTime());
     setErrors(m_errors.published());
     // Through Qt's logging, so the line reaches this run's log by the same route
     // and in the same order as everything else the view writes.
-    qWarning().noquote() << "chat_ui:" << message;
-    emit error(message);
+    qWarning().noquote() << "chat_ui:" << line;
+    emit error(line);
 }
 
 void ChatBackend::reportFailure(const QString& action, const QString& reason)
@@ -320,7 +337,7 @@ void ChatBackend::rehydrateConversations()
 
     const QList<ChatModule::Conversation> convos = modules().chat_module.list_conversations();
     // Unread counts live only here, so carry them across the rebuild.
-    const QHash<QString, int> unread = m_conversationModel->unreadCounts();
+    const auto unread = m_conversationModel->unreadCounts();
     m_conversationModel->clear();
     for (const ChatModule::Conversation& convo : convos) {
         const QString& convoId = convo.convo_id;
@@ -706,7 +723,7 @@ void ChatBackend::applyConversationCreated(const QVariantList& args)
     } else if (convoId != currentConversationId()) {
         // Being invited comes with no message of its own, so the unread badge is
         // the only thing marking the new row as unseen.
-        m_conversationModel->incrementUnread(convoId);
+        m_conversationModel->markInvited(convoId);
     }
 }
 

@@ -945,6 +945,10 @@ Item {
             verify(description, "the description must be reachable");
             tryVerify(() => description.truncated, 2000, "a long description elides");
             compare(header.implicitHeight, 76, "and the header stays its own height");
+            header.description = "Written over\ntwo lines";
+            verify(waitForPolish(description), "the description lays out again");
+            compare(description.lineCount, 1, "a line break does not start a second line");
+            verify(description.truncated, "the rest elides");
 
             detailsToggledSpy.target = header;
             detailsToggledSpy.clear();

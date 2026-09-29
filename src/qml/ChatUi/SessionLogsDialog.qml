@@ -40,7 +40,7 @@ LogosDialog {
             stem: "chat_ui",
             label: "chat-ui",
             pending: false,
-            blurb: qsTr("What this view wrote itself: every failure the Errors tab holds, plus the warnings its QML and the view host produced."),
+            blurb: qsTr("What this view wrote itself: every failure the Errors tab holds, plus the warnings the view host produced."),
             caveat: qsTr("Borrowed from the chat module, because a view module is handed no instance path."),
             caveatMore: qsTr("This is the chat module's directory, not one this view chose. A view module is not a module as far as the platform is concerned, so it is assigned no instance directory of its own, and picking one would mean two instances of the app writing into the same folder. Borrowing the module's is per-instance correct because the platform assigned it, and until LogosUiPluginContext hands over a path of its own, this log lives next to the one it belongs beside anyway."),
             pendingReason: ""

@@ -22,9 +22,16 @@ struct LogosResult {
 
 namespace logos {
 struct CallError {
-    int code = 0;
+    std::string code;
     std::string message;
-    bool ok() const { return code == 0; }
+    bool ok() const { return code.empty(); }
+};
+
+template <typename T>
+struct AsyncResult {
+    T value{};
+    CallError error;
+    bool ok() const { return error.ok(); }
 };
 } // namespace logos
 
@@ -81,6 +88,8 @@ public:
     std::function<void()> whileListingConversations;
     // What list_conversations answers.
     QList<Conversation> conversations;
+    // The reason create_conversation fails with; it succeeds while empty.
+    QString createConversationError;
 
     void goOnline()
     {
@@ -93,6 +102,12 @@ public:
     {
         m_handlers.insert(name, std::move(cb));
         return true;
+    }
+    // Delivers an event as the module pushes it.
+    void emitEvent(const QString& name, const QVariantList& args)
+    {
+        if (auto handler = m_handlers.value(name))
+            handler(args);
     }
 
     LogosResult init(const ChatConfig&, logos::CallError* = nullptr)
@@ -114,10 +129,15 @@ public:
         return conversations;
     }
     Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString(), deliveryAdopted}; }
-    void healthAsync(std::function<void(bool)>, Timeout = Timeout()) {}
+    void healthAsyncResult(std::function<void(logos::AsyncResult<bool>)>, Timeout = Timeout()) {}
     QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return {}; }
     QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return {}; }
-    LogosResult create_conversation(const QString&, logos::CallError* = nullptr) { return {true, {}, {}}; }
+    LogosResult create_conversation(const QString&, logos::CallError* = nullptr)
+    {
+        if (!createConversationError.isEmpty())
+            return {false, {}, createConversationError};
+        return {true, {}, {}};
+    }
     LogosResult create_group_conversation(const QString&, const QString&, logos::CallError* = nullptr)
     {
         return {true, {}, {}};
