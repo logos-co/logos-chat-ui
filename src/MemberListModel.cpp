@@ -27,6 +27,7 @@ QVariant MemberListModel::data(const QModelIndex& index, int role) const
                           : Identity::shortLabel(item.address);
     case IsSelfRole:  return item.isSelf;
     case PendingRole: return item.pending;
+    case RejectedRole: return item.rejected;
     case AvatarInitialsRole: return Identity::initials(item.address);
     case AvatarRampRole:     return Identity::avatarRamp(Identity::shortLabel(item.address));
     default:          return {};
@@ -40,6 +41,7 @@ QHash<int, QByteArray> MemberListModel::roleNames() const
         { LabelRole,   "label" },
         { IsSelfRole,  "isSelf" },
         { PendingRole, "pending" },
+        { RejectedRole, "rejected" },
         { AvatarInitialsRole, "avatarInitials" },
         { AvatarRampRole,     "avatarRamp" }
     };
@@ -63,7 +65,7 @@ void MemberListModel::clear()
 bool MemberListModel::contains(const QString& address) const
 {
     for (const auto& item : m_items) {
-        if (!item.pending && item.address == address)
+        if (!item.pending && !item.rejected && item.address == address)
             return true;
     }
     return false;

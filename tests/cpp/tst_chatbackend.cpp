@@ -4,6 +4,7 @@
 
 #include "ChatBackend.h"
 #include "ConversationListModel.h"
+#include "MemberListModel.h"
 #include "logos_sdk.h"
 
 class TestChatBackend : public QObject
@@ -21,6 +22,7 @@ private slots:
     void namesAGroupOnOneLine();
     void reportsAMultiLineFailureOnOneLine();
     void countsANewConversationsFirstMessageOnce();
+    void showsAnAddTheGroupVotedDown();
     void leavesTheModuleRunningWhenTheViewCloses();
 
 private:
@@ -236,6 +238,36 @@ void TestChatBackend::countsANewConversationsFirstMessageOnce()
     modules.chat_module.emitEvent(QStringLiteral("message_received"),
                                   { QStringLiteral("dm"), QStringLiteral("again"), 2000, QStringLiteral("peer") });
     QCOMPARE(unread(), 2);
+}
+
+// An invite the group votes down leaves the invited count and reads as failed on
+// its roster row once members_changed reports the roster moved.
+void TestChatBackend::showsAnAddTheGroupVotedDown()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+    ChatModule::Conversation convo;
+    convo.convo_id = QStringLiteral("group");
+    convo.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { convo };
+    modules.chat_module.groupMembers = { { modules.chat_module.address, false, false },
+                                         { QStringLiteral("pax"), true, false } };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.selectConversation(QStringLiteral("group"));
+    QCOMPARE(backend.memberCount(), 1);
+    QCOMPARE(backend.pendingMemberCount(), 1);
+
+    modules.chat_module.groupMembers.last() = { QStringLiteral("pax"), false, true };
+    modules.chat_module.emitEvent(QStringLiteral("members_changed"), { QStringLiteral("group") });
+
+    QTRY_COMPARE_WITH_TIMEOUT(backend.pendingMemberCount(), 0, 1000);
+    QCOMPARE(backend.memberCount(), 1);
+    const MemberListModel* model = backend.memberModel();
+    QVERIFY(model->data(model->index(1, 0), MemberListModel::RejectedRole).toBool());
+    QVERIFY(!model->contains(QStringLiteral("pax")));
 }
 
 // A host closing the view, as basecamp does with its tab, leaves the module

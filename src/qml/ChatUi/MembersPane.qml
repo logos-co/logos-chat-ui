@@ -14,7 +14,7 @@ Rectangle {
     id: root
 
     // The MemberListModel (roles: address, label, avatarInitials, avatarRamp,
-    // isSelf, pending).
+    // isSelf, pending, rejected).
     required property var memberModel
     // The roster's size, taken as a property because the model reaches the view
     // as a replica whose row count a non-view caller cannot read.

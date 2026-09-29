@@ -12,7 +12,7 @@ import Logos.Controls
 Row {
     id: root
 
-    // The MemberListModel (roles: avatarInitials, avatarRamp, isSelf).
+    // The MemberListModel (roles: avatarInitials, avatarRamp, isSelf, rejected).
     required property var memberModel
     // The roster's size. Taken as a property because the model reaches the view
     // as a replica, whose row count a non-view caller cannot read.
@@ -38,8 +38,11 @@ Row {
             required property string avatarInitials
             required property int avatarRamp
             required property bool isSelf
+            // A member whose add the group voted down is not in the conversation.
+            required property bool rejected
 
-            visible: ringed.index < root.maxVisible
+            objectName: "facepileTile"
+            visible: ringed.index < root.maxVisible && !ringed.rejected
             width: root.avatarSize + 4
             height: width
             radius: width / 2
