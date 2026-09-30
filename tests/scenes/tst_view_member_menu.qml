@@ -5,9 +5,8 @@ import ChatUiScenes
 
 import "../../src/qml"
 
-// A group just opened, with its details, one member still waiting to join, a
-// thread spanning two days, and failures held on the status bar. Opening it is
-// what hands the composer the caret.
+// A group of three with the menu a right-click opens on another member's row:
+// Copy address, and Remove.
 Item {
     id: stage
     width: 1280
@@ -34,30 +33,42 @@ Item {
             }
             ListElement {
                 conversationId: "c2"
-                displayName: "Design Team"
+                displayName: "Release crew"
                 isGroup: true
                 avatarInitials: "c2"
-                avatarRamp: 3
+                avatarRamp: 1
                 unreadCount: 0
                 lastActivityDisplay: "12:41"
-                preview: "You: Merged, thanks all"
-                description: "Design reviews and theme work, with a description long enough to be clamped to one line in the header"
+                preview: "Raya: notes are up for review, comments welcome before Friday"
+                description: "Release planning for 0.3"
                 historyOnly: false
             }
             ListElement {
                 conversationId: "c3"
-                displayName: "A group whose name is far too long for one sidebar row"
+                displayName: "Design sync"
                 isGroup: true
                 avatarInitials: "c3"
-                avatarRamp: 1
-                unreadCount: 128
-                lastActivityDisplay: "Yesterday"
-                preview: "Raya: the release notes are up for review, comments welcome before Friday"
+                avatarRamp: 3
+                unreadCount: 0
+                lastActivityDisplay: "11:20"
+                preview: "Pax: I'm out next week"
                 description: ""
                 historyOnly: false
             }
             ListElement {
                 conversationId: "c4"
+                displayName: "Design Team"
+                isGroup: true
+                avatarInitials: "c4"
+                avatarRamp: 2
+                unreadCount: 0
+                lastActivityDisplay: "Yesterday"
+                preview: "You: Merged, thanks all"
+                description: "Design reviews and theme work"
+                historyOnly: false
+            }
+            ListElement {
+                conversationId: "c5"
                 displayName: "Pax"
                 isGroup: false
                 avatarInitials: "pa"
@@ -72,22 +83,11 @@ Item {
         // Newest first: the thread is bottom-anchored.
         messages: ListModel {
             ListElement {
-                sender: "Me"
-                avatarInitials: "4b"
-                avatarRamp: 0
-                content: "Merged, thanks all"
-                timeDisplay: "12:41"
-                isMe: true
-                sameSenderAsPrevious: false
-                showDaySeparator: false
-                dayLabel: "Today"
-            }
-            ListElement {
                 sender: "Raya"
                 avatarInitials: "ra"
                 avatarRamp: 1
-                content: "Pushed the fix, please review"
-                timeDisplay: "12:39"
+                content: "Notes are up for review, comments welcome before Friday"
+                timeDisplay: "12:41"
                 isMe: false
                 sameSenderAsPrevious: true
                 showDaySeparator: false
@@ -97,7 +97,7 @@ Item {
                 sender: "Raya"
                 avatarInitials: "ra"
                 avatarRamp: 1
-                content: "Found the elide bug in the header"
+                content: "Tagged 0.3.0-rc1 on the release branch"
                 timeDisplay: "12:38"
                 isMe: false
                 sameSenderAsPrevious: false
@@ -105,37 +105,26 @@ Item {
                 dayLabel: "Today"
             }
             ListElement {
-                sender: "Saro"
-                avatarInitials: "sa"
+                sender: "Me"
+                avatarInitials: "4b"
                 avatarRamp: 0
-                content: "Morning! Anyone looked at the facepile yet?"
-                timeDisplay: "09:02"
+                content: "CI is green, going ahead with the tag"
+                timeDisplay: "12:30"
+                isMe: true
+                sameSenderAsPrevious: false
+                showDaySeparator: false
+                dayLabel: "Today"
+            }
+            ListElement {
+                sender: "Pax"
+                avatarInitials: "pa"
+                avatarRamp: 2
+                content: "Can someone check the build before we tag?"
+                timeDisplay: "11:02"
                 isMe: false
                 sameSenderAsPrevious: false
                 showDaySeparator: true
                 dayLabel: "Today"
-            }
-            ListElement {
-                sender: "Me"
-                avatarInitials: "4b"
-                avatarRamp: 0
-                content: "See you tomorrow"
-                timeDisplay: "18:20"
-                isMe: true
-                sameSenderAsPrevious: false
-                showDaySeparator: false
-                dayLabel: "Yesterday"
-            }
-            ListElement {
-                sender: "Saro"
-                avatarInitials: "sa"
-                avatarRamp: 0
-                content: "A longer message that wraps across several lines in the bubble, to show where the seventy-percent cap on a bubble's width lands and how the time sits under the last line."
-                timeDisplay: "18:10"
-                isMe: false
-                sameSenderAsPrevious: false
-                showDaySeparator: true
-                dayLabel: "Yesterday"
             }
         }
         members: ListModel {
@@ -158,46 +147,46 @@ Item {
                 removable: true
             }
             ListElement {
-                address: "a1b2c3d4e5f6"
-                label: "Saro"
-                avatarInitials: "sa"
-                avatarRamp: 0
-                isSelf: false
-                pending: false
-                removable: true
-            }
-            ListElement {
                 address: "f6e5d4c3b2a1"
                 label: "Pax"
                 avatarInitials: "pa"
                 avatarRamp: 2
                 isSelf: false
-                pending: true
-                removable: false
+                pending: false
+                removable: true
             }
         }
     }
 
     ChatView {
         anchors.fill: parent
-        detailsShown: true
-        lastError: "Could not send to Design Team: delivery is not connected"
-        unseenErrorCount: 3
     }
 
     Shot {
-        name: "view-group-pending"
+        id: shot
+        name: "view-member-menu"
         target: stage
         setup: () => {
             const b = stage.logos.backend;
             b.currentIsGroup = true;
-            b.currentDisplayName = "Design Team";
-            b.currentDescription = "Design reviews and theme work, with a description long enough to be clamped to one line in the header";
+            b.currentDisplayName = "Release crew";
+            b.currentDescription = "Release planning for 0.3";
             b.currentAvatarInitials = "c2";
-            b.currentAvatarRamp = 3;
+            b.currentAvatarRamp = 1;
             b.memberCount = 3;
-            b.pendingMemberCount = 1;
             b.selectConversation("c2");
+            // Pax's row, clicked near its lower edge so the menu leaves the name
+            // in view. A context menu opens at the X pointer, which a test's
+            // click does not move, so the menu is put where the click was.
+            shot.waitForRendering(stage);
+            const row = shot.findChild(stage, "memberList").itemAtIndex(2);
+            const x = Math.round(row.width * 0.4), y = row.height - 6;
+            shot.mouseClick(row, x, y, Qt.RightButton);
+            const menu = shot.findChild(stage, "memberMenu");
+            const at = row.mapToItem(menu.parent, x, y);
+            menu.x = at.x;
+            menu.y = at.y;
+            shot.mouseMove(stage, -1, -1);
         }
     }
 }

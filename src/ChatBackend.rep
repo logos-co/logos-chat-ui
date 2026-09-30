@@ -67,6 +67,7 @@ class ChatBackend
     SLOT(void createConversation(QString peerAddress))
     SLOT(void createGroupConversation(QString name, QString description))
     SLOT(void addGroupMember(QString conversationId, QString peerAddress))
+    SLOT(void removeGroupMember(QString conversationId, QString peerAddress))
     SLOT(void sendMessage(QString conversationId, QString content))
     SLOT(void selectConversation(QString conversationId))
     SLOT(void refreshMembers())

@@ -184,6 +184,12 @@ Rectangle {
                     online: store.online
                     ready: root.selectionLoaded
                     onAddMemberRequested: addMemberDialog.open()
+                    onRemoveMemberRequested: function (address, label) {
+                        removeMemberDialog.conversationId = root.selectedConversationId;
+                        removeMemberDialog.address = address;
+                        removeMemberDialog.label = label;
+                        removeMemberDialog.open();
+                    }
                 }
 
                 // A column with nothing filling it centres what it holds, so
@@ -266,6 +272,15 @@ Rectangle {
                 store.addMember(pendingConversationId, pendingAddress);
             pendingConversationId = "";
             pendingAddress = "";
+        }
+    }
+
+    RemoveMemberDialog {
+        id: removeMemberDialog
+        objectName: "removeMemberDialog"
+        memberCount: store.memberCount
+        onConfirmed: function (conversationId, address) {
+            store.removeMember(conversationId, address);
         }
     }
 

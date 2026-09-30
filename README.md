@@ -35,7 +35,7 @@ Conversations and their messages are kept across restarts, but each launch start
 - **New chat > Group** asks for a name and an optional description, neither of which can be changed later, then creates the group with you as its only member.
 - Collect peers' addresses (each copies theirs from their account card), paste one into **Add member** at the foot of the members card, and confirm to invite.
 - Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. A peer you invited sits on the roster as a dimmed row reading **Waiting to join** until the group commits it, and stays there across chat switches. The roster refreshes on selection, a message from a new member, or your own add.
-- A right-click on a roster row offers **Copy address**, for passing a member's address on.
+- A right-click on a roster row offers **Copy address**, for passing a member's address on, and on another member who has joined, **Remove**. **Remove** asks you to confirm, then the group votes on the removal, so the member stays on the roster until the group commits it a minute or more later; in a group of two it needs that member's vote as well, so it goes through only while they are online. It is greyed out while chat is not online.
 - Any member can add another; the invite routes from whoever proposed it.
 - During the brief windows while the group is finalizing a membership change, de-mls rejects sends; these surface on the status bar at the foot of the window, so retry after a moment.
 
@@ -177,7 +177,7 @@ logos-chat-ui/
             ├── MessageThreadPane.qml  # Message thread + composer (center)
             ├── ThreadHeader.qml       # Conversation name, facepile, details toggle
             ├── DetailsPanel.qml       # The conversation's facts (right, on demand)
-            ├── MembersPane.qml        # Group roster + add-member (right)
+            ├── MembersPane.qml        # Group roster + add and remove member (right)
             ├── ...                    # dialogs, delegates, leaf components
             └── qmldir
 ```

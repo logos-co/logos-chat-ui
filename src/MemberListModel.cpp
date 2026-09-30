@@ -29,6 +29,7 @@ QVariant MemberListModel::data(const QModelIndex& index, int role) const
     case PendingRole: return item.pending;
     case AvatarInitialsRole: return Identity::initials(item.address);
     case AvatarRampRole:     return Identity::avatarRamp(Identity::shortLabel(item.address));
+    case RemovableRole:      return item.removable;
     default:          return {};
     }
 }
@@ -41,7 +42,8 @@ QHash<int, QByteArray> MemberListModel::roleNames() const
         { IsSelfRole,  "isSelf" },
         { PendingRole, "pending" },
         { AvatarInitialsRole, "avatarInitials" },
-        { AvatarRampRole,     "avatarRamp" }
+        { AvatarRampRole,     "avatarRamp" },
+        { RemovableRole,      "removable" }
     };
 }
 

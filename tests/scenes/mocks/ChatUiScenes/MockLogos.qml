@@ -5,7 +5,7 @@ import Logos.ChatBackend
 // The host's `logos` bridge, reduced to what ChatStore asks of it: the chat_ui
 // backend and its three models, all plain QML a scene fills in.
 QtObject {
-    readonly property ChatBackend backend: ChatBackend {}
+    property ChatBackend backend: ChatBackend {}
     property ListModel conversations: ListModel {}
     property ListModel messages: ListModel {}
     property ListModel members: ListModel {}

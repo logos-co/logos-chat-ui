@@ -5,6 +5,7 @@
 #include <QHash>
 #include <QList>
 #include <QString>
+#include <QStringList>
 #include <QVariant>
 #include <QVariantList>
 #include <functional>
@@ -88,8 +89,14 @@ public:
     std::function<void()> whileListingConversations;
     // What list_conversations answers.
     QList<Conversation> conversations;
+    // What list_group_members answers, for any conversation.
+    QList<GroupMember> members;
     // The reason create_conversation fails with; it succeeds while empty.
     QString createConversationError;
+    // The reason remove_group_member fails with; it succeeds while empty.
+    QString removeGroupMemberError;
+    // Every remove_group_member call, as its conversation and address.
+    QList<QStringList> removeGroupMemberCalls;
 
     void goOnline()
     {
@@ -131,7 +138,7 @@ public:
     Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString(), deliveryAdopted}; }
     void healthAsyncResult(std::function<void(logos::AsyncResult<bool>)>, Timeout = Timeout()) {}
     QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return {}; }
-    QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return {}; }
+    QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return members; }
     LogosResult create_conversation(const QString&, logos::CallError* = nullptr)
     {
         if (!createConversationError.isEmpty())
@@ -144,6 +151,14 @@ public:
     }
     LogosResult add_group_member(const QString&, const QString&, logos::CallError* = nullptr)
     {
+        return {true, {}, {}};
+    }
+    LogosResult remove_group_member(const QString& convoId, const QString& peerAddress,
+                                    logos::CallError* = nullptr)
+    {
+        removeGroupMemberCalls.append({convoId, peerAddress});
+        if (!removeGroupMemberError.isEmpty())
+            return {false, {}, removeGroupMemberError};
         return {true, {}, {}};
     }
     LogosResult send_message(const QString&, const QString&, logos::CallError* = nullptr)

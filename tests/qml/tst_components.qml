@@ -119,7 +119,17 @@ Item {
             avatarRamp: 1
             isSelf: false
             pending: false
+            removable: true
         }
+    }
+    // Filled by the tests of the roster's Remove entry.
+    ListModel {
+        id: rosterMock
+    }
+    // Reads back what a copy put on the clipboard.
+    TextEdit {
+        id: pasteTarget
+        visible: false
     }
 
     // ── components under test ────────────────────────────────────────────
@@ -179,6 +189,14 @@ Item {
         id: membersPaneC
         MembersPane {
             memberModel: membersMock
+            online: true
+            ready: true
+        }
+    }
+    Component {
+        id: rosterPaneC
+        MembersPane {
+            memberModel: rosterMock
             online: true
             ready: true
         }
@@ -367,6 +385,15 @@ Item {
         AddMemberDialog {}
     }
     Component {
+        id: removeMemberDialogC
+        RemoveMemberDialog {
+            conversationId: "c2"
+            address: "0xraya"
+            label: "Raya"
+            memberCount: 3
+        }
+    }
+    Component {
         id: detailsPanelC
         DetailsPanel {
             isGroup: true
@@ -419,6 +446,7 @@ Item {
             avatarRamp: 4
             isSelf: false
             pending: true
+            removable: false
         }
     }
 
@@ -445,6 +473,10 @@ Item {
     SignalSpy {
         id: addMemberReqSpy
         signalName: "addMemberRequested"
+    }
+    SignalSpy {
+        id: removeMemberReqSpy
+        signalName: "removeMemberRequested"
     }
     SignalSpy {
         id: conversationSelectedSpy
@@ -547,6 +579,39 @@ Item {
                 showDaySeparator: false,
                 dayLabel: "Today"
             };
+        }
+
+        // A row of rosterMock.
+        function rosterRow(address, label, isSelf, pending, removable) {
+            return {
+                address: address,
+                label: label,
+                avatarInitials: label.substring(0, 2).toLowerCase(),
+                avatarRamp: 1,
+                isSelf: isSelf,
+                pending: pending,
+                removable: removable
+            };
+        }
+
+        // Fills rosterMock with this account, a member and an invite waiting
+        // to join, only the member removable.
+        function fillRoster() {
+            rosterMock.clear();
+            rosterMock.append(rosterRow("0xme", "0xme", true, false, false));
+            rosterMock.append(rosterRow("0xraya", "Raya", false, false, true));
+            rosterMock.append(rosterRow("0xpax", "Pax", false, true, false));
+        }
+
+        // Opens the roster's menu on row `index`, as a right-click on it does.
+        function openMemberMenu(pane, index) {
+            const list = findField(pane, "memberList");
+            tryVerify(() => list.itemAtIndex(index) !== null, 2000, "the row must be realised");
+            const row = list.itemAtIndex(index);
+            row.contextMenuRequested(row.address);
+            const menu = findField(pane, "memberMenu");
+            tryVerify(() => menu.opened, 2000, "the menu opens");
+            return menu;
         }
 
         function test_panesInstantiate() {
@@ -1452,6 +1517,81 @@ Item {
             compare(addMemberReqSpy.count, 1, "clicking requests adding a member");
         }
 
+        // Remove is offered on a removable row only, and an entry that is not
+        // offered gives its row in the menu back and is passed over by the
+        // keyboard.
+        function test_membersPaneOffersRemoveOnAnotherMember() {
+            fillRoster();
+            const pane = createTemporaryObject(rosterPaneC, testRoot);
+            verify(pane, "the members pane must instantiate");
+            pane.width = 280;
+            pane.height = 400;
+            const remove = findField(pane, "removeMemberMenuItem");
+            verify(remove, "the Remove entry must be reachable");
+
+            const cases = [[0, false, "not on this account's own row"], [1, true, "on another member's row"], [2, false, "not on an invite waiting to join"]];
+            for (const [index, offered, why] of cases) {
+                const menu = openMemberMenu(pane, index);
+                compare(remove.visible, offered, why);
+                compare(remove.height > 0, offered, "the entry takes a row only when offered");
+                keyClick(Qt.Key_Down);
+                keyClick(Qt.Key_Down);
+                compare(remove.activeFocus, offered, "the keyboard reaches the entry only when offered");
+                menu.close();
+            }
+        }
+
+        // Offline, Remove stays on the menu greyed out, as Add member does.
+        function test_membersPaneGreysRemoveOffline() {
+            fillRoster();
+            const pane = createTemporaryObject(rosterPaneC, testRoot);
+            verify(pane, "the members pane must instantiate");
+            pane.width = 280;
+            pane.height = 400;
+            const remove = findField(pane, "removeMemberMenuItem");
+            verify(remove, "the Remove entry must be reachable");
+
+            openMemberMenu(pane, 1);
+            verify(remove.enabled, "enabled when online");
+            pane.online = false;
+            verify(remove.visible, "still offered offline");
+            verify(!remove.enabled, "but disabled");
+        }
+
+        // The menu acts on the member it was opened on, even when its row shows
+        // someone else by the time an entry is chosen, as a delegate the list
+        // reuses does once the roster reloads.
+        function test_membersPaneActsOnTheMemberTheMenuOpenedOn() {
+            fillRoster();
+            const pane = createTemporaryObject(rosterPaneC, testRoot);
+            verify(pane, "the members pane must instantiate");
+            pane.width = 280;
+            pane.height = 400;
+            const copy = findField(pane, "copyMemberAddressMenuItem");
+            const remove = findField(pane, "removeMemberMenuItem");
+            verify(copy && remove, "the menu's entries must be reachable");
+            removeMemberReqSpy.target = pane;
+            removeMemberReqSpy.clear();
+
+            const menu = openMemberMenu(pane, 1);
+            rosterMock.set(1, {
+                address: "0xsaro",
+                label: "Saro"
+            });
+            compare(menu.row.address, "0xsaro", "the row the menu came from now shows another member");
+
+            copy.triggered();
+            pasteTarget.clear();
+            pasteTarget.paste();
+            compare(pasteTarget.text, "0xraya", "Copy takes the address of the member the menu was opened on");
+            verify(!menu.row.copiedFlashing, "and no row showing another member confirms it");
+
+            remove.triggered();
+            compare(removeMemberReqSpy.count, 1, "Remove asks once");
+            compare(removeMemberReqSpy.signalArguments[0][0], "0xraya", "for the member the menu was opened on");
+            compare(removeMemberReqSpy.signalArguments[0][1], "Raya", "by the label its row showed");
+        }
+
         // A copy flashes a brief confirmation on the row that then clears.
         function test_memberDelegateCopiedFlash() {
             const del = instantiate(memberDelegateC);
@@ -1471,6 +1611,34 @@ Item {
             dlg.open();
             dlg.rightActions[0].clicked();
             compare(confirmedSpy.count, 1, "confirming must emit confirmed() once");
+        }
+
+        // The removal's confirmation names the member and says the group votes
+        // on it, and in a group of two that the member's own vote is needed.
+        // Either answer closes it, and only Remove confirms, with the group and
+        // the address it was opened for.
+        function test_removeMemberDialog() {
+            const dlg = createTemporaryObject(removeMemberDialogC, testRoot);
+            verify(dlg, "the dialog must instantiate");
+            confirmedSpy.target = dlg;
+            confirmedSpy.clear();
+            compare(dlg.title, "Remove Raya?", "the title names the member");
+            verify(dlg.message.startsWith("The group votes on it first"), "the message says the group votes");
+            verify(!dlg.message.includes("group of two"), "a group of three says nothing of two");
+            dlg.memberCount = 2;
+            verify(dlg.message.includes("In a group of two it needs a vote from Raya as well"), "a group of two says the member votes too");
+
+            dlg.open();
+            dlg.leftActions[0].clicked();
+            tryVerify(() => !dlg.visible, 1000, "Cancel closes the dialog");
+            compare(confirmedSpy.count, 0, "and removes nobody");
+
+            dlg.open();
+            dlg.rightActions[0].clicked();
+            tryVerify(() => !dlg.visible, 1000, "Remove closes the dialog");
+            compare(confirmedSpy.count, 1, "and confirms once");
+            compare(confirmedSpy.signalArguments[0][0], "c2", "for the group it was opened on");
+            compare(confirmedSpy.signalArguments[0][1], "0xraya", "and the member's address");
         }
 
         // The strip shows the newest failure and, once more than one is waiting,
