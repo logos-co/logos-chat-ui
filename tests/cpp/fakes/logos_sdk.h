@@ -53,6 +53,7 @@ public:
         std::optional<QString> description{};
         std::optional<QString> preview{};
         bool history_only{};
+        bool removed{};
     };
     struct Message {
         bool from_self{};

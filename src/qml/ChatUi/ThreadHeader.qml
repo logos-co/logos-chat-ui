@@ -84,6 +84,7 @@ Rectangle {
         }
 
         Facepile {
+            objectName: "facepile"
             visible: root.isGroup && root.memberCount > 0
             memberModel: root.memberModel
             memberCount: root.memberCount

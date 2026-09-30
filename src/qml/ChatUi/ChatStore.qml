@@ -35,6 +35,8 @@ QtObject {
     // The current conversation is from a previous session, kept for its
     // history only.
     readonly property bool currentHistoryOnly: backend ? backend.currentHistoryOnly : false
+    // This account was removed from the current group.
+    readonly property bool currentRemoved: backend ? backend.currentRemoved : false
     // This account's own address, empty until the module has initialised, and
     // its short form.
     readonly property string myAddress: backend ? backend.myAddress : ""

@@ -19,6 +19,8 @@ class TestChatView : public QObject
 private slots:
     void initTestCase();
     void removesTheMemberARowAsksFor();
+    void hidesTheRosterOfAGroupThisAccountWasRemovedFrom();
+    void marksTheThreadAndDetailsOfAGroupThisAccountWasRemovedFrom();
 
 private:
     // ChatView in a window over groupBridge, in the order that tears the view
@@ -139,6 +141,51 @@ void TestChatView::removesTheMemberARowAsksFor()
     QMetaObject::invokeMethod(QQmlListReference(dialog, "rightActions").at(0), "clicked");
     QCOMPARE(asked.count(), 1);
     QCOMPARE(asked.first(), (QVariantList{ QStringLiteral("group"), QStringLiteral("0b2c3d4e5f60") }));
+}
+
+// The roster change that removes this account can reach the view before the
+// mark does, so the roster can still hold rows when the mark lands. The mark
+// alone hides the roster, and its faces in the header.
+void TestChatView::hidesTheRosterOfAGroupThisAccountWasRemovedFrom()
+{
+    Shown shown;
+    show(shown);
+    if (QTest::currentTestFailed())
+        return;
+    auto* roster = shown.view->findChild<QQuickItem*>(QStringLiteral("memberList"));
+    auto* faces = shown.view->findChild<QQuickItem*>(QStringLiteral("facepile"));
+    QVERIFY(roster && faces);
+    QVERIFY2(roster->isVisible(), "a group's roster shows");
+    QVERIFY2(faces->isVisible(), "and its faces in the header");
+
+    shown.logos->property("backend").value<QObject*>()->setProperty("currentRemoved", true);
+    QCOMPARE(roster->property("count").toInt(), 2);
+    QVERIFY2(!roster->isVisible(), "a group this account was removed from shows no roster");
+    QVERIFY2(!faces->isVisible(), "nor its faces");
+}
+
+// A group this account was removed from says so where the composer was, and
+// its details name the membership instead of counting members.
+void TestChatView::marksTheThreadAndDetailsOfAGroupThisAccountWasRemovedFrom()
+{
+    Shown shown;
+    show(shown);
+    if (QTest::currentTestFailed())
+        return;
+    shown.view->setProperty("detailsShown", true);
+    auto* composer = shown.view->findChild<QQuickItem*>(QStringLiteral("composer"));
+    auto* notice = shown.view->findChild<QQuickItem*>(QStringLiteral("removedNotice"));
+    auto* membership = shown.view->findChild<QQuickItem*>(QStringLiteral("membershipRow"));
+    auto* members = shown.view->findChild<QQuickItem*>(QStringLiteral("membersRow"));
+    QVERIFY(composer && notice && membership && members);
+    QVERIFY2(composer->isVisible(), "a live group takes messages");
+    QVERIFY2(!notice->property("shown").toBool(), "with no notice");
+    QVERIFY2(members->isVisible() && !membership->isVisible(), "and its details count its members");
+
+    shown.logos->property("backend").value<QObject*>()->setProperty("currentRemoved", true);
+    QVERIFY2(!composer->isVisible(), "a group this account was removed from takes none");
+    QVERIFY2(notice->property("shown").toBool(), "and a notice says why");
+    QVERIFY2(membership->isVisible() && !members->isVisible(), "its details name the membership instead");
 }
 
 QTEST_MAIN(TestChatView)

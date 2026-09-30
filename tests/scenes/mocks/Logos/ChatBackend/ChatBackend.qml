@@ -29,6 +29,7 @@ QtObject {
     property int pendingMemberCount: 0
     property string currentPeerAddress: ""
     property bool currentHistoryOnly: false
+    property bool currentRemoved: false
     property string logDir: ""
     property var logRuns: []
     property var errors: []

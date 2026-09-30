@@ -40,6 +40,8 @@ Rectangle {
     required property bool ready
     // From a previous session: it reads back, but nothing can be sent into it.
     property bool historyOnly: false
+    // Removed from the group: it reads back, but nothing can be sent into it.
+    property bool removed: false
 
     signal messageSubmitted(string text)
     // Requests the conversation's details; emitted from the header's toggle.
@@ -221,7 +223,7 @@ Rectangle {
         MessageComposer {
             id: composer
             objectName: "composer"
-            visible: !root.historyOnly
+            visible: !root.historyOnly && !root.removed
             Layout.fillWidth: true
             Layout.leftMargin: Theme.spacing.xlarge
             Layout.rightMargin: Theme.spacing.xlarge
@@ -247,7 +249,9 @@ Rectangle {
 
         LogosNotice {
             objectName: "historyNotice"
-            shown: root.historyOnly
+            // A previous session's group this account was removed from shows
+            // the removal's notice instead.
+            shown: root.historyOnly && !root.removed
             Layout.fillWidth: true
             Layout.leftMargin: Theme.spacing.xlarge
             Layout.rightMargin: Theme.spacing.xlarge
@@ -257,6 +261,21 @@ Rectangle {
             //: Title of the notice standing in for the composer in a conversation kept from a previous session
             title: qsTr("From a previous session")
             message: qsTr("Chat started as a new installation, so you can read this conversation but not reply. Restoring conversations is being worked on.")
+        }
+
+        LogosNotice {
+            objectName: "removedNotice"
+            shown: root.removed
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.spacing.xlarge
+            Layout.rightMargin: Theme.spacing.xlarge
+            Layout.topMargin: Theme.spacing.medium
+            Layout.bottomMargin: Theme.spacing.large
+            severity: LogosNotice.Info
+            //: Title of the notice standing in for the composer in a group this account was removed from
+            title: qsTr("Removed from this group")
+            //: Body of the notice standing in for the composer in a group this account was removed from
+            message: qsTr("Another member removed you, so you can read this conversation but not reply.")
         }
     }
 }
