@@ -50,6 +50,9 @@ class ChatBackend
     // The current conversation is from a previous session, kept for its
     // history only: it can be read, but not sent into or invited to.
     PROP(bool currentHistoryOnly READONLY)
+    // The current conversation is a group this account was removed from: it
+    // can be read, but not sent into or invited to.
+    PROP(bool currentRemoved READONLY)
     // The directory this run's logs are in — the chat module's instance
     // directory, which this view borrows for want of one of its own. Empty when
     // no log was opened, which is what leaves the view with none to offer.

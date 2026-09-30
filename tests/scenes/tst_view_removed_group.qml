@@ -5,8 +5,10 @@ import ChatUiScenes
 
 import "../../src/qml"
 
-// A group kept from a previous session, with its details: no roster card, and
-// the details name the session in place of the member count.
+// A group another member removed this account from, with its details: the
+// row says so in place of its preview, a notice stands where the composer was,
+// no roster card, and the details name the membership in place of the member
+// count.
 Item {
     id: stage
     width: 1280
@@ -21,32 +23,45 @@ Item {
         conversations: ListModel {
             ListElement {
                 conversationId: "c1"
-                displayName: "Pax"
-                isGroup: false
-                avatarInitials: "pa"
-                avatarRamp: 2
-                unreadCount: 1
-                lastActivityDisplay: "14:02"
-                preview: "Here's my new address"
-                description: ""
-                historyOnly: false
-                removed: false
-            }
-            ListElement {
-                conversationId: "c2"
                 displayName: "Theme review"
                 isGroup: true
-                avatarInitials: "c2"
+                avatarInitials: "c1"
                 avatarRamp: 3
-                unreadCount: 0
-                lastActivityDisplay: "13:40"
+                unreadCount: 2
+                lastActivityDisplay: "14:10"
                 preview: "Raya: the new tokens look right"
                 description: ""
                 historyOnly: false
                 removed: false
             }
             ListElement {
+                conversationId: "c2"
+                displayName: "Release crew"
+                isGroup: true
+                avatarInitials: "c2"
+                avatarRamp: 1
+                unreadCount: 0
+                lastActivityDisplay: "13:52"
+                preview: "Saro: tagged 0.3.0-rc1"
+                description: "Release planning for 0.3"
+                historyOnly: false
+                removed: true
+            }
+            ListElement {
                 conversationId: "c3"
+                displayName: "Raya"
+                isGroup: false
+                avatarInitials: "ra"
+                avatarRamp: 1
+                unreadCount: 0
+                lastActivityDisplay: "12:05"
+                preview: "Did the build go through?"
+                description: ""
+                historyOnly: false
+                removed: false
+            }
+            ListElement {
+                conversationId: "c4"
                 displayName: "Saro"
                 isGroup: false
                 avatarInitials: "sa"
@@ -55,70 +70,44 @@ Item {
                 lastActivityDisplay: "Mon"
                 preview: "Sounds good, talk soon"
                 description: ""
-                historyOnly: true
-                removed: false
-            }
-            ListElement {
-                conversationId: "c4"
-                displayName: "Release crew"
-                isGroup: true
-                avatarInitials: "c4"
-                avatarRamp: 1
-                unreadCount: 0
-                lastActivityDisplay: "12 Sep"
-                preview: "Raya: notes are up for review, comments welcome before Friday"
-                description: "Release planning for 0.3"
-                historyOnly: true
-                removed: false
-            }
-            ListElement {
-                conversationId: "c5"
-                displayName: "Raya"
-                isGroup: false
-                avatarInitials: "ra"
-                avatarRamp: 1
-                unreadCount: 0
-                lastActivityDisplay: "10 Sep"
-                preview: "Did the build go through?"
-                description: ""
-                historyOnly: true
+                historyOnly: false
                 removed: false
             }
         }
         // Newest first: the thread is bottom-anchored.
         messages: ListModel {
             ListElement {
+                sender: "Saro"
+                avatarInitials: "sa"
+                avatarRamp: 0
+                content: "Tagged 0.3.0-rc1"
+                timeDisplay: "13:52"
+                isMe: false
+                sameSenderAsPrevious: false
+                showDaySeparator: false
+                dayLabel: "Today"
+            }
+            ListElement {
                 sender: "Raya"
                 avatarInitials: "ra"
                 avatarRamp: 1
                 content: "Notes are up for review, comments welcome before Friday"
-                timeDisplay: "16:30"
+                timeDisplay: "13:40"
                 isMe: false
                 sameSenderAsPrevious: false
                 showDaySeparator: false
-                dayLabel: "12 September"
+                dayLabel: "Today"
             }
             ListElement {
                 sender: "Me"
                 avatarInitials: "4b"
                 avatarRamp: 0
-                content: "Tagged 0.3.0-rc1"
-                timeDisplay: "16:02"
+                content: "CI is green on the release branch"
+                timeDisplay: "13:12"
                 isMe: true
                 sameSenderAsPrevious: false
-                showDaySeparator: false
-                dayLabel: "12 September"
-            }
-            ListElement {
-                sender: "Pax"
-                avatarInitials: "pa"
-                avatarRamp: 2
-                content: "CI is green on the release branch"
-                timeDisplay: "15:47"
-                isMe: false
-                sameSenderAsPrevious: false
                 showDaySeparator: true
-                dayLabel: "12 September"
+                dayLabel: "Today"
             }
         }
     }
@@ -129,17 +118,17 @@ Item {
     }
 
     Shot {
-        name: "view-history-group"
+        name: "view-removed-group"
         target: stage
         setup: () => {
             const b = stage.logos.backend;
             b.currentIsGroup = true;
             b.currentDisplayName = "Release crew";
             b.currentDescription = "Release planning for 0.3";
-            b.currentAvatarInitials = "c4";
+            b.currentAvatarInitials = "c2";
             b.currentAvatarRamp = 1;
-            b.currentHistoryOnly = true;
-            b.selectConversation("c4");
+            b.currentRemoved = true;
+            b.selectConversation("c2");
         }
     }
 }

@@ -29,6 +29,7 @@ Item {
                 preview: "Sounds good, talk soon"
                 description: ""
                 historyOnly: false
+                removed: false
             }
             ListElement {
                 conversationId: "c2"
@@ -41,6 +42,7 @@ Item {
                 preview: "Did the build go through?"
                 description: ""
                 historyOnly: false
+                removed: false
             }
         }
         // Newest first: the thread is bottom-anchored.

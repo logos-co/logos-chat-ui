@@ -23,6 +23,8 @@ Rectangle {
     property int pendingMemberCount: 0
     // From a previous session, kept for its history only.
     property bool historyOnly: false
+    // Removed from the group by another member.
+    property bool removed: false
 
     signal closeRequested
 
@@ -111,10 +113,21 @@ Rectangle {
         }
 
         DetailRow {
+            objectName: "membershipRow"
+            Layout.fillWidth: true
+            visible: root.removed
+            //: Whether this account is still a member of the group
+            key: qsTr("Membership")
+            //: The membership of a group another member removed this account from
+            value: qsTr("Removed")
+        }
+
+        DetailRow {
             objectName: "membersRow"
             Layout.fillWidth: true
-            // A previous session's group keeps no roster to count.
-            visible: root.isGroup && !root.historyOnly
+            // A previous session's group keeps no roster to count, nor does a
+            // group this account was removed from.
+            visible: root.isGroup && !root.historyOnly && !root.removed
             key: qsTr("Members")
             value: root.memberSummary
         }
