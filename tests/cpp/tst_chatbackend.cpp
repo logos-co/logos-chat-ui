@@ -18,6 +18,9 @@ private slots:
     void readsTheNodeFromStatusWhenAlreadyOnline();
     void marksAConversationFromAPreviousSession();
     void listsAPreviousSessionAfterThisOne();
+    void marksAGroupThisAccountWasRemovedFrom();
+    void followsTheRemovalAcrossConversationUpdates();
+    void keepsTheConversationRoleNumbers();
     void previewsAMultiLineMessageOnOneLine();
     void namesAGroupOnOneLine();
     void reportsAMultiLineFailureOnOneLine();
@@ -155,6 +158,88 @@ void TestChatBackend::listsAPreviousSessionAfterThisOne()
     QCOMPARE(model->rowCount(), 2);
     QCOMPARE(model->data(model->index(0, 0), ConversationListModel::ConversationIdRole).toString(), QStringLiteral("live"));
     QCOMPARE(model->data(model->index(1, 0), ConversationListModel::ConversationIdRole).toString(), QStringLiteral("kept"));
+}
+
+// A group that removed this account still lists for its history, and the view
+// has to tell it from the groups it can send into.
+void TestChatBackend::marksAGroupThisAccountWasRemovedFrom()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation member;
+    member.convo_id = QStringLiteral("member");
+    member.kind = QStringLiteral("group");
+    member.last_activity_ms = 2000;
+    ChatModule::Conversation removed;
+    removed.convo_id = QStringLiteral("removed");
+    removed.kind = QStringLiteral("group");
+    removed.last_activity_ms = 1000;
+    removed.removed = true;
+    modules.chat_module.conversations = { member, removed };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+
+    const QAbstractItemModel* model = backend.conversationModel();
+    QCOMPARE(model->rowCount(), 2);
+    const auto removedAt = [model](int row) {
+        return model->data(model->index(row, 0), ConversationListModel::RemovedRole).toBool();
+    };
+    QCOMPARE(removedAt(0), false);
+    QCOMPARE(removedAt(1), true);
+
+    backend.selectConversation(QStringLiteral("removed"));
+    QCOMPARE(backend.currentRemoved(), true);
+    backend.selectConversation(QStringLiteral("member"));
+    QCOMPARE(backend.currentRemoved(), false);
+}
+
+// The module marks a group when the group removes this account and clears the
+// mark when the account is added back, announcing each with
+// conversation_updated.
+void TestChatBackend::followsTheRemovalAcrossConversationUpdates()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { group };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.selectConversation(QStringLiteral("group"));
+    const QAbstractItemModel* model = backend.conversationModel();
+    const auto removed = [model] {
+        return model->data(model->index(0, 0), ConversationListModel::RemovedRole).toBool();
+    };
+    QCOMPARE(removed(), false);
+    QCOMPARE(backend.currentRemoved(), false);
+
+    modules.chat_module.conversations.first().removed = true;
+    modules.chat_module.emitEvent(QStringLiteral("conversation_updated"), { QStringLiteral("group") });
+    QTRY_COMPARE_WITH_TIMEOUT(backend.currentRemoved(), true, 1000);
+    QCOMPARE(removed(), true);
+
+    modules.chat_module.conversations.first().removed = false;
+    modules.chat_module.emitEvent(QStringLiteral("conversation_updated"), { QStringLiteral("group") });
+    QTRY_COMPARE_WITH_TIMEOUT(backend.currentRemoved(), false, 1000);
+    QCOMPARE(removed(), false);
+}
+
+// Roles cross to the view by number, and the doc-test drivers read them by
+// number too, so each keeps its own and a new one goes last.
+void TestChatBackend::keepsTheConversationRoleNumbers()
+{
+    ChatBackend backend;
+    const QHash<int, QByteArray> roles = backend.conversationModel()->roleNames();
+    const QByteArrayList names = {
+        "conversationId", "displayName", "lastActivity", "unreadCount", "isGroup", "lastActivityDisplay",
+        "preview", "description", "avatarInitials", "avatarRamp", "historyOnly", "removed",
+    };
+    QCOMPARE(roles.size(), names.size());
+    for (int i = 0; i < names.size(); ++i)
+        QCOMPARE(roles.value(Qt::UserRole + 1 + i), names.at(i));
 }
 
 // A last message written over several lines previews on one line, so it stays

@@ -27,6 +27,9 @@ LogosItemDelegate {
     required property string description
     // From a previous session, kept for its history only.
     required property bool historyOnly
+    // Removed from the group by another member: it reads back, but nothing can
+    // be sent into it.
+    required property bool removed
     // The open conversation, so this row highlights when it is the current one.
     property string currentConversationId: ""
 
@@ -43,7 +46,8 @@ LogosItemDelegate {
             isGroup: root.isGroup,
             avatarInitials: root.avatarInitials,
             avatarRamp: root.avatarRamp,
-            historyOnly: root.historyOnly
+            historyOnly: root.historyOnly,
+            removed: root.removed
         })
 
     readonly property bool unread: root.unreadCount > 0
@@ -64,6 +68,9 @@ LogosItemDelegate {
     Accessible.role: Accessible.ListItem
     Accessible.name: {
         const base = isGroup ? qsTr("Group %1").arg(displayName) : displayName;
+        if (removed)
+            //: Screen-reader name of the row of a group this account was removed from; %1 names the group
+            return qsTr("%1, you were removed").arg(base);
         if (historyOnly)
             return qsTr("%1, from a previous session").arg(base);
         return unreadCount > 0 ? qsTr("%1, %2 unread").arg(base).arg(unreadCount) : base;
@@ -79,8 +86,8 @@ LogosItemDelegate {
             initials: root.avatarInitials
             ramp: root.avatarRamp
             isGroup: root.isGroup
-            // Faded with the name, so a previous session's rows read as history.
-            opacity: root.historyOnly ? 0.5 : 1
+            // Faded with the name, so the rows that take no reply recede.
+            opacity: root.historyOnly || root.removed ? 0.5 : 1
             Layout.alignment: Qt.AlignVCenter
         }
 
@@ -91,7 +98,7 @@ LogosItemDelegate {
             LogosText {
                 text: root.displayName
                 textFormat: Text.PlainText
-                color: root.historyOnly ? Theme.palette.textSecondary : Theme.palette.text
+                color: root.historyOnly || root.removed ? Theme.palette.textSecondary : Theme.palette.text
                 font.pixelSize: Theme.typography.primaryText
                 // An unread row leans on weight rather than on colour, so the
                 // list still reads as one column of names.
@@ -102,12 +109,17 @@ LogosItemDelegate {
 
             LogosText {
                 objectName: "previewLabel"
-                //: Placeholder in a conversation row that has no messages yet
-                text: root.preview !== "" ? root.preview : qsTr("No messages yet")
+                text: {
+                    if (root.removed)
+                        //: Stands in for the last message in the row of a group this account was removed from
+                        return qsTr("You were removed");
+                    //: Placeholder in a conversation row that has no messages yet
+                    return root.preview !== "" ? root.preview : qsTr("No messages yet");
+                }
                 textFormat: Text.PlainText
                 color: root.unread ? Theme.palette.textSecondary : Theme.palette.textTertiary
                 font.pixelSize: Theme.typography.secondaryText
-                font.italic: root.preview === ""
+                font.italic: root.removed || root.preview === ""
                 elide: Text.ElideRight
                 Layout.fillWidth: true
             }

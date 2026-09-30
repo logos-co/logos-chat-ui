@@ -30,6 +30,7 @@ Item {
                 preview: "Here's my new address"
                 description: ""
                 historyOnly: false
+                removed: false
             }
             ListElement {
                 conversationId: "c2"
@@ -42,6 +43,7 @@ Item {
                 preview: "Raya: the new tokens look right"
                 description: ""
                 historyOnly: false
+                removed: false
             }
             ListElement {
                 conversationId: "c3"
@@ -54,6 +56,7 @@ Item {
                 preview: "Sounds good, talk soon"
                 description: ""
                 historyOnly: true
+                removed: false
             }
             ListElement {
                 conversationId: "c4"
@@ -66,6 +69,7 @@ Item {
                 preview: "Raya: notes are up for review, comments welcome before Friday"
                 description: "Release planning for 0.3"
                 historyOnly: true
+                removed: false
             }
             ListElement {
                 conversationId: "c5"
@@ -78,6 +82,7 @@ Item {
                 preview: "Did the build go through?"
                 description: ""
                 historyOnly: true
+                removed: false
             }
         }
         // Newest first: the thread is bottom-anchored.

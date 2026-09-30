@@ -32,6 +32,7 @@ Item {
             preview: "See you tomorrow"
             description: ""
             historyOnly: false
+            removed: false
         }
         ListElement {
             conversationId: "c2"
@@ -44,6 +45,7 @@ Item {
             preview: "Alice: shipping the new theme"
             description: "Shipping the new theme"
             historyOnly: false
+            removed: false
         }
     }
     // This session's conversations, then two kept from a previous session.
@@ -60,6 +62,7 @@ Item {
             preview: "Here's my new address"
             description: ""
             historyOnly: false
+            removed: false
         }
         ListElement {
             conversationId: "c2"
@@ -72,6 +75,7 @@ Item {
             preview: "Sounds good, talk soon"
             description: ""
             historyOnly: true
+            removed: false
         }
         ListElement {
             conversationId: "c3"
@@ -84,6 +88,7 @@ Item {
             preview: "Pax: notes are up for review"
             description: ""
             historyOnly: true
+            removed: false
         }
     }
     ListModel {
@@ -415,6 +420,7 @@ Item {
             preview: "See you tomorrow"
             description: "Ship it"
             historyOnly: false
+            removed: false
             currentConversationId: "c1"
         }
     }
@@ -854,6 +860,43 @@ Item {
             verify(findField(pane, "threadList").visible, "its messages still show");
         }
 
+        // A group this account was removed from reads back but takes no reply:
+        // a notice of its own stands where the composer was.
+        function test_threadPaneRemoved() {
+            const pane = createTemporaryObject(messageThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const composer = findField(pane, "composer");
+            const notice = findField(pane, "removedNotice");
+            verify(composer && notice, "the composer and the notice must be reachable");
+            verify(!notice.visible, "a live conversation has no removal notice");
+
+            pane.removed = true;
+            verify(!composer.visible, "a group this account was removed from has no composer");
+            verify(notice.visible, "the notice says why");
+            compare(notice.title, "Removed from this group", "naming the removal");
+            verify(findField(pane, "threadList").visible, "its messages still show");
+        }
+
+        // A previous session's group this account was removed from says so, in
+        // place of the previous session's notice.
+        function test_threadPaneRemovalOutranksAPreviousSession() {
+            const pane = createTemporaryObject(messageThreadPaneC, testRoot);
+            verify(pane, "the thread pane must instantiate");
+            pane.width = 400;
+            pane.height = 300;
+            const history = findField(pane, "historyNotice");
+            const removed = findField(pane, "removedNotice");
+            verify(history && removed, "both notices must be reachable");
+
+            pane.historyOnly = true;
+            pane.removed = true;
+            verify(removed.visible, "the removal's notice shows");
+            verify(!history.visible, "and the previous session's does not");
+            verify(!findField(pane, "composer").visible, "nor does the composer");
+        }
+
         // A sent message comes into view from wherever the thread had been
         // scrolled to.
         function test_threadPaneShowsAnOwnSend() {
@@ -1145,6 +1188,30 @@ Item {
             verify(!members.visible, "and counts no members");
         }
 
+        // A group this account was removed from says so in its details, and
+        // counts no roster, since it shows none; after a restart it names its
+        // session as well.
+        function test_detailsPanelRemoved() {
+            const panel = createTemporaryObject(detailsPanelC, testRoot);
+            verify(panel, "the details panel must instantiate");
+            const membership = findField(panel, "membershipRow");
+            const members = findField(panel, "membersRow");
+            const session = findField(panel, "sessionRow");
+            verify(membership && members && session, "the rows must be reachable");
+            verify(!membership.visible, "a member's group says nothing of membership");
+            verify(members.visible, "and counts its members");
+
+            panel.removed = true;
+            verify(membership.visible, "a group this account was removed from says so");
+            compare(membership.value, "Removed", "in one word");
+            verify(!members.visible, "and counts no members");
+            verify(!session.visible, "and names no session while it is this session's");
+
+            panel.historyOnly = true;
+            verify(session.visible, "after a restart it names its session");
+            verify(membership.visible, "beside the removal");
+        }
+
         // The header's New menu offers both kinds of conversation, and picking
         // one requests it.
         function test_conversationsPaneNewMenu() {
@@ -1254,6 +1321,22 @@ Item {
 
             del.preview = "";
             compare(preview.text, "No messages yet", "an untouched conversation says so");
+        }
+
+        // A group this account was removed from says so where its last message
+        // was and to a screen reader, and its selection carries the fact.
+        function test_conversationDelegateRemoved() {
+            const del = instantiate(conversationDelegateC);
+            const preview = findField(del, "previewLabel");
+            verify(preview, "the preview line must be reachable");
+            verify(!preview.font.italic, "a message preview is upright");
+            compare(del.conversation.removed, false, "a member's group carries no removal");
+
+            del.removed = true;
+            compare(preview.text, "You were removed", "the removal stands where the preview was");
+            verify(preview.font.italic, "in italics, as the placeholder is");
+            compare(del.Accessible.name, "Group Alice, you were removed", "a screen reader hears it");
+            compare(del.conversation.removed, true, "and the selection carries it");
         }
 
         function test_delegatesInstantiate() {
