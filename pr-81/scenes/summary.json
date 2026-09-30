@@ -1,0 +1,39 @@
+{
+  "base": true,
+  "scenes": [
+    "view-adopted",
+    "view-direct",
+    "view-direct-details",
+    "view-group-pending",
+    "view-history-direct",
+    "view-history-group",
+    "view-initialising",
+    "view-loading",
+    "view-logs-dialog",
+    "view-member-menu",
+    "view-member-menu-offline",
+    "view-online-empty",
+    "view-remove-member-dialog",
+    "view-remove-member-dialog-of-two",
+    "view-removed-group",
+    "view-removed-group-after-restart",
+    "view-unknown-network-dialog"
+  ],
+  "changed": [
+    "view-direct",
+    "view-direct-details",
+    "view-group-pending",
+    "view-history-direct",
+    "view-history-group",
+    "view-member-menu",
+    "view-member-menu-offline",
+    "view-remove-member-dialog",
+    "view-remove-member-dialog-of-two",
+    "view-unknown-network-dialog"
+  ],
+  "added": [
+    "view-removed-group",
+    "view-removed-group-after-restart"
+  ],
+  "removed": []
+}
