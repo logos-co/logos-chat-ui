@@ -14,12 +14,13 @@ Rectangle {
     id: root
 
     // The MemberListModel (roles: address, label, avatarInitials, avatarRamp,
-    // isSelf, pending).
+    // isSelf, pending, removable).
     required property var memberModel
     // The roster's size, taken as a property because the model reaches the view
     // as a replica whose row count a non-view caller cannot read.
     property int memberCount: 0
-    // Whether the backend is online; gates the add-member control.
+    // Whether the backend is online; gates the add-member control and the
+    // Remove entry.
     required property bool online
     // Whether the member model already holds this conversation's roster. It does
     // not for as long as a selection is being loaded, and the rows standing in
@@ -28,6 +29,9 @@ Rectangle {
 
     // Emitted when the user asks to add a member; the caller collects the address.
     signal addMemberRequested
+    // Emitted when the user asks to remove a member, with the address and the
+    // label of the row the menu was opened on.
+    signal removeMemberRequested(string address, string label)
 
     // The roster model is a separate replica from the properties carrying the
     // selection, so its rows can land a moment after the conversation counts as
@@ -50,10 +54,11 @@ Rectangle {
     QtObject {
         id: d
 
-        // Copy an address and confirm it on the row that offered it.
+        // Copy an address and confirm it on the row that offered it, while that
+        // row still shows it.
         function copy(row, address) {
             clipboard.copy(address);
-            if (row)
+            if (row && row.address === address)
                 row.flashCopied();
         }
 
@@ -79,12 +84,29 @@ Rectangle {
         // The row that asked for the menu, so its copy confirms where it was
         // asked for.
         property MemberDelegate row: null
+        // The member the menu acts on, taken when it opens: by the time an
+        // entry is chosen, a reused delegate can be showing someone else.
+        property string address: ""
+        property string label: ""
+        property bool removable: false
 
         LogosMenuItem {
             objectName: "copyMemberAddressMenuItem"
             //: Menu entry that copies a member's address
             text: qsTr("Copy address")
-            onTriggered: d.copy(memberMenu.row, memberMenu.row ? memberMenu.row.address : "")
+            onTriggered: d.copy(memberMenu.row, memberMenu.address)
+        }
+
+        LogosMenuItem {
+            objectName: "removeMemberMenuItem"
+            // A hidden entry still takes its row in the menu, and the keyboard
+            // still stops on it unless it is disabled too.
+            visible: memberMenu.removable
+            height: visible ? implicitHeight : 0
+            enabled: root.online && memberMenu.removable
+            //: Menu entry that asks the group to remove a member
+            text: qsTr("Remove")
+            onTriggered: root.removeMemberRequested(memberMenu.address, memberMenu.label)
         }
     }
 
@@ -130,6 +152,9 @@ Rectangle {
                     width: ListView.view.width
                     onContextMenuRequested: {
                         memberMenu.row = memberRow;
+                        memberMenu.address = memberRow.address;
+                        memberMenu.label = memberRow.label;
+                        memberMenu.removable = memberRow.removable;
                         memberMenu.popup();
                     }
                 }

@@ -42,6 +42,8 @@ QtObject {
     }
     function addGroupMember(conversationId: string, peerAddress: string) {
     }
+    function removeGroupMember(conversationId: string, peerAddress: string) {
+    }
     function sendMessage(conversationId: string, content: string) {
     }
     function selectConversation(conversationId: string) {

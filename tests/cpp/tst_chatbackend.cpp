@@ -4,6 +4,7 @@
 
 #include "ChatBackend.h"
 #include "ConversationListModel.h"
+#include "MemberListModel.h"
 #include "logos_sdk.h"
 
 class TestChatBackend : public QObject
@@ -20,6 +21,12 @@ private slots:
     void previewsAMultiLineMessageOnOneLine();
     void namesAGroupOnOneLine();
     void reportsAMultiLineFailureOnOneLine();
+    void offersToRemoveOnlyAnotherMemberWhoHasJoined_data();
+    void offersToRemoveOnlyAnotherMemberWhoHasJoined();
+    void removesAMemberThroughTheModule();
+    void refusesARemovalItCannotAskFor_data();
+    void refusesARemovalItCannotAskFor();
+    void reportsTheModulesReasonForRefusingARemoval();
     void countsANewConversationsFirstMessageOnce();
     void leavesTheModuleRunningWhenTheViewCloses();
 
@@ -212,6 +219,128 @@ void TestChatBackend::reportsAMultiLineFailureOnOneLine()
     QCOMPARE(reported.count(), 1);
     QCOMPARE(reported.first().first().toString(), line);
     QCOMPARE(backend.errors().first().toMap().value(QStringLiteral("message")).toString(), line);
+}
+
+void TestChatBackend::offersToRemoveOnlyAnotherMemberWhoHasJoined_data()
+{
+    QTest::addColumn<QString>("myAddress");
+    QTest::addColumn<QList<bool>>("removable");
+
+    // This account, another member, an invite waiting to join, and a member
+    // with no account to name.
+    QTest::newRow("own address known") << QStringLiteral("4be1c07a9d22") << QList<bool>{ false, true, false, false };
+    QTest::newRow("own address unknown") << QString() << QList<bool>{ false, false, false, false };
+}
+
+// A roster row is removable, by the name the view binds it by, only for
+// another member who has joined and has an account to name, and none is while
+// this account's own address is unknown, since any row could then be its own.
+void TestChatBackend::offersToRemoveOnlyAnotherMemberWhoHasJoined()
+{
+    QFETCH(QString, myAddress);
+    QFETCH(QList<bool>, removable);
+
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+    modules.chat_module.address = myAddress;
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { group };
+    modules.chat_module.members = {
+        { QStringLiteral("4be1c07a9d22"), false },
+        { QStringLiteral("0b2c3d4e5f60"), false },
+        { QStringLiteral("f6e5d4c3b2a1"), true },
+        { QString(), false },
+    };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.selectConversation(QStringLiteral("group"));
+
+    const MemberListModel* roster = backend.memberModel();
+    QCOMPARE(roster->rowCount(), removable.size());
+    const int role = roster->roleNames().key("removable", -1);
+    QVERIFY(role != -1);
+    for (int row = 0; row < removable.size(); ++row)
+        QCOMPARE(roster->data(roster->index(row), role).toBool(), removable.at(row));
+}
+
+// A removal is one call to the module and nothing to report: the group votes on
+// it first, and members_changed says when the member has left.
+void TestChatBackend::removesAMemberThroughTheModule()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+    backend.removeGroupMember(QStringLiteral("group"), QStringLiteral("pax"));
+
+    QCOMPARE(modules.chat_module.removeGroupMemberCalls,
+             QList<QStringList>({ { QStringLiteral("group"), QStringLiteral("pax") } }));
+    QCOMPARE(reported.count(), 0);
+}
+
+void TestChatBackend::refusesARemovalItCannotAskFor_data()
+{
+    QTest::addColumn<bool>("online");
+    QTest::addColumn<QString>("conversationId");
+    QTest::addColumn<QString>("address");
+    QTest::addColumn<QString>("report");
+
+    QTest::newRow("offline") << false << QStringLiteral("group") << QStringLiteral("pax")
+                             << QStringLiteral("Failed to remove member: chat is not online");
+    QTest::newRow("no conversation") << true << QString() << QStringLiteral("pax")
+                                     << QStringLiteral("Failed to remove member: no conversation selected");
+    QTest::newRow("no address") << true << QStringLiteral("group") << QString()
+                                << QStringLiteral("Failed to remove member: address cannot be empty");
+}
+
+// A removal the view cannot ask for is reported and never reaches the module.
+void TestChatBackend::refusesARemovalItCannotAskFor()
+{
+    QFETCH(bool, online);
+    QFETCH(QString, conversationId);
+    QFETCH(QString, address);
+    QFETCH(QString, report);
+
+    LogosModules modules;
+    place(modules);
+    if (online)
+        modules.chat_module.deliveryState = QStringLiteral("online");
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+    backend.removeGroupMember(conversationId, address);
+
+    QVERIFY(modules.chat_module.removeGroupMemberCalls.isEmpty());
+    QCOMPARE(reported.count(), 1);
+    QCOMPARE(reported.first().first().toString(), report);
+}
+
+// The module refuses a removal it cannot put to the group, and its reason is
+// what reaches the status bar.
+void TestChatBackend::reportsTheModulesReasonForRefusingARemoval()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+    modules.chat_module.removeGroupMemberError = QStringLiteral("no one named is a member of this group");
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+    backend.removeGroupMember(QStringLiteral("group"), QStringLiteral("pax"));
+
+    QCOMPARE(modules.chat_module.removeGroupMemberCalls.size(), 1);
+    QCOMPARE(reported.count(), 1);
+    QCOMPARE(reported.first().first().toString(),
+             QStringLiteral("Failed to remove member: no one named is a member of this group"));
 }
 
 // Being invited marks a new conversation unread, and the message the invite

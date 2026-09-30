@@ -40,6 +40,7 @@ public slots:
     void createConversation(QString peerAddress) override;
     void createGroupConversation(QString name, QString description) override;
     void addGroupMember(QString conversationId, QString peerAddress) override;
+    void removeGroupMember(QString conversationId, QString peerAddress) override;
     void sendMessage(QString conversationId, QString content) override;
     void selectConversation(QString conversationId) override;
     // Reloads the current conversation's roster into memberModel. A synchronous

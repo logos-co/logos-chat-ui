@@ -493,6 +493,30 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
         refreshMembers();
 }
 
+void ChatBackend::removeGroupMember(QString conversationId, QString peerAddress)
+{
+    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
+        report(QStringLiteral("Failed to remove member: chat is not online"));
+        return;
+    }
+    if (conversationId.isEmpty()) {
+        report(QStringLiteral("Failed to remove member: no conversation selected"));
+        return;
+    }
+    if (peerAddress.isEmpty()) {
+        report(QStringLiteral("Failed to remove member: address cannot be empty"));
+        return;
+    }
+
+    const LogosResult res = modules().chat_module.remove_group_member(conversationId, peerAddress);
+    if (!res.success) {
+        const QString reason = res.getError<QString>();
+        reportFailure(QStringLiteral("Failed to remove member"), reason);
+    }
+    // The group votes on the removal first, so the member stays on the roster
+    // until the commit lands, which the members_changed event reports.
+}
+
 void ChatBackend::sendMessage(QString conversationId, QString content)
 {
     if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
@@ -564,7 +588,11 @@ void ChatBackend::refreshMembers()
         // An empty address is the roster's "no confirmed account" signal; keep
         // it — the model renders it as "unknown_account". Only a real account
         // address can be self.
-        rows.append({ address, !address.isEmpty() && address == myAddress(), member.pending });
+        const bool isSelf = !address.isEmpty() && address == myAddress();
+        // With our own address unknown any entry could be ours, so none is
+        // offered for removal.
+        const bool removable = !myAddress().isEmpty() && !address.isEmpty() && !isSelf && !member.pending;
+        rows.append({ address, isSelf, member.pending, removable });
         if (!member.pending)
             ++committed;
     }

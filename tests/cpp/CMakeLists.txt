@@ -90,3 +90,13 @@ target_compile_definitions(tst_threadpane PRIVATE
 target_link_libraries(tst_threadpane PRIVATE Qt6::Quick Qt6::Test)
 add_test(NAME threadpane COMMAND tst_threadpane)
 set_tests_properties(threadpane PROPERTIES ENVIRONMENT "QML_IMPORT_PATH=$ENV{QT_QML_DIR};QT_QPA_PLATFORM=offscreen")
+
+# The whole view, on the scenes' stand-in for the host.
+add_executable(tst_chatview tst_chatview.cpp)
+target_compile_definitions(tst_chatview PRIVATE
+    CHAT_UI_QML_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../../src/qml"
+    DESIGN_SYSTEM_QML_DIR="$ENV{LOGOS_DESIGN_SYSTEM_QML}"
+    SCENE_MOCKS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../scenes/mocks")
+target_link_libraries(tst_chatview PRIVATE Qt6::Quick Qt6::Test)
+add_test(NAME chatview COMMAND tst_chatview)
+set_tests_properties(chatview PROPERTIES ENVIRONMENT "QML_IMPORT_PATH=$ENV{QT_QML_DIR};QT_QPA_PLATFORM=offscreen")

@@ -82,6 +82,7 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/NewGroupDialog.qml
             src/qml/ChatUi/MemberAddInfoDialog.qml
             src/qml/ChatUi/AddMemberDialog.qml
+            src/qml/ChatUi/RemoveMemberDialog.qml
             src/qml/ChatUi/SelectableText.qml
             src/qml/ChatUi/SessionLogsDialog.qml
             src/qml/ChatUi/DeliveryNotice.qml

@@ -19,6 +19,8 @@ LogosItemDelegate {
     required property bool isSelf
     // Invited but not yet committed into the group's roster.
     required property bool pending
+    // Whether the group can be asked to remove this member.
+    required property bool removable
 
     // Asks for the row's actions, carrying the address they act on.
     signal contextMenuRequested(string address)

@@ -13,6 +13,9 @@ struct MemberItem {
     bool isSelf = false;
     // A member invited but not yet committed into the group.
     bool pending = false;
+    // Known to be another member who has joined, with an account to name, so
+    // one the group can be asked to remove.
+    bool removable = false;
 };
 
 // A group's roster, replaced wholesale on each refresh. `label` is the short
@@ -31,7 +34,8 @@ public:
         // Avatar identity, derived from the address so one account keeps one
         // pair of initials and one colour wherever it is drawn.
         AvatarInitialsRole,
-        AvatarRampRole
+        AvatarRampRole,
+        RemovableRole
     };
 
     explicit MemberListModel(QObject* parent = nullptr);

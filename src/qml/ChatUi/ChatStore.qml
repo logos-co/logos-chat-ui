@@ -91,6 +91,10 @@ QtObject {
         if (backend && conversationId !== "")
             backend.addGroupMember(conversationId, address);
     }
+    function removeMember(conversationId, address) {
+        if (backend && conversationId !== "")
+            backend.removeGroupMember(conversationId, address);
+    }
     function refreshLogRuns() {
         if (backend)
             backend.refreshSessionLogs();
