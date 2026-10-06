@@ -29,6 +29,7 @@ Item {
                 preview: "Did you get a chance to look?"
                 description: ""
                 historyOnly: false
+                removed: false
             }
         }
     }

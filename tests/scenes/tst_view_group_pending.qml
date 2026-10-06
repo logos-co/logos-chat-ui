@@ -31,6 +31,7 @@ Item {
                 preview: "Did you get a chance to look?"
                 description: ""
                 historyOnly: false
+                removed: false
             }
             ListElement {
                 conversationId: "c2"
@@ -43,6 +44,7 @@ Item {
                 preview: "You: Merged, thanks all"
                 description: "Design reviews and theme work, with a description long enough to be clamped to one line in the header"
                 historyOnly: false
+                removed: false
             }
             ListElement {
                 conversationId: "c3"
@@ -55,6 +57,7 @@ Item {
                 preview: "Raya: the release notes are up for review, comments welcome before Friday"
                 description: ""
                 historyOnly: false
+                removed: false
             }
             ListElement {
                 conversationId: "c4"
@@ -67,6 +70,7 @@ Item {
                 preview: ""
                 description: ""
                 historyOnly: false
+                removed: false
             }
         }
         // Newest first: the thread is bottom-anchored.

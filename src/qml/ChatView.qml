@@ -31,11 +31,12 @@ Rectangle {
     readonly property string selectedAvatarInitials: root.optimisticSelection ? root.optimisticSelection.avatarInitials : store.currentAvatarInitials
     readonly property int selectedAvatarRamp: root.optimisticSelection ? root.optimisticSelection.avatarRamp : store.currentAvatarRamp
     readonly property bool selectedHistoryOnly: root.optimisticSelection ? root.optimisticSelection.historyOnly : store.currentHistoryOnly
+    readonly property bool selectedRemoved: root.optimisticSelection ? root.optimisticSelection.removed : store.currentRemoved
     // Whether the models hold the selected conversation's data.
     readonly property bool selectionLoaded: store.loadedConversationId === root.selectedConversationId
     // A group's roster, which a conversation from a previous session does not
-    // have.
-    readonly property bool rosterShown: root.selectedIsGroup && !root.selectedHistoryOnly
+    // have, nor a group this account was removed from.
+    readonly property bool rosterShown: root.selectedIsGroup && !root.selectedHistoryOnly && !root.selectedRemoved
 
     // Whether the conversation's details panel is showing, toggled from the
     // thread header and left as the user last set it.
@@ -137,14 +138,17 @@ Rectangle {
                 avatarInitials: root.selectedAvatarInitials
                 avatarRamp: root.selectedAvatarRamp
                 conversationId: root.selectedConversationId
-                memberModel: store.memberModel
-                memberCount: store.memberCount
+                // The header's facepile is the roster too, so it shows where
+                // the roster does.
+                memberModel: root.rosterShown ? store.memberModel : null
+                memberCount: root.rosterShown ? store.memberCount : 0
                 detailsShown: root.detailsShown
                 hasConversation: root.selectedConversationId !== ""
                 hasConversations: conversationsPane.count > 0
                 online: store.online
                 ready: root.selectionLoaded
                 historyOnly: root.selectedHistoryOnly
+                removed: root.selectedRemoved
                 // To the conversation on screen, which the backend may not have
                 // switched to yet.
                 onMessageSubmitted: function (text) {
@@ -171,6 +175,7 @@ Rectangle {
                     memberCount: store.memberCount
                     pendingMemberCount: store.pendingMemberCount
                     historyOnly: root.selectedHistoryOnly
+                    removed: root.selectedRemoved
                     onCloseRequested: root.detailsShown = false
                 }
 

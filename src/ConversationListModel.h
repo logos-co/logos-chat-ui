@@ -18,6 +18,9 @@ struct ConversationItem {
     QString preview;
     // From a previous session, kept for its history only.
     bool historyOnly = false;
+    // A group this account was removed from: it reads back, but nothing can be
+    // sent into it.
+    bool removed = false;
     // The unread count stands for the invite alone, until a message takes it over.
     bool unreadForInvite = false;
 };
@@ -27,6 +30,7 @@ class ConversationListModel : public QAbstractListModel
     Q_OBJECT
 
 public:
+    // The numbers are part of the model's interface, so a new role goes last.
     enum Roles {
         ConversationIdRole = Qt::UserRole + 1,
         // On one line, as PreviewRole.
@@ -49,7 +53,9 @@ public:
         AvatarInitialsRole,
         AvatarRampRole,
         // From a previous session, kept for its history only.
-        HistoryOnlyRole
+        HistoryOnlyRole,
+        // A group this account was removed from.
+        RemovedRole
     };
 
     explicit ConversationListModel(QObject* parent = nullptr);
@@ -60,7 +66,7 @@ public:
 
     void addConversation(const QString& id, const QString& displayName,
                          const QString& description, const QDateTime& lastActivity, bool isGroup,
-                         const QString& preview, bool historyOnly);
+                         const QString& preview, bool historyOnly, bool removed);
     void updateDisplayName(const QString& id, const QString& displayName);
     void updateDescription(const QString& id, const QString& description);
     void updatePreview(const QString& id, const QString& preview);
@@ -96,6 +102,10 @@ public:
     // Whether a conversation is from a previous session; false for one of
     // this session or an unknown id.
     bool historyOnlyFor(const QString& id) const;
+
+    // Whether this account was removed from a group; false for any other
+    // conversation or an unknown id.
+    bool removedFor(const QString& id) const;
 
 private:
     // Relative label for the last-activity timestamp (see LastActivityDisplayRole).

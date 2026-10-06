@@ -37,6 +37,7 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     case AvatarInitialsRole:      return Identity::initials(item.conversationId);
     case AvatarRampRole:          return Identity::avatarRamp(Identity::shortLabel(item.conversationId));
     case HistoryOnlyRole:         return item.historyOnly;
+    case RemovedRole:             return item.removed;
     default:                      return {};
     }
 }
@@ -54,18 +55,20 @@ QHash<int, QByteArray> ConversationListModel::roleNames() const
         { DescriptionRole,         "description" },
         { AvatarInitialsRole,      "avatarInitials" },
         { AvatarRampRole,          "avatarRamp" },
-        { HistoryOnlyRole,         "historyOnly" }
+        { HistoryOnlyRole,         "historyOnly" },
+        { RemovedRole,             "removed" }
     };
 }
 
 void ConversationListModel::addConversation(const QString& id, const QString& displayName,
                                             const QString& description, const QDateTime& lastActivity,
-                                            bool isGroup, const QString& preview, bool historyOnly)
+                                            bool isGroup, const QString& preview, bool historyOnly,
+                                            bool removed)
 {
     if (contains(id)) return;
 
     beginInsertRows(QModelIndex(), m_items.size(), m_items.size());
-    m_items.append({ id, displayName, description, lastActivity, 0, isGroup, preview, historyOnly });
+    m_items.append({ id, displayName, description, lastActivity, 0, isGroup, preview, historyOnly, removed });
     endInsertRows();
 }
 
@@ -215,6 +218,12 @@ bool ConversationListModel::historyOnlyFor(const QString& id) const
 {
     const int idx = indexOf(id);
     return idx >= 0 && m_items.at(idx).historyOnly;
+}
+
+bool ConversationListModel::removedFor(const QString& id) const
+{
+    const int idx = indexOf(id);
+    return idx >= 0 && m_items.at(idx).removed;
 }
 
 QString ConversationListModel::formatLastActivity(const QDateTime& lastActivity) const
