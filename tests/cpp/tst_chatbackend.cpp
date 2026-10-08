@@ -20,6 +20,7 @@ private slots:
     void previewsAMultiLineMessageOnOneLine();
     void namesAGroupOnOneLine();
     void reportsAMultiLineFailureOnOneLine();
+    void reportsASendDeliveryGaveUpOn();
     void countsANewConversationsFirstMessageOnce();
     void leavesTheModuleRunningWhenTheViewCloses();
 
@@ -209,6 +210,25 @@ void TestChatBackend::reportsAMultiLineFailureOnOneLine()
 
     const QString line =
         QStringLiteral("Failed to create DM: server returned status 503: <html> <body>busy</body> </html>");
+    QCOMPARE(reported.count(), 1);
+    QCOMPARE(reported.first().first().toString(), line);
+    QCOMPARE(backend.errors().first().toMap().value(QStringLiteral("message")).toString(), line);
+}
+
+// The module answers a send once delivery has the message, so a send delivery
+// gives up on later arrives as an event with no call left to fail.
+void TestChatBackend::reportsASendDeliveryGaveUpOn()
+{
+    LogosModules modules;
+    place(modules);
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+
+    modules.chat_module.emitEvent(QStringLiteral("delivery_send_failed"),
+                                  { QStringLiteral("Unable to send within retry time window") });
+
+    const QString line = QStringLiteral("Delivery failed to send: Unable to send within retry time window");
     QCOMPARE(reported.count(), 1);
     QCOMPARE(reported.first().first().toString(), line);
     QCOMPARE(backend.errors().first().toMap().value(QStringLiteral("message")).toString(), line);

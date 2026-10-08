@@ -329,6 +329,9 @@ void ChatBackend::subscribeToEvents()
     chat.on(QStringLiteral("delivery_state_changed"), [this](const QVariantList& a) {
         applyDeliveryState(a.value(0).toString(), a.value(1).toString(), a.value(2).toBool());
     });
+    chat.on(QStringLiteral("delivery_send_failed"), [this](const QVariantList& a) {
+        reportFailure(QStringLiteral("Delivery failed to send"), a.value(0).toString());
+    });
 }
 
 void ChatBackend::rehydrateConversations()
