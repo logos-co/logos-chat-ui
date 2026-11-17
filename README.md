@@ -34,10 +34,10 @@ Conversations and their messages are kept across restarts, but each launch start
 
 - **New chat > Group** asks for a name and an optional description, neither of which can be changed later, then creates the group with you as its only member.
 - Collect peers' addresses (each copies theirs from their account card), paste one into **Add member** at the foot of the members card, and confirm to invite.
-- Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. A peer you invited sits on the roster as a dimmed row reading **Waiting to join** until the group commits it, and stays there across chat switches. The roster refreshes on selection, a message from a new member, or your own add.
+- Membership changes are asynchronous: your instance applies an add, and sends the peer its welcome, about two minutes after the invite, so a peer joins **minutes** after it, and another add of yours to the group fails until then. A peer you invited sits on the roster as a dimmed row reading **Waiting to join** until your instance applies the add, and stays there across chat switches. The roster refreshes on selection, a message from a new member, or your own add.
 - A right-click on a roster row offers **Copy address**, for passing a member's address on.
-- Any member can add another; the invite routes from whoever proposed it.
-- During the brief windows while the group is finalizing a membership change, de-mls rejects sends; these surface on the status bar at the foot of the window, so retry after a moment.
+- Any member can add another, and the welcome comes from whoever added them.
+- Each member applies a membership change on its own timer, a few seconds apart, and a message sent in those seconds can miss a member that has applied the change when its sender has not, or the other way round.
 
 ## How to Run
 

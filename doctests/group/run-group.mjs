@@ -5,7 +5,7 @@
 // the live network — something the single-instance doc-test ui_test driver can
 // neither orchestrate nor read runtime addresses out of. This driver speaks the
 // logos-qt-mcp inspector protocol to all three instances: Alice creates a group,
-// invites Bob and Carol by address, waits for the roster to converge, then sends
+// invites Bob and Carol by address, waits for every roster to converge, then sends
 // one message that fans out to both — exercising the members pane and the
 // per-message sender attribution the group UI adds over a DM. Launch and
 // teardown of the three apps is handled by run-group.sh; this script attaches to
@@ -180,8 +180,17 @@ async function main() {
   await waitFor(async () => (await evalq(carol, "conversationsPane.count")) >= 1, { timeout: 300000, what: "carol joins the group" });
   console.log("carol joined");
 
-  console.log("alice: wait for the roster to converge to three...");
+  // Each member applies an add on its own timer, and one that has not applied
+  // Carol's yet cannot read a message sent after it, so every roster settles
+  // before the send. waitForRoster needs the group selected on each.
+  console.log("wait for every roster to converge to three...");
+  const bobGroup = await evalq(bob, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
+  const carolGroup = await evalq(carol, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
+  await evalq(bob, `store.backend.selectConversation(${JSON.stringify(bobGroup)})`);
+  await evalq(carol, `store.backend.selectConversation(${JSON.stringify(carolGroup)})`);
   await waitForRoster(alice, 3, { what: "alice's roster" });
+  await waitForRoster(bob, 3, { what: "bob's roster" });
+  await waitForRoster(carol, 3, { what: "carol's roster" });
   await shoot(alice, outDir, "01-alice-group.png");
 
   console.log("alice: send the group message...");
@@ -195,7 +204,6 @@ async function main() {
   // roster. Load her thread first (leaves the group selected), then converge
   // her roster.
   console.log("carol: open the group and wait for alice's message...");
-  const carolGroup = await evalq(carol, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
   // The shared name reached the joiner end to end: carol set no local nickname,
   // so her display name resolves to the group name Alice created it with.
   const carolName = await evalq(carol, `store.conversationModel.data(store.conversationModel.index(0,0), ${DISPLAY_NAME_ROLE})`);
@@ -207,7 +215,6 @@ async function main() {
   await shoot(carol, outDir, "03-carol-received.png");
 
   console.log("bob: confirm the message fanned out to him too...");
-  const bobGroup = await evalq(bob, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
   await loadThread(bob, bobGroup, 1, { timeout: 300000 });
   await shoot(bob, outDir, "04-bob-received.png");
 
