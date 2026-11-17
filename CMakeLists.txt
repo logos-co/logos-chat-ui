@@ -7,8 +7,11 @@ else()
     message(FATAL_ERROR "LogosModule.cmake not found. Set LOGOS_MODULE_BUILDER_ROOT.")
 endif()
 
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/metadata.json" METADATA_JSON)
+string(JSON MODULE_NAME GET ${METADATA_JSON} name)
+
 logos_module(
-    NAME chat_ui
+    NAME ${MODULE_NAME}
     REP_FILE src/ChatBackend.rep
     SOURCES
         src/ChatBackend.h

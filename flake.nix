@@ -7,9 +7,10 @@
   };
 
   inputs = {
-    # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
-    # chain matches across both.
-    logos-module-builder.follows = "chat_module/logos-module-builder";
+    # Its own builder: the backend runs as a core module ("backend": "module"),
+    # which chat_module's release builder predates. The two talk over IPC like
+    # any two separately built modules.
+    logos-module-builder.url = "github:logos-co/logos-module-builder";
     # Pinned to the v0.3.0 release tag: this view and the module it renders are
     # released in lockstep, so the module built here is the release the package
     # manager resolves.
