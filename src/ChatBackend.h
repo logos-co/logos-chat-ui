@@ -8,7 +8,7 @@
 #include <QVariantList>
 #include <functional>
 #include "rep_ChatBackend_source.h"
-#include "logos_ui_plugin_context.h"
+#include "logos_module_context.h"
 #include "ConversationListModel.h"
 #include "MessageListModel.h"
 #include "MemberListModel.h"
@@ -16,7 +16,7 @@
 #include "SessionLogFiles.h"
 
 class ChatBackend : public ChatBackendSimpleSource,
-                    public LogosUiPluginContext
+                    public LogosModuleContext
 {
     Q_OBJECT
     // The conversation model reaches QML through a recency proxy, so the list is
