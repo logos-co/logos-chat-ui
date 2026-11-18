@@ -92,6 +92,8 @@ public:
     QString createConversationError;
     // How many create_conversation calls succeeded.
     int conversationsCreated = 0;
+    // The delivery_preset init was called with.
+    QString initialisedPreset;
 
     void goOnline()
     {
@@ -118,8 +120,9 @@ public:
             handler(args);
     }
 
-    LogosResult init(const ChatConfig&, logos::CallError* = nullptr)
+    LogosResult init(const ChatConfig& config, logos::CallError* = nullptr)
     {
+        initialisedPreset = config.delivery_preset.value_or(QString());
         m_initialised = true;
         return {true, {}, {}};
     }

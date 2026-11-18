@@ -15,6 +15,7 @@ private slots:
     void showsTheAddressWhenDeliveryComesUpDuringTheFirstSnapshot();
     void reportsTheNodeDeliveryCameUpOn();
     void readsTheNodeFromStatusWhenAlreadyOnline();
+    void asksForThePresetTheEnvironmentNames();
     void marksAConversationFromAPreviousSession();
     void listsAPreviousSessionAfterThisOne();
     void previewsAMultiLineMessageOnOneLine();
@@ -90,6 +91,21 @@ void TestChatBackend::readsTheNodeFromStatusWhenAlreadyOnline()
     backend._logosCoreSetLogosModulesPtr_(&modules);
 
     QCOMPARE(backend.deliveryAdopted(), true);
+}
+
+// Both the request and the card follow LOGOS_CHAT_DELIVERY_PRESET.
+void TestChatBackend::asksForThePresetTheEnvironmentNames()
+{
+    LogosModules modules;
+    place(modules);
+
+    qputenv("LOGOS_CHAT_DELIVERY_PRESET", "logos.dev");
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    qunsetenv("LOGOS_CHAT_DELIVERY_PRESET");
+
+    QCOMPARE(modules.chat_module.initialisedPreset, QStringLiteral("logos.dev"));
+    QCOMPARE(backend.deliveryPreset(), QStringLiteral("logos.dev"));
 }
 
 // The module keeps earlier sessions' conversations for their history, and the
