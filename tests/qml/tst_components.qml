@@ -1080,6 +1080,18 @@ Item {
             verify(!members.visible, "and counts no members");
         }
 
+        // A conversation's type is the protocol it runs once known.
+        function test_detailsPanelProtocol() {
+            const panel = createTemporaryObject(detailsPanelC, testRoot);
+            verify(panel, "the details panel must instantiate");
+            const type = findField(panel, "typeRow");
+            verify(type, "the type row must be reachable");
+            compare(type.value, "Group", "a group of unknown protocol");
+
+            panel.protocol = "GroupV3";
+            compare(type.value, "GroupV3", "the protocol names the type");
+        }
+
         // The header's New menu offers both kinds of conversation, and picking
         // one requests it.
         function test_conversationsPaneNewMenu() {

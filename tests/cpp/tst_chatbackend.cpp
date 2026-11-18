@@ -20,6 +20,7 @@ private slots:
     void listsAPreviousSessionAfterThisOne();
     void previewsAMultiLineMessageOnOneLine();
     void namesAGroupOnOneLine();
+    void showsAGroupsProtocol();
     void reportsAMultiLineFailureOnOneLine();
     void createsAConversationWhileDeliveryIsOffline();
     void countsANewConversationsFirstMessageOnce();
@@ -207,6 +208,31 @@ void TestChatBackend::namesAGroupOnOneLine()
     QCOMPARE(model->data(model->index(0, 0), ConversationListModel::DisplayNameRole).toString(),
              QStringLiteral("Book Club"));
     QCOMPARE(backend.currentDisplayName(), QStringLiteral("Book Club"));
+}
+
+// A GroupV3 group names its protocol; a conversation from a previous session
+// may not.
+void TestChatBackend::showsAGroupsProtocol()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    group.protocol = QStringLiteral("GroupV3");
+    ChatModule::Conversation kept;
+    kept.convo_id = QStringLiteral("kept");
+    kept.kind = QStringLiteral("group");
+    kept.history_only = true;
+    modules.chat_module.conversations = { group, kept };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+
+    backend.selectConversation(QStringLiteral("group"));
+    QCOMPARE(backend.currentProtocol(), QStringLiteral("GroupV3"));
+    backend.selectConversation(QStringLiteral("kept"));
+    QCOMPARE(backend.currentProtocol(), QString());
 }
 
 // A module failure can carry a server's response body, and reaches the status

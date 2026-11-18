@@ -193,6 +193,7 @@ Item {
             b.currentAvatarRamp = 3;
             b.memberCount = 3;
             b.pendingMemberCount = 1;
+            b.currentProtocol = "GroupV3";
             b.selectConversation("c2");
         }
     }

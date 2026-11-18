@@ -37,6 +37,8 @@ QtObject {
     // The current conversation is from a previous session, kept for its
     // history only.
     readonly property bool currentHistoryOnly: backend ? backend.currentHistoryOnly : false
+    // The protocol the current conversation runs ("GroupV3").
+    readonly property string currentProtocol: backend ? backend.currentProtocol : ""
     // This account's own address, empty until the module has initialised, and
     // its short form.
     readonly property string myAddress: backend ? backend.myAddress : ""

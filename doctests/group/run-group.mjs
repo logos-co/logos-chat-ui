@@ -223,6 +223,15 @@ async function main() {
   await waitForRoster(alice, 3, { what: "alice's roster" });
   await waitForRoster(bob, 3, { what: "bob's roster" });
   await waitForRoster(carol, 3, { what: "carol's roster" });
+
+  console.log("wait for every member to name the group's protocol...");
+  let protocols = [];
+  await waitFor(async () => {
+    protocols = [];
+    for (const insp of [alice, bob, carol])
+      protocols.push(await evalq(insp, "store.currentProtocol"));
+    return protocols.every((p) => p === "GroupV3");
+  }, { timeout: 60000, what: `GroupV3 on every member (last ${JSON.stringify(protocols)})` });
   await shoot(alice, outDir, "01-alice-group.png");
 
   console.log("alice: send the group message...");

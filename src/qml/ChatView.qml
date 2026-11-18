@@ -171,6 +171,7 @@ Rectangle {
                     memberCount: store.memberCount
                     pendingMemberCount: store.pendingMemberCount
                     historyOnly: root.selectedHistoryOnly
+                    protocol: store.currentProtocol
                     onCloseRequested: root.detailsShown = false
                 }
 

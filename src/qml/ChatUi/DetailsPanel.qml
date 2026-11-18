@@ -23,6 +23,8 @@ Rectangle {
     property int pendingMemberCount: 0
     // From a previous session, kept for its history only.
     property bool historyOnly: false
+    // The protocol the conversation runs ("GroupV3"); empty while unknown.
+    property string protocol: ""
 
     signal closeRequested
 
@@ -95,10 +97,11 @@ Rectangle {
         }
 
         DetailRow {
+            objectName: "typeRow"
             Layout.fillWidth: true
-            //: Whether the conversation is a group or a one-to-one
+            //: The protocol the conversation runs, or whether it is a group or a one-to-one
             key: qsTr("Type")
-            value: root.isGroup ? qsTr("Group") : qsTr("Direct")
+            value: root.protocol !== "" ? root.protocol : root.isGroup ? qsTr("Group") : qsTr("Direct")
         }
 
         DetailRow {

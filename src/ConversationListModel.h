@@ -20,6 +20,9 @@ struct ConversationItem {
     bool historyOnly = false;
     // The unread count stands for the invite alone, until a message takes it over.
     bool unreadForInvite = false;
+    // The protocol the conversation runs, as the chat module names it
+    // ("GroupV3"); empty while unknown.
+    QString protocol;
 };
 
 class ConversationListModel : public QAbstractListModel
@@ -65,6 +68,7 @@ public:
     void updateDescription(const QString& id, const QString& description);
     void updatePreview(const QString& id, const QString& preview);
     void updateLastActivity(const QString& id, const QDateTime& lastActivity);
+    void updateProtocol(const QString& id, const QString& protocol);
     void incrementUnread(const QString& id);
     // Marks a row unread for being new; its first message counts as that one
     // rather than a second.
@@ -96,6 +100,9 @@ public:
     // Whether a conversation is from a previous session; false for one of
     // this session or an unknown id.
     bool historyOnlyFor(const QString& id) const;
+
+    // The protocol a conversation runs; empty for an unknown id.
+    QString protocolFor(const QString& id) const;
 
 private:
     // Relative label for the last-activity timestamp (see LastActivityDisplayRole).
