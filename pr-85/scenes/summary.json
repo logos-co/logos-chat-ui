@@ -10,10 +10,13 @@
     "view-initialising",
     "view-loading",
     "view-logs-dialog",
+    "view-offline",
     "view-online-empty",
     "view-unknown-network-dialog"
   ],
   "changed": [],
-  "added": [],
+  "added": [
+    "view-offline"
+  ],
   "removed": []
 }
