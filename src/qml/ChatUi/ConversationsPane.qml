@@ -15,7 +15,8 @@ Rectangle {
 
     required property var conversationModel
     required property string currentConversationId
-    required property bool online
+    // Delivery's node runs, online or offline; enables New chat.
+    required property bool running
 
     // Carries the selected row's own data, so a view can render the selection
     // before the backend has switched to it.
@@ -63,7 +64,7 @@ Rectangle {
             trailingIcon.source: Qt.resolvedUrl("icons/caret-down.png")
             trailingIcon.size: 14
             trailingIcon.color: Theme.palette.backgroundBlack
-            enabled: root.online
+            enabled: root.running
             onClicked: newMenu.popup(0, newButton.height + Theme.spacing.tiny)
             Layout.fillWidth: true
             Layout.preferredHeight: 40
@@ -156,7 +157,7 @@ Rectangle {
                 anchors.centerIn: parent
                 width: parent.width - 2 * Theme.spacing.medium
                 visible: convList.count === 0
-                text: root.online ? qsTr("No conversations yet. Use New chat to start one, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
+                text: root.running ? qsTr("No conversations yet. Use New chat to start one, or share your address so someone can reach you.") : qsTr("Waiting for connection...")
             }
         }
     }

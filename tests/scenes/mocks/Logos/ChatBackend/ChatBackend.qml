@@ -9,7 +9,8 @@ QtObject {
         Stopped,
         Initialising,
         Online,
-        Error
+        Error,
+        Offline
     }
 
     property int chatStatus: ChatBackend.Stopped

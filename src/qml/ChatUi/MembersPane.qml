@@ -19,8 +19,9 @@ Rectangle {
     // The roster's size, taken as a property because the model reaches the view
     // as a replica whose row count a non-view caller cannot read.
     property int memberCount: 0
-    // Whether the backend is online; gates the add-member control.
-    required property bool online
+    // Whether delivery's node runs, online or offline; gates the add-member
+    // control.
+    required property bool running
     // Whether the member model already holds this conversation's roster. It does
     // not for as long as a selection is being loaded, and the rows standing in
     // the model meanwhile are the ones left behind by the previous conversation.
@@ -164,7 +165,7 @@ Rectangle {
             leadingIcon.source: Qt.resolvedUrl("icons/add-member.png")
             leadingIcon.size: 18
             leadingIcon.color: Theme.palette.text
-            enabled: root.online
+            enabled: root.running
             onClicked: root.addMemberRequested()
             Layout.fillWidth: true
             Layout.preferredHeight: 40

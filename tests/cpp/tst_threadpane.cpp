@@ -61,7 +61,7 @@ void TestThreadPane::opensAConversationAtItsNewestMessage()
         {QStringLiteral("title"), QStringLiteral("Raya")},
         {QStringLiteral("conversationId"), QStringLiteral("c1")},
         {QStringLiteral("hasConversation"), true},
-        {QStringLiteral("online"), true},
+        {QStringLiteral("running"), true},
         {QStringLiteral("ready"), true},
     }));
     auto* pane = qobject_cast<QQuickItem*>(created.get());

@@ -90,12 +90,20 @@ public:
     QList<Conversation> conversations;
     // The reason create_conversation fails with; it succeeds while empty.
     QString createConversationError;
+    // How many create_conversation calls succeeded.
+    int conversationsCreated = 0;
 
     void goOnline()
     {
         deliveryState = QStringLiteral("online");
         if (auto handler = m_handlers.value(QStringLiteral("delivery_state_changed")))
             handler({QStringLiteral("online"), QString(), deliveryAdopted});
+    }
+    void goOffline()
+    {
+        deliveryState = QStringLiteral("offline");
+        if (auto handler = m_handlers.value(QStringLiteral("delivery_state_changed")))
+            handler({QStringLiteral("offline"), QString(), deliveryAdopted});
     }
 
     bool on(const QString& name, EventCallback cb)
@@ -136,6 +144,7 @@ public:
     {
         if (!createConversationError.isEmpty())
             return {false, {}, createConversationError};
+        ++conversationsCreated;
         return {true, {}, {}};
     }
     LogosResult create_group_conversation(const QString&, const QString&, logos::CallError* = nullptr)

@@ -62,6 +62,8 @@ private:
     // of its own rather than a dangling separator: it is what a call that never
     // reached the module leaves behind, which is the worst moment to say least.
     void reportFailure(const QString& action, const QString& reason);
+    // Delivery's node runs, online or offline, so the module takes actions.
+    bool deliveryRunning() const;
     // Starts asking the module whether it is still there. Until something asks,
     // a module that died is indistinguishable from an idle one, and the app goes
     // on looking connected until the next thing the user does times out.

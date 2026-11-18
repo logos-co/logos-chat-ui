@@ -220,6 +220,12 @@ void ChatBackend::initialiseModule()
     startHealthProbe();
 }
 
+bool ChatBackend::deliveryRunning() const
+{
+    return chatStatus() == ChatBackendSimpleSource::Online
+        || chatStatus() == ChatBackendSimpleSource::Offline;
+}
+
 void ChatBackend::startHealthProbe()
 {
     m_healthProbe = new QTimer(this);
@@ -432,7 +438,7 @@ void ChatBackend::deferToEventLoop(std::function<void()> work)
 
 void ChatBackend::createConversation(QString peerAddress)
 {
-    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
+    if (!deliveryRunning() || !isContextReady()) {
         report(QStringLiteral("Failed to create DM: chat is not online"));
         return;
     }
@@ -452,7 +458,7 @@ void ChatBackend::createConversation(QString peerAddress)
 
 void ChatBackend::createGroupConversation(QString name, QString description)
 {
-    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
+    if (!deliveryRunning() || !isContextReady()) {
         report(QStringLiteral("Failed to create group: chat is not online"));
         return;
     }
@@ -468,7 +474,7 @@ void ChatBackend::createGroupConversation(QString name, QString description)
 
 void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
 {
-    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
+    if (!deliveryRunning() || !isContextReady()) {
         report(QStringLiteral("Failed to add member: chat is not online"));
         return;
     }
@@ -495,7 +501,7 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
 
 void ChatBackend::sendMessage(QString conversationId, QString content)
 {
-    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady()) {
+    if (!deliveryRunning() || !isContextReady()) {
         report(QStringLiteral("Failed to send message: chat is not online"));
         return;
     }
@@ -547,7 +553,7 @@ void ChatBackend::refreshMembers()
         setCurrentPeerAddress(QString());
         return;
     }
-    if (chatStatus() != ChatBackendSimpleSource::Online || !isContextReady())
+    if (!deliveryRunning() || !isContextReady())
         return; // can't fetch now; keep the last-known roster
 
     // Telling our own entry from the others needs our address; recover it here
@@ -598,6 +604,8 @@ void ChatBackend::applyDeliveryState(const QString& state, const QString& detail
         next = ChatBackendSimpleSource::Online;
     } else if (state == QStringLiteral("initialising")) {
         next = ChatBackendSimpleSource::Initialising;
+    } else if (state == QStringLiteral("offline")) {
+        next = ChatBackendSimpleSource::Offline;
     } else if (state == QStringLiteral("error")) {
         next = ChatBackendSimpleSource::Error;
     } else if (state == QStringLiteral("stopped")) {

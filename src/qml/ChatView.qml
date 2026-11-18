@@ -101,7 +101,7 @@ Rectangle {
                     Layout.fillHeight: true
                     conversationModel: store.conversationModel
                     currentConversationId: root.selectedConversationId
-                    online: store.online
+                    running: store.running
                     onConversationSelected: function (conversation) {
                         root.pendingSelection = conversation;
                         store.selectConversation(conversation.conversationId);
@@ -142,7 +142,7 @@ Rectangle {
                 detailsShown: root.detailsShown
                 hasConversation: root.selectedConversationId !== ""
                 hasConversations: conversationsPane.count > 0
-                online: store.online
+                running: store.running
                 ready: root.selectionLoaded
                 historyOnly: root.selectedHistoryOnly
                 // To the conversation on screen, which the backend may not have
@@ -181,7 +181,7 @@ Rectangle {
                     Layout.fillHeight: true
                     memberModel: store.memberModel
                     memberCount: store.memberCount
-                    online: store.online
+                    running: store.running
                     ready: root.selectionLoaded
                     onAddMemberRequested: addMemberDialog.open()
                 }
