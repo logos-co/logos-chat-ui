@@ -22,6 +22,7 @@ private slots:
     void namesAGroupOnOneLine();
     void showsAGroupsProtocolAndEpoch();
     void marksASentMessageDelivered();
+    void listsTheMembersByTheirState();
     void reportsAMultiLineFailureOnOneLine();
     void createsAConversationWhileDeliveryIsOffline();
     void countsANewConversationsFirstMessageOnce();
@@ -279,6 +280,61 @@ void TestChatBackend::marksASentMessageDelivered()
     modules.chat_module.emitEvent(QStringLiteral("message_delivered"),
                                   { QStringLiteral("group"), QStringLiteral("m2") });
     QCOMPARE(delivered(0), true);
+}
+
+// The roster leads with this account and the members on its group state, then
+// lists the rest under their state, worst first, with the invited last.
+void TestChatBackend::listsTheMembersByTheirState()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { group };
+    modules.chat_module.deliveryState = QStringLiteral("online");
+    const auto member = [](const char* address, const char* state, bool pending = false) {
+        ChatModule::GroupMember m;
+        m.address = QString::fromLatin1(address);
+        m.sync_state = QString::fromLatin1(state);
+        m.pending = pending;
+        return m;
+    };
+    ChatModule::GroupMember saro = member("saro", "behind");
+    saro.epoch = 3;
+    saro.epoch_fingerprint = QStringLiteral("5e81c09b2a7d44");
+    modules.chat_module.members = {
+        member("invited", "", true),
+        saro,
+        member("unheard", "unconfirmed"),
+        member("raya", "synced"),
+        member("pax", "forked"),
+        member(qPrintable(modules.chat_module.address), "synced"),
+        member("early", "ahead"),
+    };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    backend.selectConversation(QStringLiteral("group"));
+
+    const QAbstractItemModel* model = backend.memberModel();
+    QStringList order;
+    QStringList groups;
+    for (int row = 0; row < model->rowCount(); ++row) {
+        order << model->data(model->index(row, 0), MemberListModel::AddressRole).toString();
+        groups << model->data(model->index(row, 0), MemberListModel::SyncGroupRole).toString();
+    }
+    QCOMPARE(order, QStringList({ modules.chat_module.address, QStringLiteral("raya"), QStringLiteral("pax"),
+                                  QStringLiteral("saro"), QStringLiteral("early"), QStringLiteral("unheard"),
+                                  QStringLiteral("invited") }));
+    QCOMPARE(groups, QStringList({ QString(), QString(), QStringLiteral("forked"), QStringLiteral("behind"),
+                                   QStringLiteral("ahead"), QStringLiteral("unconfirmed"),
+                                   QStringLiteral("pending") }));
+    const QModelIndex saroRow = model->index(3, 0);
+    QCOMPARE(model->data(saroRow, MemberListModel::EpochRole).toInt(), 3);
+    QCOMPARE(model->data(saroRow, MemberListModel::EpochFingerprintRole).toString(),
+             QStringLiteral("5e81c09b2a7d44"));
 }
 
 // A module failure can carry a server's response body, and reaches the status

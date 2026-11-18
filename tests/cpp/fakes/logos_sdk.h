@@ -73,6 +73,9 @@ public:
     struct GroupMember {
         QString address{};
         bool pending{};
+        QString sync_state{};
+        std::optional<qlonglong> epoch{};
+        std::optional<QString> epoch_fingerprint{};
     };
     struct ChatConfig {
         std::optional<QString> delivery_preset{};
@@ -95,6 +98,8 @@ public:
     QList<Conversation> conversations;
     // What get_messages answers, for every conversation.
     QList<Message> messages;
+    // What list_group_members answers, for every conversation.
+    QList<GroupMember> members;
     // The reason create_conversation fails with; it succeeds while empty.
     QString createConversationError;
     // How many create_conversation calls succeeded.
@@ -149,7 +154,7 @@ public:
     Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString(), deliveryAdopted}; }
     void healthAsyncResult(std::function<void(logos::AsyncResult<bool>)>, Timeout = Timeout()) {}
     QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return messages; }
-    QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return {}; }
+    QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return members; }
     LogosResult create_conversation(const QString&, logos::CallError* = nullptr)
     {
         if (!createConversationError.isEmpty())

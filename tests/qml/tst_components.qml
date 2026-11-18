@@ -120,6 +120,10 @@ Item {
             avatarRamp: 1
             isSelf: false
             pending: false
+            syncState: ""
+            memberEpoch: -1
+            memberFingerprint: ""
+            syncGroup: ""
         }
     }
 
@@ -421,6 +425,9 @@ Item {
             avatarRamp: 4
             isSelf: false
             pending: true
+            syncState: ""
+            memberEpoch: -1
+            memberFingerprint: ""
         }
     }
 
@@ -1510,6 +1517,27 @@ Item {
             del.flashCopied();
             verify(del.copiedFlashing, "flashing right after a copy");
             tryCompare(del, "copiedFlashing", false, 3000, "the flash clears");
+        }
+
+        // A member of a group that tracks state shows the epoch they were last
+        // heard at, or that nothing checkable was heard; an invited member and an
+        // untracked roster show neither.
+        function test_memberDelegateEpoch() {
+            const del = createTemporaryObject(memberDelegateC, testRoot);
+            verify(del, "the delegate must instantiate");
+            const line = findField(del, "memberEpoch");
+            verify(line, "the epoch line must be reachable");
+            verify(!line.visible, "an invited member has no epoch to show");
+
+            del.pending = false;
+            verify(!line.visible, "nor does a member whose state is not tracked");
+            del.syncState = "unconfirmed";
+            verify(line.visible, "a tracked member shows the line");
+            compare(line.text, "unconfirmed", "before anything checkable is heard");
+            del.syncState = "behind";
+            del.memberEpoch = 3;
+            del.memberFingerprint = "5e81c09b2a7d44";
+            compare(line.text, "epoch 3 · 5e81c09b2a7d44");
         }
 
         // Confirming the explainer emits confirmed() so the caller can proceed

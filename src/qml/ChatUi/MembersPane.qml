@@ -14,7 +14,8 @@ Rectangle {
     id: root
 
     // The MemberListModel (roles: address, label, avatarInitials, avatarRamp,
-    // isSelf, pending).
+    // isSelf, pending, syncState, memberEpoch, memberFingerprint, syncGroup),
+    // ordered by syncGroup.
     required property var memberModel
     // The roster's size, taken as a property because the model reaches the view
     // as a replica whose row count a non-view caller cannot read.
@@ -125,6 +126,40 @@ Rectangle {
                 Keys.onEnterPressed: d.copyCurrent()
 
                 ScrollBar.vertical: LogosScrollBar {}
+
+                // This account and the members on its group state lead the list
+                // unheaded; everyone else is listed under their state.
+                section.property: "syncGroup"
+                section.delegate: LogosText {
+                    required property string section
+
+                    objectName: "syncHeading"
+                    width: ListView.view.width
+                    height: text !== "" ? 26 : 0
+                    visible: text !== ""
+                    leftPadding: Theme.spacing.small
+                    bottomPadding: 2
+                    verticalAlignment: Text.AlignBottom
+                    text: ({
+                            //: Heading over members whose group state is not this account's
+                            forked: qsTr("Forked"),
+                            //: Heading over members who have not applied a commit this account has
+                            behind: qsTr("Not updated yet"),
+                            //: Heading over members past this account's epoch
+                            ahead: qsTr("Ahead of you"),
+                            //: Heading over members nothing checkable has been heard from
+                            unconfirmed: qsTr("Unconfirmed"),
+                            //: Heading over members invited but not joined yet
+                            pending: qsTr("Invited")
+                        })[section] ?? ""
+                    color: ({
+                            forked: Theme.palette.error,
+                            behind: Theme.palette.warning,
+                            ahead: Theme.palette.info
+                        })[section] ?? Theme.palette.textTertiary
+                    font.pixelSize: Theme.typography.secondaryText
+                    font.weight: Theme.typography.weightMedium
+                }
 
                 delegate: MemberDelegate {
                     id: memberRow

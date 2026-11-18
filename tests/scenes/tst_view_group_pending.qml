@@ -152,6 +152,10 @@ Item {
                 avatarRamp: 0
                 isSelf: true
                 pending: false
+                syncState: "synced"
+                memberEpoch: 4
+                memberFingerprint: "a2434d2747f3f5"
+                syncGroup: ""
             }
             ListElement {
                 address: "0b2c3d4e5f60"
@@ -160,6 +164,10 @@ Item {
                 avatarRamp: 1
                 isSelf: false
                 pending: false
+                syncState: "synced"
+                memberEpoch: 4
+                memberFingerprint: "a2434d2747f3f5"
+                syncGroup: ""
             }
             ListElement {
                 address: "a1b2c3d4e5f6"
@@ -168,6 +176,10 @@ Item {
                 avatarRamp: 0
                 isSelf: false
                 pending: false
+                syncState: "behind"
+                memberEpoch: 3
+                memberFingerprint: "5e81c09b2a7d44"
+                syncGroup: "behind"
             }
             ListElement {
                 address: "f6e5d4c3b2a1"
@@ -176,6 +188,10 @@ Item {
                 avatarRamp: 2
                 isSelf: false
                 pending: true
+                syncState: ""
+                memberEpoch: -1
+                memberFingerprint: ""
+                syncGroup: "pending"
             }
         }
     }

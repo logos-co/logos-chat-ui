@@ -340,6 +340,8 @@ void ChatBackend::subscribeToEvents()
             [this](const QVariantList& a) { applyConversationUpdated(a); });
     chat.on(QStringLiteral("members_changed"),
             [this](const QVariantList& a) { applyMembersChanged(a); });
+    chat.on(QStringLiteral("member_states_changed"),
+            [this](const QVariantList& a) { applyMembersChanged(a); });
     chat.on(QStringLiteral("conversation_deleted"),
             [this](const QVariantList& a) { applyConversationDeleted(a); });
     chat.on(QStringLiteral("delivery_state_changed"), [this](const QVariantList& a) {
@@ -587,7 +589,9 @@ void ChatBackend::refreshMembers()
         // An empty address is the roster's "no confirmed account" signal; keep
         // it — the model renders it as "unknown_account". Only a real account
         // address can be self.
-        rows.append({ address, !address.isEmpty() && address == myAddress(), member.pending });
+        rows.append({ address, !address.isEmpty() && address == myAddress(), member.pending,
+                      member.sync_state, member.epoch ? static_cast<int>(*member.epoch) : -1,
+                      member.epoch_fingerprint.value_or(QString()) });
         if (!member.pending)
             ++committed;
     }
@@ -781,7 +785,8 @@ void ChatBackend::applyConversationUpdated(const QVariantList& args)
 void ChatBackend::applyMembersChanged(const QVariantList& args)
 {
     const QString convoId = args.value(0).toString();
-    // A commit changed this group's roster; refetch it if it is on screen.
+    // A commit changed this group's roster, or a member's group state moved;
+    // refetch it if it is on screen.
     deferToEventLoop([this, convoId] {
         if (convoId == currentConversationId() && m_conversationModel->isGroupFor(convoId))
             refreshMembers();
