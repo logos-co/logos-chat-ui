@@ -20,6 +20,7 @@ private slots:
     void previewsAMultiLineMessageOnOneLine();
     void namesAGroupOnOneLine();
     void reportsAMultiLineFailureOnOneLine();
+    void createsAConversationWhileDeliveryIsOffline();
     void countsANewConversationsFirstMessageOnce();
     void leavesTheModuleRunningWhenTheViewCloses();
 
@@ -212,6 +213,25 @@ void TestChatBackend::reportsAMultiLineFailureOnOneLine()
     QCOMPARE(reported.count(), 1);
     QCOMPARE(reported.first().first().toString(), line);
     QCOMPARE(backend.errors().first().toMap().value(QStringLiteral("message")).toString(), line);
+}
+
+// A node with no peers for the moment still takes actions, and is no error.
+void TestChatBackend::createsAConversationWhileDeliveryIsOffline()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+    modules.chat_module.goOffline();
+    QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Offline);
+
+    backend.createConversation(QStringLiteral("peer"));
+
+    QCOMPARE(modules.chat_module.conversationsCreated, 1);
+    QCOMPARE(reported.count(), 0);
 }
 
 // Being invited marks a new conversation unread, and the message the invite

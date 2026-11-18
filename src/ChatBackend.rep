@@ -4,7 +4,10 @@ class ChatBackend
         Stopped = 0,
         Initialising = 1,
         Online = 2,
-        Error = 3
+        Error = 3,
+        // Delivery's node runs but has no peers for the moment. Actions still
+        // work: delivery keeps trying a send for a minute.
+        Offline = 4
     }
 
     PROP(ChatStatus chatStatus READONLY)

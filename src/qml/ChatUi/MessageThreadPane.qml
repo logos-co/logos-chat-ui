@@ -32,7 +32,8 @@ Rectangle {
     // Whether any conversation exists at all. Optional so the pane stands alone;
     // drives the empty-thread guidance when nothing is selected.
     property bool hasConversations: true
-    required property bool online
+    // Delivery's node runs, online or offline; enables the composer.
+    required property bool running
     // Whether the message model already holds this conversation's messages. It
     // does not for as long as a selection is being loaded, and the rows standing
     // in the model meanwhile are the ones left behind by the previous
@@ -231,8 +232,8 @@ Rectangle {
             placeholder: root.title !== "" ? qsTr("Message %1").arg(root.title) : qsTr("Type a message...")
             // Name the reason the composer is closed: being connected with
             // nothing selected is not the same as having no connection.
-            disabledPlaceholder: root.online ? qsTr("Select a conversation to start chatting") : qsTr("Chat not connected")
-            submitEnabled: root.online && root.hasConversation
+            disabledPlaceholder: root.running ? qsTr("Select a conversation to start chatting") : qsTr("Chat not connected")
+            submitEnabled: root.running && root.hasConversation
             onSubmitted: function (text) {
                 // From wherever the user had scrolled to: at the newest end, the
                 // list keeps the sent message in view when it lands.

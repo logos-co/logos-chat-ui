@@ -128,7 +128,7 @@ Item {
         ConversationsPane {
             conversationModel: conversationsMock
             currentConversationId: "c1"
-            online: true
+            running: true
         }
     }
     Component {
@@ -139,7 +139,7 @@ Item {
             title: "Alice"
             conversationId: "c1"
             hasConversation: true
-            online: true
+            running: true
             ready: true
         }
     }
@@ -151,7 +151,7 @@ Item {
             title: "Raya"
             conversationId: "c1"
             hasConversation: true
-            online: true
+            running: true
             ready: true
         }
     }
@@ -159,7 +159,7 @@ Item {
         id: emptyMembersPaneC
         MembersPane {
             memberModel: emptyMembersMock
-            online: true
+            running: true
             ready: true
         }
     }
@@ -171,7 +171,7 @@ Item {
             title: "Alice"
             conversationId: "c1"
             hasConversation: true
-            online: true
+            running: true
             ready: true
         }
     }
@@ -179,7 +179,7 @@ Item {
         id: membersPaneC
         MembersPane {
             memberModel: membersMock
-            online: true
+            running: true
             ready: true
         }
     }
@@ -764,10 +764,10 @@ Item {
             verify(composer, "the composer must be reachable");
 
             pane.hasConversation = false;
-            compare(composer.disabledPlaceholder, "Select a conversation to start chatting", "online with nothing selected");
+            compare(composer.disabledPlaceholder, "Select a conversation to start chatting", "running with nothing selected");
 
-            pane.online = false;
-            compare(composer.disabledPlaceholder, "Chat not connected", "offline");
+            pane.running = false;
+            compare(composer.disabledPlaceholder, "Chat not connected", "not running");
         }
 
         // A conversation kept from a previous session reads back but takes no
@@ -1436,15 +1436,15 @@ Item {
             compare(field.text, "", "accept clears the address");
         }
 
-        // The Add member button reflects connectivity and requests a member add.
+        // The Add member button follows the running node and requests a member add.
         function test_membersPaneAddButton() {
             const pane = instantiate(membersPaneC);
             const btn = findField(pane, "addMemberButton");
             verify(btn, "the add-member button must be reachable");
-            verify(btn.enabled, "enabled when online");
-            pane.online = false;
-            verify(!btn.enabled, "disabled when offline");
-            pane.online = true;
+            verify(btn.enabled, "enabled while running");
+            pane.running = false;
+            verify(!btn.enabled, "disabled while not running");
+            pane.running = true;
 
             addMemberReqSpy.target = pane;
             addMemberReqSpy.clear();
