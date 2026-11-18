@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Layouts
 
 import Logos.Theme
 import Logos.Controls
@@ -24,6 +25,11 @@ Item {
     required property bool sameSenderAsPrevious
     required property bool showDaySeparator
     required property string dayLabel
+    // Another member received this message, which this account sent.
+    required property bool delivered
+    // Whether the thread reports deliveries, as only GroupV3 does; ticks this
+    // account's messages when it does.
+    property bool tracksDelivery: false
 
     // Where a run of someone else's messages begins: the one row in it that
     // carries their face and name.
@@ -99,7 +105,7 @@ Item {
 
         // Grow to the wider of the content and the timestamp (a short message
         // must not leave the time outside the bubble), capped at 70% of the row.
-        width: Math.min(Math.max(contentText.implicitWidth, timeText.implicitWidth) + 2 * Theme.spacing.medium, root.width * 0.7)
+        width: Math.min(Math.max(contentText.implicitWidth, timeText.implicitWidth + (ticks.visible ? ticks.implicitWidth + Theme.spacing.tiny : 0)) + 2 * Theme.spacing.medium, root.width * 0.7)
         height: contentText.implicitHeight + timeText.implicitHeight + 2 * Theme.spacing.small + Theme.spacing.tiny
         radius: Theme.spacing.radiusXlarge
         // The corner nearest its sender is squared off, so a bubble points at
@@ -136,14 +142,28 @@ Item {
                 font.pixelSize: Theme.typography.primaryText
             }
 
-            LogosText {
-                id: timeText
+            RowLayout {
                 width: parent.width
-                text: root.timeDisplay
-                color: root.isMe ? Theme.colors.getColor(ChatTheme.bubbleOwnText, 0.5) : Theme.palette.textTertiary
-                font.family: Theme.typography.mono
-                font.pixelSize: Theme.typography.secondaryText
-                horizontalAlignment: root.isMe ? Text.AlignRight : Text.AlignLeft
+                spacing: Theme.spacing.tiny
+
+                LogosText {
+                    id: timeText
+                    text: root.timeDisplay
+                    color: root.isMe ? Theme.colors.getColor(ChatTheme.bubbleOwnText, 0.5) : Theme.palette.textTertiary
+                    font.family: Theme.typography.mono
+                    font.pixelSize: Theme.typography.secondaryText
+                    horizontalAlignment: root.isMe ? Text.AlignRight : Text.AlignLeft
+                    Layout.fillWidth: true
+                }
+
+                DeliveryTicks {
+                    id: ticks
+                    objectName: "deliveryTicks"
+                    visible: root.isMe && root.tracksDelivery
+                    delivered: root.delivered
+                    color: timeText.color
+                    Layout.alignment: Qt.AlignVCenter
+                }
             }
         }
     }

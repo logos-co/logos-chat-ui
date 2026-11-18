@@ -98,6 +98,7 @@ Item {
             sameSenderAsPrevious: false
             showDaySeparator: true
             dayLabel: "Today"
+            delivered: false
         }
     }
     ListModel {
@@ -404,6 +405,7 @@ Item {
             sameSenderAsPrevious: false
             showDaySeparator: true
             dayLabel: "Today"
+            delivered: false
         }
     }
     Component {
@@ -545,7 +547,8 @@ Item {
                 isMe: isMe,
                 sameSenderAsPrevious: false,
                 showDaySeparator: false,
-                dayLabel: "Today"
+                dayLabel: "Today",
+                delivered: false
             };
         }
 
@@ -1252,6 +1255,34 @@ Item {
             verify(shortBox.width < longBox.width, "a short message makes a narrower bubble");
             compare(longBox.width, 280, "a long message caps at 70% of the row");
             verify(longBox.height > shortBox.height, "wrapped content makes a taller bubble");
+        }
+
+        // Only this account's messages in a thread that reports deliveries carry
+        // ticks: one once sent, two once another member has received the
+        // message, with the bubble wide enough for them.
+        function test_messageDelegateTicks() {
+            const bubble = createTemporaryObject(messageDelegateC, testRoot);
+            verify(bubble, "the delegate must instantiate");
+            bubble.width = 400;
+            bubble.content = "Hi";
+            const ticks = findField(bubble, "deliveryTicks");
+            const second = findField(bubble, "secondTick");
+            const tip = findField(bubble, "deliveredTip");
+            verify(ticks && second && tip, "the ticks must be reachable");
+            verify(!ticks.visible, "a received message carries no ticks");
+
+            bubble.isMe = true;
+            verify(!ticks.visible, "nor a sent one where the thread reports no deliveries");
+            const plainWidth = findField(bubble, "bubble").width;
+
+            bubble.tracksDelivery = true;
+            verify(ticks.visible, "a sent message in a GroupV3 thread is ticked");
+            verify(!second.visible, "once, while no other member has received it");
+            verify(findField(bubble, "bubble").width > plainWidth, "the bubble makes room for the ticks");
+
+            bubble.delivered = true;
+            verify(second.visible, "twice once another member has received it");
+            compare(tip.text, "At least one member has received it");
         }
 
         // A sender's name takes the first colour of the ramp their avatar is

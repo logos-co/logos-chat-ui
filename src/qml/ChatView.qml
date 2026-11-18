@@ -145,6 +145,7 @@ Rectangle {
                 running: store.running
                 ready: root.selectionLoaded
                 historyOnly: root.selectedHistoryOnly
+                tracksDelivery: store.currentTracksDelivery
                 // To the conversation on screen, which the backend may not have
                 // switched to yet.
                 onMessageSubmitted: function (text) {

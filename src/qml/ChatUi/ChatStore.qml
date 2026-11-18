@@ -39,6 +39,8 @@ QtObject {
     readonly property bool currentHistoryOnly: backend ? backend.currentHistoryOnly : false
     // The protocol the current conversation runs ("GroupV3").
     readonly property string currentProtocol: backend ? backend.currentProtocol : ""
+    // Only GroupV3 reports when another member received a message.
+    readonly property bool currentTracksDelivery: currentProtocol === "GroupV3"
     // This account's own address, empty until the module has initialised, and
     // its short form.
     readonly property string myAddress: backend ? backend.myAddress : ""

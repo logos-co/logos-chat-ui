@@ -59,6 +59,8 @@ public:
         QString content{};
         qlonglong timestamp_ms{};
         std::optional<QString> sender{};
+        std::optional<QString> message_id{};
+        bool delivered{};
     };
     struct Status {
         qlonglong convo_count{};
@@ -89,6 +91,8 @@ public:
     std::function<void()> whileListingConversations;
     // What list_conversations answers.
     QList<Conversation> conversations;
+    // What get_messages answers, for every conversation.
+    QList<Message> messages;
     // The reason create_conversation fails with; it succeeds while empty.
     QString createConversationError;
     // How many create_conversation calls succeeded.
@@ -142,7 +146,7 @@ public:
     }
     Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString(), deliveryAdopted}; }
     void healthAsyncResult(std::function<void(logos::AsyncResult<bool>)>, Timeout = Timeout()) {}
-    QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return {}; }
+    QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return messages; }
     QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return {}; }
     LogosResult create_conversation(const QString&, logos::CallError* = nullptr)
     {

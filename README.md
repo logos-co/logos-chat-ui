@@ -37,6 +37,7 @@ Conversations and their messages are kept across restarts, but each launch start
 - Membership changes are asynchronous: your instance applies an add, and sends the peer its welcome, about two minutes after the invite, so a peer joins **minutes** after it, and another add of yours to the group fails until then. A peer you invited sits on the roster as a dimmed row reading **Waiting to join** until your instance applies the add, and stays there across chat switches. The roster refreshes on selection, a message from a new member, or your own add.
 - A right-click on a roster row offers **Copy address**, for passing a member's address on.
 - **Details** names the group's protocol, GroupV3.
+- A message you send to a group carries one tick once it is sent and two once another member has received it. The second tick comes with the first member who received it, not the last.
 - Any member can add another, and the welcome comes from whoever added them.
 - Each member applies a membership change on its own timer, a few seconds apart, and a message sent in those seconds can miss a member that has applied the change when its sender has not, or the other way round.
 
