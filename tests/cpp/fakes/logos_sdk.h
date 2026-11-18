@@ -48,6 +48,9 @@ public:
         qlonglong message_count{};
         qlonglong last_activity_ms{};
         QString kind{};
+        std::optional<QString> protocol{};
+        std::optional<qlonglong> epoch{};
+        std::optional<QString> epoch_fingerprint{};
         std::optional<QString> name{};
         std::optional<QString> description{};
         std::optional<QString> preview{};

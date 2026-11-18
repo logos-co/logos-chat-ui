@@ -193,6 +193,9 @@ Item {
             b.currentAvatarRamp = 3;
             b.memberCount = 3;
             b.pendingMemberCount = 1;
+            b.currentProtocol = "GroupV3";
+            b.currentEpoch = 4;
+            b.currentEpochFingerprint = "a2434d2747f3f5";
             b.selectConversation("c2");
         }
     }

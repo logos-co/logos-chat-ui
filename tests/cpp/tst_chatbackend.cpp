@@ -20,6 +20,7 @@ private slots:
     void listsAPreviousSessionAfterThisOne();
     void previewsAMultiLineMessageOnOneLine();
     void namesAGroupOnOneLine();
+    void showsAGroupsProtocolAndEpoch();
     void reportsAMultiLineFailureOnOneLine();
     void createsAConversationWhileDeliveryIsOffline();
     void countsANewConversationsFirstMessageOnce();
@@ -207,6 +208,37 @@ void TestChatBackend::namesAGroupOnOneLine()
     QCOMPARE(model->data(model->index(0, 0), ConversationListModel::DisplayNameRole).toString(),
              QStringLiteral("Book Club"));
     QCOMPARE(backend.currentDisplayName(), QStringLiteral("Book Club"));
+}
+
+// A GroupV3 group names its protocol, and the epoch and fingerprint its members
+// on the same state share.
+void TestChatBackend::showsAGroupsProtocolAndEpoch()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    group.protocol = QStringLiteral("GroupV3");
+    group.epoch = 4;
+    group.epoch_fingerprint = QStringLiteral("a2434d2747f3f5");
+    ChatModule::Conversation kept;
+    kept.convo_id = QStringLiteral("kept");
+    kept.kind = QStringLiteral("group");
+    kept.history_only = true;
+    modules.chat_module.conversations = { group, kept };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+
+    backend.selectConversation(QStringLiteral("group"));
+    QCOMPARE(backend.currentProtocol(), QStringLiteral("GroupV3"));
+    QCOMPARE(backend.currentEpoch(), 4);
+    QCOMPARE(backend.currentEpochFingerprint(), QStringLiteral("a2434d2747f3f5"));
+    backend.selectConversation(QStringLiteral("kept"));
+    QCOMPARE(backend.currentProtocol(), QString());
+    QCOMPARE(backend.currentEpoch(), -1);
+    QCOMPARE(backend.currentEpochFingerprint(), QString());
 }
 
 // A module failure can carry a server's response body, and reaches the status

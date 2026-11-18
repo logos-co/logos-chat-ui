@@ -37,6 +37,11 @@ QtObject {
     // The current conversation is from a previous session, kept for its
     // history only.
     readonly property bool currentHistoryOnly: backend ? backend.currentHistoryOnly : false
+    // The protocol the current conversation runs ("GroupV3"), and a group's
+    // epoch with its fingerprint: -1 and empty without one.
+    readonly property string currentProtocol: backend ? backend.currentProtocol : ""
+    readonly property int currentEpoch: backend ? backend.currentEpoch : -1
+    readonly property string currentEpochFingerprint: backend ? backend.currentEpochFingerprint : ""
     // This account's own address, empty until the module has initialised, and
     // its short form.
     readonly property string myAddress: backend ? backend.myAddress : ""

@@ -369,6 +369,9 @@ void ChatBackend::rehydrateConversations()
         m_conversationModel->addConversation(convoId, displayName, description,
                                              msToDateTime(lastActivity), isGroup, preview,
                                              convo.history_only);
+        m_conversationModel->updateProtocol(convoId, convo.protocol.value_or(QString()));
+        m_conversationModel->updateEpoch(convoId, convo.epoch ? static_cast<int>(*convo.epoch) : -1,
+                                         convo.epoch_fingerprint.value_or(QString()));
     }
     m_conversationModel->restoreUnreadCounts(unread);
     // The rebuilt list may now know the current conversation's kind/name.
@@ -401,6 +404,9 @@ void ChatBackend::syncCurrentConversationMeta()
     setCurrentDisplayName(m_conversationModel->displayNameFor(id));
     setCurrentDescription(m_conversationModel->descriptionFor(id));
     setCurrentHistoryOnly(m_conversationModel->historyOnlyFor(id));
+    setCurrentProtocol(m_conversationModel->protocolFor(id));
+    setCurrentEpoch(m_conversationModel->epochFor(id));
+    setCurrentEpochFingerprint(m_conversationModel->epochFingerprintFor(id));
     setCurrentAvatarInitials(Identity::initials(id));
     setCurrentAvatarRamp(Identity::avatarRamp(Identity::shortLabel(id)));
 }
@@ -730,6 +736,9 @@ void ChatBackend::applyConversationCreated(const QVariantList& args)
         m_conversationModel->updateDescription(convoId, description);
         m_conversationModel->updateLastActivity(convoId, now);
     }
+    // The event names no protocol and no epoch; the list does. Deferred: this
+    // runs inside a module event callback (see deferToEventLoop).
+    deferToEventLoop([this] { rehydrateConversations(); });
 
     // Open a conversation we just created, so creating a chat or group lands
     // the user in it. Deferred: selectConversation makes a synchronous module

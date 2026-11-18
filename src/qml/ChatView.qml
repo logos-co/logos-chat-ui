@@ -171,6 +171,9 @@ Rectangle {
                     memberCount: store.memberCount
                     pendingMemberCount: store.pendingMemberCount
                     historyOnly: root.selectedHistoryOnly
+                    protocol: store.currentProtocol
+                    epoch: store.currentEpoch
+                    epochFingerprint: store.currentEpochFingerprint
                     onCloseRequested: root.detailsShown = false
                 }
 

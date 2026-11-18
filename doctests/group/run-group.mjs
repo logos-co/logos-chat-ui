@@ -223,6 +223,18 @@ async function main() {
   await waitForRoster(alice, 3, { what: "alice's roster" });
   await waitForRoster(bob, 3, { what: "bob's roster" });
   await waitForRoster(carol, 3, { what: "carol's roster" });
+
+  // Having applied the same commits, every member runs GroupV3 at one epoch with
+  // one fingerprint.
+  console.log("wait for every member to hold the same group state...");
+  let states = [];
+  await waitFor(async () => {
+    states = [];
+    for (const insp of [alice, bob, carol])
+      states.push(await evalq(insp, `store.currentProtocol + " " + store.currentEpoch + " " + store.currentEpochFingerprint`));
+    return states.every((s) => /^GroupV3 \d+ [0-9a-f]+$/.test(s) && s === states[0]);
+  }, { timeout: 60000, what: `one group state (last ${JSON.stringify(states)})` });
+  console.log(`every member holds ${states[0]}`);
   await shoot(alice, outDir, "01-alice-group.png");
 
   console.log("alice: send the group message...");
@@ -281,7 +293,7 @@ async function main() {
   await shoot(carol, outDir, "05-carol-fetched.png");
 
   alice.disconnect(); bob.disconnect(); carol.disconnect();
-  console.log("\nGROUP COMPLETE: three-member group formed, message fanned out to both peers, a missed message fetched from Store; screenshots in " + outDir);
+  console.log("\nGROUP COMPLETE: three-member group formed at one group state, message fanned out to both peers, a missed message fetched from Store; screenshots in " + outDir);
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error("\nFAILED:", e.message); process.exit(1); });

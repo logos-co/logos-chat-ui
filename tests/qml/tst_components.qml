@@ -1080,6 +1080,25 @@ Item {
             verify(!members.visible, "and counts no members");
         }
 
+        // A conversation's type is the protocol it runs once known, and a
+        // GroupV3 group adds its epoch, whose copy takes the fingerprint alone.
+        function test_detailsPanelProtocolAndEpoch() {
+            const panel = createTemporaryObject(detailsPanelC, testRoot);
+            verify(panel, "the details panel must instantiate");
+            const type = findField(panel, "typeRow");
+            const epoch = findField(panel, "epochRow");
+            verify(type && epoch, "both rows must be reachable");
+            compare(type.value, "Group", "a group of unknown protocol");
+            verify(!epoch.visible, "no epoch while none is known");
+
+            panel.protocol = "GroupV3";
+            panel.epoch = 4;
+            panel.epochFingerprint = "a2434d2747f3f5";
+            compare(type.value, "GroupV3", "the protocol names the type");
+            verify(epoch.visible, "a GroupV3 group shows its epoch");
+            compare(epoch.value, "4 · a2434d2747f3f5");
+        }
+
         // The header's New menu offers both kinds of conversation, and picking
         // one requests it.
         function test_conversationsPaneNewMenu() {

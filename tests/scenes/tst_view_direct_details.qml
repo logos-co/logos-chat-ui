@@ -114,6 +114,7 @@ Item {
             b.currentAvatarInitials = "sa";
             b.currentPeerAddress = "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9";
             b.memberCount = 2;
+            b.currentProtocol = "DirectV1";
             b.selectConversation("c1");
         }
     }
