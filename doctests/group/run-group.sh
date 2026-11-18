@@ -6,7 +6,8 @@
 # and QML inspector port — drives a real group conversation between them via the
 # logos-qt-mcp inspector protocol (run-group.mjs): Alice creates the group,
 # invites Bob and Carol, and once the roster converges sends a message that fans
-# out to both. Writes the screenshots to OUT_DIR and exits non-zero if the flow
+# out to both. Then Carol misses a message and fetches it from Store. Writes the
+# screenshots to OUT_DIR and exits non-zero if the flow
 # does not complete, so this doubles as an end-to-end integration check. The three
 # instances coexist because each picks a random QtRO socket name and its own
 # delivery ports, and we give each a distinct data dir / inspector port.
@@ -115,7 +116,7 @@ wait_for_port "$CAROL_PORT"
 # Dump the app logs on any driver failure (e.g. a node that never reaches
 # Online) before the EXIT trap tears the work dir down — they show whether a node
 # crashed or was still connecting.
-if ! OUT_DIR="$OUT_DIR" ALICE_PORT="$ALICE_PORT" BOB_PORT="$BOB_PORT" CAROL_PORT="$CAROL_PORT" \
+if ! OUT_DIR="$OUT_DIR" WORK_DIR="$WORK_DIR" ALICE_PORT="$ALICE_PORT" BOB_PORT="$BOB_PORT" CAROL_PORT="$CAROL_PORT" \
      node "$here/run-group.mjs"; then
   dump_app_logs
   exit 1

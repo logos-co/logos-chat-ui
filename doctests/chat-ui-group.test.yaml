@@ -15,14 +15,16 @@ intro: |
   `logos-chat-ui` ships an automated test for exactly this. The `group` app
   drives the real three-party flow over the live network between three headless
   instances — Alice creates the group, invites Bob and Carol, and once the roster
-  converges sends a message that reaches both — then exposes the newest member's
-  window so the finished group can be captured.
+  converges sends a message that reaches both. Then Carol misses a message and
+  gets it back from a Store node. The app then exposes Carol's window so the
+  finished group can be captured.
 
 what_you_build: "A verified three-member, end-to-end-encrypted group conversation across three chat UI instances, captured from a receiving member's window."
 
 what_you_learn:
   - "How the `group` app forms a three-member group and fans a message out to it, headless over the live network"
   - "How the group UI adds a members pane and per-message sender attribution over a DM"
+  - "How a member who missed a message fetches it from Store once a later message names it"
   - "Why a multi-window group needs a dedicated runner rather than the single-instance `ui_test` driver"
 
 prerequisites:
@@ -45,11 +47,18 @@ sections:
     text: |
       The `group` app launches three instances offscreen and runs the real flow
       over the live network — Alice creates the group, invites Bob and Carol,
-      and once all three are in she sends a message that fans out to both — then
-      opens the capture port onto Carol's live window so her copy of the group is
-      on screen. The whole flow happens while the launch is still coming up, so
-      the screenshot below captures the already-formed group: the creator's
-      message, received with its sender label, beside the three-member roster.
+      and once all three are in she sends a message that fans out to both.
+
+      Then Carol misses one. The flow has her delivery node drop the group's
+      topic while Alice sends "Next pick: Dune", so the message never reaches
+      her live, and subscribes again 35 seconds later. Bob's reply, "Count me
+      in", names Alice's message, so Carol's Chat sees a gap and fetches the
+      message from a Store node of the delivery network.
+
+      The app then opens the capture port onto Carol's live window. The whole
+      flow happens while the launch is still coming up, so the screenshot below
+      captures the finished group: all three messages, each with its sender
+      label, beside the three-member roster.
     steps:
       - title: "Run the group flow and show the result"
         ui_test:
@@ -72,13 +81,15 @@ sections:
               action: wait_for
               # Exact strings — the inspector's findByProperty matches the whole
               # `text` property, not a substring (verified against logos-qt-mcp).
-              # "Hello team 👋" mirrors run-group.mjs's GROUP_MSG; "Members" is
-              # the members-pane header, present only for a group conversation.
-              texts: ["Hello team 👋", "Members"]
+              # The messages mirror run-group.mjs's GROUP_MSG, MISSED_MSG and
+              # REPLY_MSG; "Members" is the members-pane header, present only
+              # for a group conversation.
+              texts: ["Hello team 👋", "Next pick: Dune", "Count me in", "Members"]
               timeout: 90000
               text: |
-                Carol's window after the group formed: Alice's message, received
-                with its sender label and end-to-end-encrypted over
-                `delivery_module`, beside the members pane listing the
-                three-member roster.
+                Carol's window after the group formed: Alice's two messages and
+                Bob's reply, received with their sender labels and
+                end-to-end-encrypted over `delivery_module`, beside the members
+                pane listing the three-member roster. "Next pick: Dune" came
+                from Store.
               screenshot: "group.png"
