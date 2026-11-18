@@ -154,6 +154,8 @@ async function callDelivery(insp, method, topic) {
 
 const CONV_ID_ROLE = 257; // ConversationListModel::ConversationIdRole (Qt::UserRole + 1)
 const DISPLAY_NAME_ROLE = 258; // ConversationListModel::DisplayNameRole
+const CONTENT_ROLE = 258; // MessageListModel::ContentRole
+const DELIVERED_ROLE = 267; // MessageListModel::DeliveredRole
 // The group's shared name and description, set by the creator and carried to
 // every joiner. The joiners' display name resolves to GROUP_NAME (nickname unset).
 const GROUP_NAME = "Book Club";
@@ -292,8 +294,25 @@ async function main() {
   console.log("carol: fetched the missed message from Store");
   await shoot(carol, outDir, "05-carol-fetched.png");
 
+  // Bob's reply names the messages he holds, so Alice's Chat learns another
+  // member holds her first one, and reads it back delivered.
+  console.log("alice: wait for her first message to read delivered...");
+  const deliveredExpr = `(function () {
+    const m = store.messageModel;
+    for (let i = 0; i < threadPane.messageCount; ++i)
+      if (m.data(m.index(i, 0), ${CONTENT_ROLE}) === ${JSON.stringify(GROUP_MSG)})
+        return m.data(m.index(i, 0), ${DELIVERED_ROLE}) === true;
+    return false;
+  })()`;
+  await waitFor(async () => {
+    await loadThread(alice, groupId, 3);
+    return (await evalq(alice, deliveredExpr)) === true;
+  }, { timeout: 120000, what: "alice's first message to read delivered" });
+  console.log("alice: her first message reads delivered");
+  await shoot(alice, outDir, "06-alice-delivered.png");
+
   alice.disconnect(); bob.disconnect(); carol.disconnect();
-  console.log("\nGROUP COMPLETE: three-member group formed at one group state, message fanned out to both peers, a missed message fetched from Store; screenshots in " + outDir);
+  console.log("\nGROUP COMPLETE: three-member group formed at one group state, message fanned out to both peers and read back delivered, a missed message fetched from Store; screenshots in " + outDir);
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error("\nFAILED:", e.message); process.exit(1); });

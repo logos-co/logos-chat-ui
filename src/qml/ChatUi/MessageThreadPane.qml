@@ -41,6 +41,9 @@ Rectangle {
     required property bool ready
     // From a previous session: it reads back, but nothing can be sent into it.
     property bool historyOnly: false
+    // Whether the thread reports when another member holds a message, as only
+    // GroupV3 does.
+    property bool tracksDelivery: false
 
     signal messageSubmitted(string text)
     // Requests the conversation's details; emitted from the header's toggle.
@@ -168,6 +171,7 @@ Rectangle {
                 delegate: MessageDelegate {
                     width: ListView.view.width
                     groupContext: root.currentIsGroup
+                    tracksDelivery: root.tracksDelivery
                     onContextMenuRequested: function (text) {
                         messageMenu.copyText = text;
                         messageMenu.popup();

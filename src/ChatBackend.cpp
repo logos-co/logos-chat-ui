@@ -332,6 +332,8 @@ void ChatBackend::subscribeToEvents()
             [this](const QVariantList& a) { applyMessageReceived(a); });
     chat.on(QStringLiteral("message_sent"),
             [this](const QVariantList& a) { applyMessageSent(a); });
+    chat.on(QStringLiteral("message_delivered"),
+            [this](const QVariantList& a) { applyMessageDelivered(a); });
     chat.on(QStringLiteral("conversation_created"),
             [this](const QVariantList& a) { applyConversationCreated(a); });
     chat.on(QStringLiteral("conversation_updated"),
@@ -437,7 +439,8 @@ bool ChatBackend::showConversationMessages(const QString& convoId)
     for (const ChatModule::Message& msg : msgs) {
         const QString sender = msg.sender.value_or(QString());
         rows.append({ msg.from_self ? QStringLiteral("Me") : shortSenderLabel(sender),
-                      msg.content, msToDateTime(msg.timestamp_ms), msg.from_self });
+                      msg.content, msToDateTime(msg.timestamp_ms), msg.from_self,
+                      msg.message_id.value_or(QString()), msg.delivered });
     }
     m_messageModel->setMessages(std::move(rows));
     return true;
@@ -702,6 +705,7 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
     if (convoId.isEmpty()) return;
     const QString content = args.value(1).toString();
     const qint64 ts = args.value(2).toLongLong();
+    const QString messageId = args.value(3).toString();
     const QDateTime when = msToDateTime(ts);
     const QString preview = content.left(kPreviewMaxChars);
 
@@ -713,7 +717,14 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
     m_conversationModel->updatePreview(convoId, preview);
 
     if (convoId == currentConversationId())
-        m_messageModel->addMessage(QStringLiteral("Me"), content, when, true);
+        m_messageModel->addMessage(QStringLiteral("Me"), content, when, true, messageId);
+}
+
+void ChatBackend::applyMessageDelivered(const QVariantList& args)
+{
+    // A conversation not on screen reads the flag back when it is opened.
+    if (args.value(0).toString() == currentConversationId())
+        m_messageModel->markDelivered(args.value(1).toString());
 }
 
 void ChatBackend::applyConversationCreated(const QVariantList& args)

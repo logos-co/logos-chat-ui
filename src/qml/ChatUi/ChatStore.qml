@@ -42,6 +42,8 @@ QtObject {
     readonly property string currentProtocol: backend ? backend.currentProtocol : ""
     readonly property int currentEpoch: backend ? backend.currentEpoch : -1
     readonly property string currentEpochFingerprint: backend ? backend.currentEpochFingerprint : ""
+    // Only GroupV3 reports when another member holds a message.
+    readonly property bool currentTracksDelivery: currentProtocol === "GroupV3"
     // This account's own address, empty until the module has initialised, and
     // its short form.
     readonly property string myAddress: backend ? backend.myAddress : ""
