@@ -14,6 +14,7 @@ ChatMenuItem 1.0 ChatMenuItem.qml
 MessageComposer 1.0 MessageComposer.qml
 StatusBar 1.0 StatusBar.qml
 MessageDelegate 1.0 MessageDelegate.qml
+DeliveryTicks 1.0 DeliveryTicks.qml
 DayChip 1.0 DayChip.qml
 Facepile 1.0 Facepile.qml
 ThreadHeader 1.0 ThreadHeader.qml

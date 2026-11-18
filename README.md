@@ -34,8 +34,11 @@ Conversations and their messages are kept across restarts, but each launch start
 
 - **New chat > Group** asks for a name and an optional description, neither of which can be changed later, then creates the group with you as its only member.
 - Collect peers' addresses (each copies theirs from their account card), paste one into **Add member** at the foot of the members card, and confirm to invite.
-- Membership changes are asynchronous: your instance applies an add, and sends the peer its welcome, about two minutes after the invite, so a peer joins **minutes** after it, and another add of yours to the group fails until then. A peer you invited sits on the roster as a dimmed row reading **Waiting to join** until your instance applies the add, and stays there across chat switches. The roster refreshes on selection, a message from a new member, or your own add.
+- Membership changes are asynchronous: your instance applies an add, and sends the peer its welcome, about two minutes after the invite, so a peer joins **minutes** after it, and another add of yours to the group fails until then. A peer you invited sits on the roster as a dimmed row reading **Waiting to join** until your instance applies the add, and stays there across chat switches. The roster refreshes on selection, a message from a new member, your own add, or a member's group state moving.
 - A right-click on a roster row offers **Copy address**, for passing a member's address on.
+- **Details** names the group's protocol, GroupV3, and its epoch with that epoch's fingerprint. Members on the same group state share both, and the copy button beside the epoch takes the fingerprint.
+- A message you send to a group carries one tick once it is sent and two once another member holds it. The second tick comes with the first member who holds it, not the last.
+- The roster lists you and the members on your group state first. The rest follow under a heading for their state, **Forked**, **Not updated yet**, **Ahead of you** or **Unconfirmed**, and the invited come last. Each row shows the epoch the member was last heard at and their fingerprint of it. A member stays Unconfirmed until something they sent or signed can be checked against your group state.
 - Any member can add another, and the welcome comes from whoever added them.
 - Each member applies a membership change on its own timer, a few seconds apart, and a message sent in those seconds can miss a member that has applied the change when its sender has not, or the other way round.
 

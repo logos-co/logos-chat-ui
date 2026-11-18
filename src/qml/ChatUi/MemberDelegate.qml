@@ -5,7 +5,8 @@ import Logos.Theme
 import Logos.Controls
 
 // A roster row: the member's avatar and identity, marked as this account where
-// it is, and told as waiting where the invitation has not committed yet. A
+// it is, told as waiting where the invitation has not committed yet, and with
+// the epoch the member was last heard at where the group tracks it. A
 // right-click asks for the row's actions; Return copies from the keyboard.
 // Delegate roles bind by name.
 LogosItemDelegate {
@@ -19,6 +20,14 @@ LogosItemDelegate {
     required property bool isSelf
     // Invited but not yet committed into the group's roster.
     required property bool pending
+    // How the member's group state compares with this account's ("synced",
+    // "behind", "ahead", "forked", "unconfirmed"); empty where it is not
+    // tracked.
+    required property string syncState
+    // The newest epoch the member was heard at, and their fingerprint of it;
+    // -1 and empty until then.
+    required property int memberEpoch
+    required property string memberFingerprint
 
     // Asks for the row's actions, carrying the address they act on.
     signal contextMenuRequested(string address)
@@ -103,6 +112,20 @@ LogosItemDelegate {
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                 }
+            }
+
+            LogosText {
+                objectName: "memberEpoch"
+                visible: !root.pending && root.syncState !== ""
+                //: The epoch a member was last heard at, and their fingerprint of it
+                text: root.memberEpoch >= 0 ? qsTr("epoch %1 · %2").arg(root.memberEpoch).arg(root.memberFingerprint) :
+                //: Said of a member nothing has been heard from that can be checked
+                qsTr("unconfirmed")
+                color: Theme.palette.textTertiary
+                font.family: Theme.typography.mono
+                font.pixelSize: Theme.typography.secondaryText
+                elide: Text.ElideRight
+                Layout.fillWidth: true
             }
         }
 

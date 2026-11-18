@@ -98,8 +98,10 @@ private:
     void applyDeliveryState(const QString& state, const QString& detail, bool adopted);
     void applyMessageReceived(const QVariantList& args);
     void applyMessageSent(const QVariantList& args);
+    void applyMessageDelivered(const QVariantList& args);
     void applyConversationCreated(const QVariantList& args);
     void applyConversationUpdated(const QVariantList& args);
+    // Serves members_changed and member_states_changed alike.
     void applyMembersChanged(const QVariantList& args);
     void applyConversationDeleted(const QVariantList& args);
 

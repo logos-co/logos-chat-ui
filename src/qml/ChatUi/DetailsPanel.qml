@@ -23,6 +23,12 @@ Rectangle {
     property int pendingMemberCount: 0
     // From a previous session, kept for its history only.
     property bool historyOnly: false
+    // The protocol the conversation runs ("GroupV3"); empty while unknown.
+    property string protocol: ""
+    // The group's epoch and that epoch's fingerprint, which every member on
+    // the same group state shares; -1 and empty without one.
+    property int epoch: -1
+    property string epochFingerprint: ""
 
     signal closeRequested
 
@@ -95,10 +101,23 @@ Rectangle {
         }
 
         DetailRow {
+            objectName: "typeRow"
             Layout.fillWidth: true
-            //: Whether the conversation is a group or a one-to-one
+            //: The protocol the conversation runs, or whether it is a group or a one-to-one
             key: qsTr("Type")
-            value: root.isGroup ? qsTr("Group") : qsTr("Direct")
+            value: root.protocol !== "" ? root.protocol : root.isGroup ? qsTr("Group") : qsTr("Direct")
+        }
+
+        DetailRow {
+            objectName: "epochRow"
+            Layout.fillWidth: true
+            visible: root.epochFingerprint !== ""
+            //: The group's epoch and its fingerprint
+            key: qsTr("Epoch")
+            value: qsTr("%1 · %2").arg(root.epoch).arg(root.epochFingerprint)
+            mono: true
+            copyable: true
+            onCopyRequested: clipboard.copy(root.epochFingerprint)
         }
 
         DetailRow {

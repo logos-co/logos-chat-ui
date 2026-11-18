@@ -92,6 +92,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: false
                 dayLabel: "Monday"
+                delivered: false
             }
             ListElement {
                 sender: "Me"
@@ -103,6 +104,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: false
                 dayLabel: "Monday"
+                delivered: false
             }
             ListElement {
                 sender: "Saro"
@@ -114,6 +116,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: true
                 dayLabel: "Monday"
+                delivered: false
             }
         }
     }

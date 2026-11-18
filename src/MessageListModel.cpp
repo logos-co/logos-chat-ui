@@ -45,6 +45,7 @@ QVariant MessageListModel::data(const QModelIndex& index, int role) const
     case TimeDisplayRole: return TimeFormat::shortTime(item.timestamp);
     case AvatarInitialsRole: return Identity::initials(item.sender);
     case AvatarRampRole:     return Identity::avatarRamp(item.sender);
+    case DeliveredRole: return item.delivered;
     default:            return {};
     }
 }
@@ -61,12 +62,13 @@ QHash<int, QByteArray> MessageListModel::roleNames() const
         { DayLabelRole,               "dayLabel" },
         { TimeDisplayRole,            "timeDisplay" },
         { AvatarInitialsRole,         "avatarInitials" },
-        { AvatarRampRole,             "avatarRamp" }
+        { AvatarRampRole,             "avatarRamp" },
+        { DeliveredRole,              "delivered" }
     };
 }
 
 void MessageListModel::addMessage(const QString& sender, const QString& content,
-                                  const QDateTime& timestamp, bool isMe)
+                                  const QDateTime& timestamp, bool isMe, const QString& messageId)
 {
     // Drop an exact duplicate of the newest message. A reconnect resync reloads
     // the active thread via get_messages while live events still push, so a
@@ -80,7 +82,7 @@ void MessageListModel::addMessage(const QString& sender, const QString& content,
     }
 
     beginInsertRows(QModelIndex(), 0, 0);
-    m_items.prepend({ sender, content, timestamp, isMe });
+    m_items.prepend({ sender, content, timestamp, isMe, messageId });
     endInsertRows();
 }
 
@@ -116,6 +118,20 @@ void MessageListModel::setMessages(QVector<MessageItem> items)
     beginResetModel();
     m_items = std::move(items);
     endResetModel();
+}
+
+void MessageListModel::markDelivered(const QString& messageId)
+{
+    if (messageId.isEmpty()) return;
+    for (int row = 0; row < m_items.size(); ++row) {
+        MessageItem& item = m_items[row];
+        if (item.messageId != messageId) continue;
+        if (!item.delivered) {
+            item.delivered = true;
+            emit dataChanged(index(row), index(row), { DeliveredRole });
+        }
+        return;
+    }
 }
 
 void MessageListModel::clear()

@@ -98,6 +98,7 @@ Item {
             sameSenderAsPrevious: false
             showDaySeparator: true
             dayLabel: "Today"
+            delivered: false
         }
     }
     ListModel {
@@ -119,6 +120,10 @@ Item {
             avatarRamp: 1
             isSelf: false
             pending: false
+            syncState: ""
+            memberEpoch: -1
+            memberFingerprint: ""
+            syncGroup: ""
         }
     }
 
@@ -404,6 +409,7 @@ Item {
             sameSenderAsPrevious: false
             showDaySeparator: true
             dayLabel: "Today"
+            delivered: false
         }
     }
     Component {
@@ -419,6 +425,9 @@ Item {
             avatarRamp: 4
             isSelf: false
             pending: true
+            syncState: ""
+            memberEpoch: -1
+            memberFingerprint: ""
         }
     }
 
@@ -545,7 +554,8 @@ Item {
                 isMe: isMe,
                 sameSenderAsPrevious: false,
                 showDaySeparator: false,
-                dayLabel: "Today"
+                dayLabel: "Today",
+                delivered: false
             };
         }
 
@@ -1080,6 +1090,25 @@ Item {
             verify(!members.visible, "and counts no members");
         }
 
+        // A conversation's type is the protocol it runs once known, and a
+        // GroupV3 group adds its epoch, whose copy takes the fingerprint alone.
+        function test_detailsPanelProtocolAndEpoch() {
+            const panel = createTemporaryObject(detailsPanelC, testRoot);
+            verify(panel, "the details panel must instantiate");
+            const type = findField(panel, "typeRow");
+            const epoch = findField(panel, "epochRow");
+            verify(type && epoch, "both rows must be reachable");
+            compare(type.value, "Group", "a group of unknown protocol");
+            verify(!epoch.visible, "no epoch while none is known");
+
+            panel.protocol = "GroupV3";
+            panel.epoch = 4;
+            panel.epochFingerprint = "a2434d2747f3f5";
+            compare(type.value, "GroupV3", "the protocol names the type");
+            verify(epoch.visible, "a GroupV3 group shows its epoch");
+            compare(epoch.value, "4 · a2434d2747f3f5");
+        }
+
         // The header's New menu offers both kinds of conversation, and picking
         // one requests it.
         function test_conversationsPaneNewMenu() {
@@ -1240,6 +1269,34 @@ Item {
             verify(shortBox.width < longBox.width, "a short message makes a narrower bubble");
             compare(longBox.width, 280, "a long message caps at 70% of the row");
             verify(longBox.height > shortBox.height, "wrapped content makes a taller bubble");
+        }
+
+        // Only this account's messages in a thread that reports deliveries carry
+        // ticks: one once sent, two once another member holds the message, with
+        // the bubble wide enough for them.
+        function test_messageDelegateTicks() {
+            const bubble = createTemporaryObject(messageDelegateC, testRoot);
+            verify(bubble, "the delegate must instantiate");
+            bubble.width = 400;
+            bubble.content = "Hi";
+            const ticks = findField(bubble, "deliveryTicks");
+            const second = findField(bubble, "secondTick");
+            const tip = findField(bubble, "deliveredTip");
+            verify(ticks && second && tip, "the ticks must be reachable");
+            verify(!ticks.visible, "a received message carries no ticks");
+
+            bubble.isMe = true;
+            verify(!ticks.visible, "nor a sent one where the thread reports no deliveries");
+            const plainWidth = findField(bubble, "bubble").width;
+
+            bubble.tracksDelivery = true;
+            verify(ticks.visible, "a sent message in a GroupV3 thread is ticked");
+            verify(!second.visible, "once, while no other member holds it");
+            verify(findField(bubble, "bubble").width > plainWidth, "the bubble makes room for the ticks");
+
+            bubble.delivered = true;
+            verify(second.visible, "twice once another member holds it");
+            compare(tip.text, "At least one member has read it");
         }
 
         // A sender's name takes the first colour of the ramp their avatar is
@@ -1460,6 +1517,27 @@ Item {
             del.flashCopied();
             verify(del.copiedFlashing, "flashing right after a copy");
             tryCompare(del, "copiedFlashing", false, 3000, "the flash clears");
+        }
+
+        // A member of a group that tracks state shows the epoch they were last
+        // heard at, or that nothing checkable was heard; an invited member and an
+        // untracked roster show neither.
+        function test_memberDelegateEpoch() {
+            const del = createTemporaryObject(memberDelegateC, testRoot);
+            verify(del, "the delegate must instantiate");
+            const line = findField(del, "memberEpoch");
+            verify(line, "the epoch line must be reachable");
+            verify(!line.visible, "an invited member has no epoch to show");
+
+            del.pending = false;
+            verify(!line.visible, "nor does a member whose state is not tracked");
+            del.syncState = "unconfirmed";
+            verify(line.visible, "a tracked member shows the line");
+            compare(line.text, "unconfirmed", "before anything checkable is heard");
+            del.syncState = "behind";
+            del.memberEpoch = 3;
+            del.memberFingerprint = "5e81c09b2a7d44";
+            compare(line.text, "epoch 3 · 5e81c09b2a7d44");
         }
 
         // Confirming the explainer emits confirmed() so the caller can proceed

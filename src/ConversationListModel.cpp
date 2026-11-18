@@ -89,6 +89,22 @@ void ConversationListModel::updateDescription(const QString& id, const QString& 
     emit dataChanged(index(idx), index(idx), { DescriptionRole });
 }
 
+void ConversationListModel::updateProtocol(const QString& id, const QString& protocol)
+{
+    const int idx = indexOf(id);
+    if (idx >= 0)
+        m_items[idx].protocol = protocol;
+}
+
+void ConversationListModel::updateEpoch(const QString& id, int epoch, const QString& epochFingerprint)
+{
+    const int idx = indexOf(id);
+    if (idx < 0) return;
+
+    m_items[idx].epoch = epoch;
+    m_items[idx].epochFingerprint = epochFingerprint;
+}
+
 void ConversationListModel::updatePreview(const QString& id, const QString& preview)
 {
     int idx = indexOf(id);
@@ -215,6 +231,24 @@ bool ConversationListModel::historyOnlyFor(const QString& id) const
 {
     const int idx = indexOf(id);
     return idx >= 0 && m_items.at(idx).historyOnly;
+}
+
+QString ConversationListModel::protocolFor(const QString& id) const
+{
+    const int idx = indexOf(id);
+    return idx < 0 ? QString() : m_items.at(idx).protocol;
+}
+
+int ConversationListModel::epochFor(const QString& id) const
+{
+    const int idx = indexOf(id);
+    return idx < 0 ? -1 : m_items.at(idx).epoch;
+}
+
+QString ConversationListModel::epochFingerprintFor(const QString& id) const
+{
+    const int idx = indexOf(id);
+    return idx < 0 ? QString() : m_items.at(idx).epochFingerprint;
 }
 
 QString ConversationListModel::formatLastActivity(const QDateTime& lastActivity) const

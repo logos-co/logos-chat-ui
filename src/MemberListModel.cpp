@@ -1,6 +1,32 @@
 #include "MemberListModel.h"
 #include "Identity.h"
 
+#include <QStringList>
+#include <algorithm>
+
+namespace {
+
+QString syncGroup(const MemberItem& item)
+{
+    if (item.pending) return QStringLiteral("pending");
+    if (item.isSelf || item.syncState == QLatin1String("synced")) return QString();
+    return item.syncState;
+}
+
+// Where a row lists: this account first, then the rest of the top group, then
+// each heading in turn. A state this view does not know lists as unconfirmed.
+int rank(const MemberItem& item)
+{
+    static const QStringList order = { QString(), QStringLiteral("forked"), QStringLiteral("behind"),
+                                       QStringLiteral("ahead"), QStringLiteral("unconfirmed"),
+                                       QStringLiteral("pending") };
+    if (item.isSelf && !item.pending) return 0;
+    const int group = order.indexOf(syncGroup(item));
+    return 1 + (group < 0 ? order.indexOf(QStringLiteral("unconfirmed")) : group);
+}
+
+} // namespace
+
 MemberListModel::MemberListModel(QObject* parent)
     : QAbstractListModel(parent)
 {
@@ -29,6 +55,10 @@ QVariant MemberListModel::data(const QModelIndex& index, int role) const
     case PendingRole: return item.pending;
     case AvatarInitialsRole: return Identity::initials(item.address);
     case AvatarRampRole:     return Identity::avatarRamp(Identity::shortLabel(item.address));
+    case SyncStateRole:      return item.syncState;
+    case EpochRole:          return item.epoch;
+    case EpochFingerprintRole: return item.epochFingerprint;
+    case SyncGroupRole:      return syncGroup(item);
     default:          return {};
     }
 }
@@ -41,7 +71,11 @@ QHash<int, QByteArray> MemberListModel::roleNames() const
         { IsSelfRole,  "isSelf" },
         { PendingRole, "pending" },
         { AvatarInitialsRole, "avatarInitials" },
-        { AvatarRampRole,     "avatarRamp" }
+        { AvatarRampRole,     "avatarRamp" },
+        { SyncStateRole,      "syncState" },
+        { EpochRole,          "memberEpoch" },
+        { EpochFingerprintRole, "memberFingerprint" },
+        { SyncGroupRole,      "syncGroup" }
     };
 }
 
@@ -49,6 +83,8 @@ void MemberListModel::setMembers(const QVector<MemberItem>& members)
 {
     beginResetModel();
     m_items = members;
+    std::stable_sort(m_items.begin(), m_items.end(),
+                     [](const MemberItem& a, const MemberItem& b) { return rank(a) < rank(b); });
     endResetModel();
 }
 

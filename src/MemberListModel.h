@@ -13,11 +13,20 @@ struct MemberItem {
     bool isSelf = false;
     // A member invited but not yet committed into the group.
     bool pending = false;
+    // How the member's group state compares with this account's, as the chat
+    // module words it ("synced", "behind", "ahead", "forked", "unconfirmed");
+    // empty where it is not tracked.
+    QString syncState;
+    // The newest epoch the member was heard at, and their fingerprint of it;
+    // -1 and empty until then.
+    int epoch = -1;
+    QString epochFingerprint;
 };
 
 // A group's roster, replaced wholesale on each refresh. `label` is the short
 // form of `address` (or "unknown_account" when the address is empty), computed
-// here so QML renders a consistent identity string.
+// here so QML renders a consistent identity string. Rows are ordered by
+// `syncGroup`, each group in the order given.
 class MemberListModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -31,7 +40,14 @@ public:
         // Avatar identity, derived from the address so one account keeps one
         // pair of initials and one colour wherever it is drawn.
         AvatarInitialsRole,
-        AvatarRampRole
+        AvatarRampRole,
+        SyncStateRole,
+        EpochRole,
+        EpochFingerprintRole,
+        // The heading a row is listed under, in this order: "" for this
+        // account, the members on its group state and an untracked roster,
+        // then "forked", "behind", "ahead", "unconfirmed" and "pending".
+        SyncGroupRole
     };
 
     explicit MemberListModel(QObject* parent = nullptr);

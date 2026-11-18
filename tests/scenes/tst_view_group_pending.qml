@@ -81,6 +81,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: false
                 dayLabel: "Today"
+                delivered: false
             }
             ListElement {
                 sender: "Raya"
@@ -92,6 +93,7 @@ Item {
                 sameSenderAsPrevious: true
                 showDaySeparator: false
                 dayLabel: "Today"
+                delivered: false
             }
             ListElement {
                 sender: "Raya"
@@ -103,6 +105,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: false
                 dayLabel: "Today"
+                delivered: false
             }
             ListElement {
                 sender: "Saro"
@@ -114,6 +117,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: true
                 dayLabel: "Today"
+                delivered: false
             }
             ListElement {
                 sender: "Me"
@@ -125,6 +129,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: false
                 dayLabel: "Yesterday"
+                delivered: true
             }
             ListElement {
                 sender: "Saro"
@@ -136,6 +141,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: true
                 dayLabel: "Yesterday"
+                delivered: false
             }
         }
         members: ListModel {
@@ -146,6 +152,10 @@ Item {
                 avatarRamp: 0
                 isSelf: true
                 pending: false
+                syncState: "synced"
+                memberEpoch: 4
+                memberFingerprint: "a2434d2747f3f5"
+                syncGroup: ""
             }
             ListElement {
                 address: "0b2c3d4e5f60"
@@ -154,6 +164,10 @@ Item {
                 avatarRamp: 1
                 isSelf: false
                 pending: false
+                syncState: "synced"
+                memberEpoch: 4
+                memberFingerprint: "a2434d2747f3f5"
+                syncGroup: ""
             }
             ListElement {
                 address: "a1b2c3d4e5f6"
@@ -162,6 +176,10 @@ Item {
                 avatarRamp: 0
                 isSelf: false
                 pending: false
+                syncState: "behind"
+                memberEpoch: 3
+                memberFingerprint: "5e81c09b2a7d44"
+                syncGroup: "behind"
             }
             ListElement {
                 address: "f6e5d4c3b2a1"
@@ -170,6 +188,10 @@ Item {
                 avatarRamp: 2
                 isSelf: false
                 pending: true
+                syncState: ""
+                memberEpoch: -1
+                memberFingerprint: ""
+                syncGroup: "pending"
             }
         }
     }
@@ -193,6 +215,9 @@ Item {
             b.currentAvatarRamp = 3;
             b.memberCount = 3;
             b.pendingMemberCount = 1;
+            b.currentProtocol = "GroupV3";
+            b.currentEpoch = 4;
+            b.currentEpochFingerprint = "a2434d2747f3f5";
             b.selectConversation("c2");
         }
     }
