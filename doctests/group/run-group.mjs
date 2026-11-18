@@ -7,13 +7,16 @@
 // logos-qt-mcp inspector protocol to all three instances: Alice creates a group,
 // invites Bob and Carol by address, waits for every roster to converge, then sends
 // one message that fans out to both — exercising the members pane and the
-// per-message sender attribution the group UI adds over a DM. Launch and
-// teardown of the three apps is handled by run-group.sh; this script attaches to
-// the three inspector ports it is given.
+// per-message sender attribution the group UI adds over a DM. Then Carol misses
+// a message and gets it from Store: her node drops the group's topic while Alice
+// sends, and Bob's reply names the message, so her chat_module fetches it. Launch
+// and teardown of the three apps is handled by run-group.sh; this script attaches
+// to the three inspector ports it is given.
 //
 // Env:
 //   ALICE_PORT / BOB_PORT / CAROL_PORT  inspector ports (default 3768/3769/3770)
 //   OUT_DIR                              screenshot output dir (default ./images)
+//   WORK_DIR                             the instances' dir, holding <name>.log
 import net from "node:net";
 import fs from "node:fs";
 
@@ -126,6 +129,29 @@ async function getAddress(insp) {
   throw new Error("address was not produced");
 }
 
+// The content topics an instance subscribed, from delivery_module's own lines in
+// its log. delivery_module reports no subscriptions to ask for instead.
+function subscribedTopics(logPath) {
+  const lines = fs.readFileSync(logPath, "utf-8");
+  return new Set([...lines.matchAll(/DeliveryModuleImpl::subscribe called with contentTopic: (\S+)/g)].map((m) => m[1]));
+}
+
+// The group's topic: the one Alice and Carol both subscribed, besides each one's own inbox.
+function groupTopic(workDir) {
+  const carol = subscribedTopics(`${workDir}/carol.log`);
+  const shared = [...subscribedTopics(`${workDir}/alice.log`)].filter((t) => carol.has(t));
+  if (shared.length !== 1) throw new Error(`expected one topic Alice and Carol share, got ${JSON.stringify(shared)}`);
+  return shared[0];
+}
+
+// Calls delivery_module on the instance's own node, through the view's module bridge.
+async function callDelivery(insp, method, topic) {
+  const raw = await evalq(insp, `logos.callModule("delivery_module", ${JSON.stringify(method)}, [${JSON.stringify(topic)}])`);
+  let reply = null;
+  try { reply = JSON.parse(raw); } catch {}
+  if (reply?.success !== true) throw new Error(`delivery_module.${method}(${topic}): ${raw}`);
+}
+
 const CONV_ID_ROLE = 257; // ConversationListModel::ConversationIdRole (Qt::UserRole + 1)
 const DISPLAY_NAME_ROLE = 258; // ConversationListModel::DisplayNameRole
 // The group's shared name and description, set by the creator and carried to
@@ -135,10 +161,16 @@ const GROUP_DESC = "Weekly sci-fi picks";
 // Must match doctests/chat-ui-group.test.yaml's wait_for text exactly:
 // findByProperty matches the whole `text` property, not a substring.
 const GROUP_MSG = "Hello team \u{1F44B}";
+// The message Carol misses, and Bob's reply that names it. Also matched exactly by
+// the spec's wait_for.
+const MISSED_MSG = "Next pick: Dune";
+const REPLY_MSG = "Count me in";
 
 async function main() {
   const outDir = process.env.OUT_DIR || "./images";
   fs.mkdirSync(outDir, { recursive: true });
+  const workDir = process.env.WORK_DIR;
+  if (!workDir) throw new Error("WORK_DIR is not set");
   const alice = new Inspector("127.0.0.1", parseInt(process.env.ALICE_PORT || "3768", 10));
   const bob   = new Inspector("127.0.0.1", parseInt(process.env.BOB_PORT   || "3769", 10));
   const carol = new Inspector("127.0.0.1", parseInt(process.env.CAROL_PORT || "3770", 10));
@@ -218,8 +250,38 @@ async function main() {
   await loadThread(bob, bobGroup, 1, { timeout: 300000 });
   await shoot(bob, outDir, "04-bob-received.png");
 
+  // Delivery hands an instance only the topics its node subscribes, so with the
+  // group's topic dropped Alice's next message never reaches Carol live.
+  const topic = groupTopic(workDir);
+  console.log(`carol: drop the group's topic ${topic}...`);
+  await callDelivery(carol, "unsubscribe", topic);
+  console.log("alice: send the message carol misses...");
+  await evalq(alice, `store.backend.sendMessage(${JSON.stringify(groupId)}, ${JSON.stringify(MISSED_MSG)})`);
+  await loadThread(bob, bobGroup, 2, { timeout: 120000 });
+  console.log("bob: received it");
+  // Past delivery's 20 s timestamp variance, so the subscribe below gets no
+  // history from Store that holds the message, and short of the 60 s after which
+  // Alice's SDS would resend it unacknowledged.
+  await sleep(35000);
+  const carolLog = `${workDir}/carol.log`;
+  const logFrom = fs.statSync(carolLog).size;
+  console.log("carol: subscribe again; bob: reply...");
+  await callDelivery(carol, "subscribe", topic);
+  await evalq(bob, `store.backend.sendMessage(${JSON.stringify(bobGroup)}, ${JSON.stringify(REPLY_MSG)})`);
+  try {
+    await loadThread(carol, carolGroup, 3, { timeout: 120000 });
+  } catch (e) {
+    throw new Error(`carol did not get the message she missed: ${e.message}`);
+  }
+  const since = fs.readFileSync(carolLog).subarray(logFrom).toString("utf-8");
+  if (!since.includes("DeliveryModuleImpl::storeQuery called")) {
+    throw new Error("carol has the missed message, but her node ran no Store query for it");
+  }
+  console.log("carol: fetched the missed message from Store");
+  await shoot(carol, outDir, "05-carol-fetched.png");
+
   alice.disconnect(); bob.disconnect(); carol.disconnect();
-  console.log("\nGROUP COMPLETE: three-member group formed, message fanned out to both peers; screenshots in " + outDir);
+  console.log("\nGROUP COMPLETE: three-member group formed, message fanned out to both peers, a missed message fetched from Store; screenshots in " + outDir);
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error("\nFAILED:", e.message); process.exit(1); });

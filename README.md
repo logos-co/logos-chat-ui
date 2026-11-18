@@ -88,7 +88,8 @@ copy one window's address from its account card and paste it into another
 panel for a group). For
 the full walkthrough with screenshots, and the scripted drivers that automate it
 (`doctests/exchange/run-exchange.sh` for a two-party exchange,
-`doctests/group/run-group.sh` for a three-party group), see
+`doctests/group/run-group.sh` for a three-party group that also fetches a
+missed message from Store), see
 [Two-instance message exchange](docs/two-instance-exchange.md).
 
 ### In Basecamp
@@ -145,7 +146,7 @@ arrived in [chat-module PR #66](https://github.com/logos-co/logos-chat-module/pu
   [Run the automated message-exchange test](doctests/chat-ui-exchange.test.yaml)
   (the real two-party round-trip, captured) and
   [Run the automated group-chat test](doctests/chat-ui-group.test.yaml)
-  (a real three-party group, captured).
+  (a real three-party group, with a missed message fetched from Store, captured).
 
   Enabling the report links is a one-time repo setup: Settings -> Pages ->
   "Deploy from a branch", branch `gh-pages` / `(root)` (the CI publish-report
