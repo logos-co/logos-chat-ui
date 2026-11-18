@@ -27,6 +27,14 @@ constexpr const char* kDefaultDeliveryPreset = "logos.test";
 // TODO: expose to the client through the UI in the future.
 constexpr const char* kChatLogLevel = "info";
 
+// The network Chat asks for: LOGOS_CHAT_DELIVERY_PRESET when it is set, else
+// the default.
+QString requestedDeliveryPreset()
+{
+    const QString named = qEnvironmentVariable("LOGOS_CHAT_DELIVERY_PRESET");
+    return named.isEmpty() ? QString::fromLatin1(kDefaultDeliveryPreset) : named;
+}
+
 // How often the module is asked whether it is still there, and how long that
 // question is worth waiting for. Acquiring the object blocks the caller, so the
 // timeout is what a dead module costs this thread: short enough not to be felt,
@@ -135,7 +143,7 @@ ChatBackend::ChatBackend(QObject* parent)
 
     setChatStatus(ChatBackendSimpleSource::Stopped);
     setDeliveryAdopted(false);
-    setDeliveryPreset(QString::fromLatin1(kDefaultDeliveryPreset));
+    setDeliveryPreset(requestedDeliveryPreset());
     setMyAddress(QString());
     setMyLabel(QString());
     setMyInitials(QString());
@@ -180,7 +188,7 @@ void ChatBackend::initialiseModule()
     setChatStatus(ChatBackendSimpleSource::Initialising);
 
     ChatModule::ChatConfig config;
-    config.delivery_preset = QString::fromLatin1(kDefaultDeliveryPreset);
+    config.delivery_preset = deliveryPreset();
     config.log_level = QString::fromLatin1(kChatLogLevel);
     const LogosResult res = modules().chat_module.init(config);
     if (!res.success) {

@@ -78,6 +78,7 @@ state apart; it defaults to the platform application data location.
 | Variable | Purpose |
 |---|---|
 | `LOGOS_USER_DIR` | The standalone app's session directory, for when setting it by environment is easier than by flag. `--user-dir` wins over it. |
+| `LOGOS_CHAT_DELIVERY_PRESET` | The delivery network Chat starts its node on, `logos.test` when unset. The doc-tests set `logos.dev`. |
 | `QML_INSPECTOR_PORT` | Only needed when attaching the [logos-qt-mcp](https://github.com/logos-co/logos-qt-mcp) inspector to drive an instance programmatically (default 3768); give each a distinct one then. Interactive use does not need it. |
 
 Each node joins the `logos.test` Waku fleet and publishes its key package during
