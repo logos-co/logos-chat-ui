@@ -55,6 +55,10 @@ sections:
       in", names Alice's message, so Carol's Chat sees a gap and fetches the
       message from a Store node of the delivery network.
 
+      Last, the flow reads the group's debug data in each window, what the
+      developer tools' State tab shows, and checks that all three report the
+      same epoch and fingerprint.
+
       The app then opens the capture port onto Carol's live window. The whole
       flow happens while the launch is still coming up, so the screenshot below
       captures the finished group: all three messages, each with its sender

@@ -13,7 +13,10 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QPointer>
+#include <QTime>
 #include <QVariantMap>
 #include <utility>
 
@@ -93,6 +96,60 @@ void appendRuns(QVariantList& published, const QString& writer, const QString& a
     }
 }
 
+// A conversation's debug data as the developer tools show it, from the map
+// get_debug_data returned: see the debugData property for its keys.
+QVariantMap debugDataView(const QVariantMap& data, const QString& myAddress)
+{
+    QVariantList members;
+    QMap<QString, int> counts;
+    for (const QVariant& entry : data.value(QStringLiteral("members")).toList()) {
+        const QVariantMap member = entry.toMap();
+        const QString account = member.value(QStringLiteral("account")).toString();
+        const QString sync = member.value(QStringLiteral("sync")).toString();
+        const bool isSelf = !account.isEmpty() && account == myAddress;
+        ++counts[sync];
+        const QVariantMap row{
+            {QStringLiteral("label"),
+             account.isEmpty() ? QStringLiteral("unknown_account") : Identity::shortLabel(account)},
+            {QStringLiteral("signer"), member.value(QStringLiteral("signer")).toString()},
+            {QStringLiteral("sync"), sync},
+            {QStringLiteral("epoch"), member.value(QStringLiteral("epoch"), -1).toInt()},
+            {QStringLiteral("epochFingerprint"), member.value(QStringLiteral("epoch_fingerprint")).toString()},
+            {QStringLiteral("isSelf"), isSelf},
+        };
+        if (isSelf)
+            members.prepend(row);
+        else
+            members.append(row);
+    }
+
+    // The states libchat names, in the order a reader scans for trouble; a
+    // state it adds later is counted after them.
+    static const QStringList order = {QStringLiteral("synced"), QStringLiteral("behind"),
+                                      QStringLiteral("ahead"), QStringLiteral("forked"),
+                                      QStringLiteral("unconfirmed")};
+    QVariantList countList;
+    const auto count = [&countList](const QString& sync, int n) {
+        countList.append(QVariantMap{{QStringLiteral("sync"), sync}, {QStringLiteral("count"), n}});
+    };
+    for (const QString& sync : order) {
+        if (counts.contains(sync))
+            count(sync, counts.take(sync));
+    }
+    for (auto it = counts.cbegin(); it != counts.cend(); ++it)
+        count(it.key(), it.value());
+
+    return {
+        {QStringLiteral("epoch"), data.value(QStringLiteral("epoch"), -1).toInt()},
+        {QStringLiteral("epochFingerprint"), data.value(QStringLiteral("epoch_fingerprint")).toString()},
+        {QStringLiteral("members"), members},
+        {QStringLiteral("counts"), countList},
+        {QStringLiteral("json"),
+         QString::fromUtf8(QJsonDocument(QJsonObject::fromVariantMap(data)).toJson(QJsonDocument::Indented))},
+        {QStringLiteral("readAt"), QTime::currentTime().toString(QStringLiteral("HH:mm:ss"))},
+    };
+}
+
 // Sorted descending, it lists this session's conversations before those kept
 // from a previous one, whatever their activity: a ListView heads a section only
 // over rows grouped together, and a kept conversation with no messages counts
@@ -150,7 +207,13 @@ ChatBackend::ChatBackend(QObject* parent)
     setCurrentConversationId(QString());
     setLoadedConversationId(QString());
     setLogDir(QString());
+    setDebugData({});
+    setDebugDataShown(false);
     syncCurrentConversationMeta();
+    connect(this, &ChatBackendSimpleSource::debugDataShownChanged, this, [this](bool shown) {
+        if (shown)
+            refreshDebugData();
+    });
 
     // As early as this plugin can reach: the QML engine has not loaded the view
     // yet, so its warnings are caught too. The lines are held in memory until
@@ -552,6 +615,9 @@ void ChatBackend::selectConversation(QString conversationId)
     setPendingMemberCount(0);
     setCurrentPeerAddress(QString());
     refreshMembers();
+    setDebugData({});
+    if (debugDataShown())
+        refreshDebugData();
     if (loaded)
         setLoadedConversationId(conversationId);
 }
@@ -606,6 +672,32 @@ void ChatBackend::refreshSessionLogs()
     appendRuns(published, QStringLiteral("chat_ui"), m_viewLogPath);
     appendRuns(published, QStringLiteral("chat_module"), m_moduleLogPath);
     setLogRuns(published);
+}
+
+void ChatBackend::refreshDebugData()
+{
+    const QString convoId = currentConversationId();
+    // A conversation from a previous session has no live group to ask.
+    if (convoId.isEmpty() || currentHistoryOnly() || !m_moduleInitialised) {
+        setDebugData({});
+        return;
+    }
+    const LogosResult res = modules().chat_module.get_debug_data(convoId);
+    if (!res.success) {
+        reportFailure(QStringLiteral("Failed to read the debug data"), res.error.toString());
+        return;
+    }
+    setDebugData(debugDataView(res.value.toMap(), myAddress()));
+}
+
+void ChatBackend::refreshDebugDataAfter(const QString& convoId)
+{
+    if (!debugDataShown())
+        return;
+    deferToEventLoop([this, convoId] {
+        if (convoId == currentConversationId())
+            refreshDebugData();
+    });
 }
 
 // ── event handlers ────────────────────────────────────────────────────────────
@@ -690,6 +782,7 @@ void ChatBackend::applyMessageReceived(const QVariantList& args)
         // refetch (deferred: sync module read from inside an event callback).
         if (!sender.isEmpty() && !m_memberModel->contains(sender))
             deferToEventLoop([this] { refreshMembers(); });
+        refreshDebugDataAfter(convoId);
     } else {
         m_conversationModel->incrementUnread(convoId);
     }
@@ -712,8 +805,10 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
     }
     m_conversationModel->updatePreview(convoId, preview);
 
-    if (convoId == currentConversationId())
+    if (convoId == currentConversationId()) {
         m_messageModel->addMessage(QStringLiteral("Me"), content, when, true, messageId);
+        refreshDebugDataAfter(convoId);
+    }
 }
 
 void ChatBackend::applyMessageDelivered(const QVariantList& args)
@@ -782,6 +877,7 @@ void ChatBackend::applyMembersChanged(const QVariantList& args)
         if (convoId == currentConversationId() && m_conversationModel->isGroupFor(convoId))
             refreshMembers();
     });
+    refreshDebugDataAfter(convoId);
 }
 
 void ChatBackend::applyConversationDeleted(const QVariantList& args)
@@ -798,6 +894,7 @@ void ChatBackend::applyConversationDeleted(const QVariantList& args)
         // The roster goes with the conversation. Reached with no current
         // conversation, refreshMembers clears it without a module read.
         refreshMembers();
+        setDebugData({});
     }
 }
 

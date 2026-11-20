@@ -6,8 +6,8 @@ import ChatUiScenes
 import "../../src/qml"
 
 // A group just opened, with its details, one member still waiting to join, a
-// thread spanning two days, and failures held on the status bar. Opening it is
-// what hands the composer the caret.
+// thread spanning two days, and failures held on the developer tools icon.
+// Opening it is what hands the composer the caret.
 Item {
     id: stage
     width: 1280

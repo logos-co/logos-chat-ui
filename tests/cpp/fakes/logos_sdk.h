@@ -99,6 +99,9 @@ public:
     int conversationsCreated = 0;
     // The delivery_preset init was called with.
     QString initialisedPreset;
+    // What get_debug_data answers, and how many times it was asked.
+    QVariantMap debugData;
+    int debugDataReads = 0;
 
     void goOnline()
     {
@@ -166,6 +169,11 @@ public:
     LogosResult send_message(const QString&, const QString&, logos::CallError* = nullptr)
     {
         return {true, {}, {}};
+    }
+    LogosResult get_debug_data(const QString&, logos::CallError* = nullptr)
+    {
+        ++debugDataReads;
+        return {true, debugData, {}};
     }
 
 private:

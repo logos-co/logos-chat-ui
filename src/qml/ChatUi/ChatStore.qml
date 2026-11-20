@@ -53,6 +53,11 @@ QtObject {
     readonly property var logRuns: backend ? backend.logRuns : []
     readonly property string logDir: backend ? backend.logDir : ""
 
+    // What the current conversation reports about itself for debugging, kept
+    // current by the backend while debugDataShown is set.
+    readonly property var debugData: backend ? backend.debugData : ({})
+    property bool debugDataShown: false
+
     // Short connectivity label for the account card.
     readonly property string statusLabel: {
         if (!backend)
@@ -102,6 +107,17 @@ QtObject {
     function refreshLogRuns() {
         if (backend)
             backend.refreshSessionLogs();
+    }
+    function refreshDebugData() {
+        if (backend)
+            backend.refreshDebugData();
+    }
+
+    property Binding _debugDataShown: Binding {
+        target: root.backend
+        property: "debugDataShown"
+        value: root.debugDataShown
+        when: root.backend !== null
     }
 
     property Connections _backendSignals: Connections {

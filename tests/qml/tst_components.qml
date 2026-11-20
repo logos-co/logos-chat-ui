@@ -271,20 +271,14 @@ Item {
         }
     }
     Component {
-        id: statusBarC
-        StatusBar {
-            width: 360
-            errorMessage: ""
-            errorCount: 0
-        }
-    }
-    Component {
         id: clipboardProxyC
         ClipboardProxy {}
     }
     Component {
-        id: sessionLogsDialogC
-        SessionLogsDialog {
+        id: sessionLogsViewC
+        SessionLogsView {
+            width: 620
+            height: 320
             logDir: "/data/module_data/chat_module/74fe12d2b288"
             // Two writers in one directory, which is what the tabs divide, plus
             // one run of this view's that rotated.
@@ -334,13 +328,60 @@ Item {
             ]
         }
     }
-    // The same dialog with nothing to report, for the tab it opens on.
+    // A GroupV3 group's debug data as the backend publishes it: this account
+    // first, a member behind it, and one not heard from yet.
     Component {
-        id: quietLogsDialogC
-        SessionLogsDialog {
-            logDir: "/data/module_data/chat_module/74fe12d2b288"
-            runs: []
-            errors: []
+        id: devToolsPanelC
+        DevToolsPanel {
+            width: 720
+            height: 320
+            conversationName: "Book Club"
+            debugData: ({
+                    epoch: 4,
+                    epochFingerprint: "a2434d2747f3f5",
+                    members: [
+                        {
+                            label: "4be1c07a",
+                            signer: "1233c4d1f0e2a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4",
+                            sync: "synced",
+                            epoch: 4,
+                            epochFingerprint: "a2434d2747f3f5",
+                            isSelf: true
+                        },
+                        {
+                            label: "757f1dbb",
+                            signer: "52c9e1f0d2c3b4a5968778695a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b",
+                            sync: "behind",
+                            epoch: 3,
+                            epochFingerprint: "5e81c09b2a7d44",
+                            isSelf: false
+                        },
+                        {
+                            label: "unknown_account",
+                            signer: "34e8a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e",
+                            sync: "unconfirmed",
+                            epoch: -1,
+                            epochFingerprint: "",
+                            isSelf: false
+                        }
+                    ],
+                    counts: [
+                        {
+                            sync: "synced",
+                            count: 1
+                        },
+                        {
+                            sync: "behind",
+                            count: 1
+                        },
+                        {
+                            sync: "unconfirmed",
+                            count: 1
+                        }
+                    ],
+                    json: "{\n    \"epoch\": 4\n}\n",
+                    readAt: "12:41:07"
+                })
         }
     }
     Component {
@@ -477,12 +518,16 @@ Item {
         signalName: "contextMenuRequested"
     }
     SignalSpy {
-        id: errorActivatedSpy
-        signalName: "errorActivated"
+        id: devtoolsRequestedSpy
+        signalName: "devtoolsRequested"
     }
     SignalSpy {
-        id: logsRequestedSpy
-        signalName: "logsRequested"
+        id: refreshRequestedSpy
+        signalName: "refreshRequested"
+    }
+    SignalSpy {
+        id: closeRequestedSpy
+        signalName: "closeRequested"
     }
     SignalSpy {
         id: unknownNetworkSpy
@@ -570,8 +615,9 @@ Item {
             instantiate(threadHeaderC);
             instantiate(messageSkeletonC);
             instantiate(emptyStateC);
-            instantiate(statusBarC);
             instantiate(clipboardProxyC);
+            instantiate(sessionLogsViewC);
+            instantiate(devToolsPanelC);
         }
 
         // copy() writes without throwing; an empty string is a no-op.
@@ -1516,133 +1562,84 @@ Item {
             compare(confirmedSpy.count, 1, "confirming must emit confirmed() once");
         }
 
-        // The strip shows the newest failure and, once more than one is waiting,
-        // how many there are; a single one needs no count.
-        function test_statusBarCountsWhatIsWaiting() {
-            const bar = createTemporaryObject(statusBarC, testRoot);
-            verify(bar, "the strip must instantiate");
-            const message = findField(bar, "statusMessage");
-            const count = findField(bar, "statusErrorCount");
-            verify(message && count, "the message and the count must be reachable");
-            verify(!count.visible, "nothing waiting shows no count");
-
-            bar.errorMessage = "Failed to add member: no key package for peer";
-            bar.errorCount = 1;
-            compare(message.text, "Failed to add member: no key package for peer");
-            verify(!count.visible, "one failure is the one on show");
-
-            bar.errorCount = 2;
-            verify(count.visible, "a second failure earns a count");
-            compare(count.text, "2 errors");
-        }
-
-        // Activating the message is the only way off the strip, so a failure
-        // stays until it is read.
-        function test_statusBarActivatesOnlyWhileHolding() {
-            const bar = createTemporaryObject(statusBarC, testRoot);
-            verify(bar, "the strip must instantiate");
-            const message = findField(bar, "statusMessage");
-            errorActivatedSpy.target = bar;
-            errorActivatedSpy.clear();
-
-            mouseClick(message);
-            compare(errorActivatedSpy.count, 0, "a resting strip is not a control");
-
-            bar.errorMessage = "Chat not online";
-            bar.errorCount = 1;
-            mouseClick(message);
-            compare(errorActivatedSpy.count, 1, "a held failure activates once");
-        }
-
-        // The way to the logs is always there: it leads to the run's files as
-        // much as to its failures, and a quiet run still has files.
-        function test_statusBarAlwaysOffersTheLogs() {
-            const bar = createTemporaryObject(statusBarC, testRoot);
-            verify(bar, "the strip must instantiate");
-            const button = findField(bar, "showLogsButton");
-            verify(button, "the button must be reachable");
-            verify(button.visible, "a resting strip still offers the logs");
-            waitForRendering(bar);
-
-            logsRequestedSpy.target = bar;
-            logsRequestedSpy.clear();
-            mouseClick(button);
-            compare(logsRequestedSpy.count, 1, "the button asks for the list once");
-        }
-
-        // The badge counts what nobody has looked at, so a run with nothing to
-        // report carries no mark at all.
-        function test_statusBarBadgesTheUnseen() {
-            const bar = createTemporaryObject(statusBarC, testRoot);
-            const badge = findField(bar, "unseenErrorBadge");
-            verify(badge, "the badge must be reachable");
+        // The icon badges what nobody has looked at, so a run with nothing to
+        // report carries no mark at all, and on hover names the newest failure
+        // in its place.
+        function test_accountCardBadgesTheUnseen() {
+            const card = createTemporaryObject(accountCardC, testRoot);
+            const badge = findField(card, "unseenErrorBadge");
+            const hint = findField(card, "devtoolsHint");
+            verify(badge && hint, "the badge and the hint must be reachable");
             verify(!badge.visible, "nothing unseen, no badge");
+            compare(hint.text, "Developer tools (F12)");
 
-            bar.errorCount = 3;
+            card.unseenErrors = 3;
+            card.newestError = "Delivery error: connection refused";
             verify(badge.visible, "an unseen failure earns a badge");
+            compare(hint.text, "Delivery error: connection refused");
 
-            // What clearing looks like from the view: the count goes to zero and
-            // the list it counted lives on behind the button.
-            bar.errorCount = 0;
-            verify(!badge.visible, "opening the logs quiets the strip");
+            card.unseenErrors = 0;
+            verify(!badge.visible, "seeing the failures quiets the icon");
+            compare(hint.text, "Developer tools (F12)");
+        }
+
+        // The icon is the way in, failures or not: the tools hold the log files
+        // and the debug data as much as the failures.
+        function test_accountCardAsksForTheDevtools() {
+            const card = createTemporaryObject(accountCardC, testRoot);
+            const button = findField(card, "devtoolsButton");
+            verify(button, "the icon must be reachable");
+            waitForRendering(card);
+
+            devtoolsRequestedSpy.target = card;
+            devtoolsRequestedSpy.clear();
+            mouseClick(button);
+            compare(devtoolsRequestedSpy.count, 1, "the icon asks for the tools once");
+
+            card.devtoolsOpen = true;
+            verify(button.lit, "the icon stays lit while the tools are open");
         }
 
         // A tab lists its own writer's runs and no one else's, which is what
         // lets two writers share one directory.
-        function test_sessionLogsDialogListsOneWritersRuns() {
-            const dlg = instantiate(sessionLogsDialogC);
-            dlg.open();
+        function test_sessionLogsViewListsOneWritersRuns() {
+            const logs = createTemporaryObject(sessionLogsViewC, testRoot);
+            logs.page = 1;
 
-            compare(dlg.currentWriter, 0, "the view's own log is the first tab");
+            compare(logs.currentWriter, 0, "the view's own log is the first tab");
             let rows = [];
-            collectFields(dlg, "sessionLogRun", rows);
+            collectFields(logs, "sessionLogRun", rows);
             compare(rows.length, 1, "chat-ui kept one run of the three listed");
 
-            dlg.currentWriter = 1;
+            logs.currentWriter = 1;
             rows = [];
-            collectFields(dlg, "sessionLogRun", rows);
+            collectFields(logs, "sessionLogRun", rows);
             compare(rows.length, 2, "the chat module kept the other two");
         }
 
         // A writer with no file of its own says why rather than being absent.
-        function test_sessionLogsDialogExplainsTheWriterWithNoFile() {
-            const dlg = instantiate(sessionLogsDialogC);
-            dlg.open();
-            findField(dlg, "logsTabBar").currentIndex = 1;
-            dlg.currentWriter = 2;
-            waitForRendering(dlg.contentItem);
+        function test_sessionLogsViewExplainsTheWriterWithNoFile() {
+            const logs = createTemporaryObject(sessionLogsViewC, testRoot);
+            logs.page = 1;
+            logs.currentWriter = 2;
+            waitForRendering(logs);
 
-            const pending = findField(dlg, "writerPending");
+            const pending = findField(logs, "writerPending");
             verify(pending && pending.visible, "the tab must say why it holds nothing");
             const rows = [];
-            collectFields(dlg, "sessionLogRun", rows);
+            collectFields(logs, "sessionLogRun", rows);
             compare(rows.length, 0, "and list nothing");
-        }
-
-        // Opening from the strip should land on the failure that brought you
-        // here; with none, the files are the only reason to be here.
-        function test_sessionLogsDialogOpensOnWhatThereIsToSee() {
-            const held = instantiate(sessionLogsDialogC);
-            held.open();
-            const heldTabs = findField(held, "logsTabBar");
-            verify(heldTabs, "the tab bar must be reachable");
-            compare(heldTabs.currentIndex, 0, "failures held, so Errors");
-
-            const quiet = instantiate(quietLogsDialogC);
-            quiet.open();
-            compare(findField(quiet, "logsTabBar").currentIndex, 1, "nothing failed, so Full logs");
         }
 
         // Every failure is listed, a repeat counts against its row rather than
         // adding one, and the count the tab states is of occurrences.
-        function test_sessionLogsDialogListsEveryFailure() {
-            const dlg = instantiate(sessionLogsDialogC);
-            dlg.open();
-            waitForRendering(dlg.contentItem);
+        function test_sessionLogsViewListsEveryFailure() {
+            const logs = createTemporaryObject(sessionLogsViewC, testRoot);
+            waitForRendering(logs);
 
-            compare(dlg.failureCount, 4, "three deliveries and one add");
+            compare(logs.failureCount, 4, "three deliveries and one add");
             const rows = [];
-            collectFields(dlg, "errorRow", rows);
+            collectFields(logs, "errorRow", rows);
             compare(rows.length, 2, "the repeat is one row, not three");
 
             const repeated = findField(rows[1], "errorMessage");
@@ -1652,21 +1649,112 @@ Item {
 
         // The caveat is one line until asked, because the tab that needs
         // explaining must not also be the tab with three fewer rows.
-        function test_sessionLogsDialogKeepsTheCaveatShort() {
-            const dlg = instantiate(sessionLogsDialogC);
-            dlg.open();
-            findField(dlg, "logsTabBar").currentIndex = 1;
-            waitForRendering(dlg.contentItem);
+        function test_sessionLogsViewKeepsTheCaveatShort() {
+            const logs = createTemporaryObject(sessionLogsViewC, testRoot);
+            logs.page = 1;
+            waitForRendering(logs);
 
-            const caveat = findField(dlg, "caveatText");
-            const toggle = findField(dlg, "caveatToggle");
+            const caveat = findField(logs, "caveatText");
+            const toggle = findField(logs, "caveatToggle");
             verify(caveat && toggle, "the caveat and its toggle must be reachable");
             const oneLine = caveat.text;
             verify(toggle.visible, "the rest is offered");
 
-            dlg.caveatExpanded = true;
+            logs.caveatExpanded = true;
             verify(caveat.text.length > oneLine.length, "asking spells it out");
             verify(!toggle.visible, "and the offer goes away");
+        }
+
+        // The conversation's name, the read time and Refresh are about the open
+        // conversation, so they show on State and Raw and not beside the run's
+        // failures and files.
+        function test_devToolsPanelNamesTheConversationOnItsTabsOnly() {
+            const panel = createTemporaryObject(devToolsPanelC, testRoot);
+            const name = findField(panel, "debugConversationName");
+            const readAt = findField(panel, "debugReadAt");
+            const refresh = findField(panel, "debugRefreshButton");
+            verify(name && readAt && refresh, "the header's fields must be reachable");
+
+            for (const tab of [0, 1]) {
+                panel.currentTab = tab;
+                verify(!name.visible && !readAt.visible && !refresh.visible, "tab " + tab + " is about the run");
+            }
+            for (const tab of [2, 3]) {
+                panel.currentTab = tab;
+                verify(name.visible && readAt.visible && refresh.visible, "tab " + tab + " is about the conversation");
+            }
+            compare(name.text, "Book Club");
+            compare(readAt.text, "read 12:41:07");
+        }
+
+        // State lays a group out: its epoch, a count per state, and a row per
+        // member with this account's marked.
+        function test_devToolsPanelListsEveryMember() {
+            const panel = createTemporaryObject(devToolsPanelC, testRoot);
+            panel.currentTab = 2;
+            waitForRendering(panel);
+
+            compare(findField(panel, "debugEpoch").text, "4");
+            const counts = [];
+            collectFields(panel, "debugSyncCount", counts);
+            compare(counts.length, 3, "one count per state present");
+            verify(!findField(panel, "stateEmpty").visible, "a group with members has a table");
+
+            const selfMarks = [];
+            collectFields(panel, "debugSelfMark", selfMarks);
+            compare(selfMarks.length, 3, "a row per member");
+            compare(selfMarks.filter(mark => mark.visible).length, 1, "and one of them this account");
+        }
+
+        // With nothing to lay out, State and Raw say why in place of an empty
+        // table, and Raw offers nothing to copy.
+        function test_devToolsPanelSaysWhyItShowsNothing() {
+            const panel = createTemporaryObject(devToolsPanelC, testRoot);
+            panel.currentTab = 2;
+            const empty = findField(panel, "stateEmpty");
+            const copy = findField(panel, "copyJsonButton");
+            const refresh = findField(panel, "debugRefreshButton");
+
+            panel.debugData = {};
+            verify(empty.visible, "nothing read, nothing to lay out");
+            compare(empty.text, "Nothing read yet. A read that failed is under Errors.");
+            verify(refresh.enabled, "but a read to try");
+
+            panel.historyOnly = true;
+            compare(empty.text, "A conversation from a previous session has no state to read.");
+            verify(!refresh.enabled, "with no group to ask");
+
+            panel.historyOnly = false;
+            panel.conversationName = "";
+            compare(empty.text, "No conversation is open.");
+
+            // A direct conversation reports an empty map.
+            panel.conversationName = "Saro";
+            panel.debugData = {
+                json: "{\n}\n",
+                readAt: "12:41:07"
+            };
+            compare(empty.text, "This conversation reports no group state.");
+            panel.currentTab = 3;
+            verify(copy.visible, "Raw still offers what it reported");
+            panel.debugData = {};
+            verify(!copy.visible, "and nothing to copy before a read");
+        }
+
+        // The panel asks for a read and for closing; ChatView owns both.
+        function test_devToolsPanelAsksToRefreshAndClose() {
+            const panel = createTemporaryObject(devToolsPanelC, testRoot);
+            panel.currentTab = 3;
+            waitForRendering(panel);
+            refreshRequestedSpy.target = panel;
+            refreshRequestedSpy.clear();
+            closeRequestedSpy.target = panel;
+            closeRequestedSpy.clear();
+
+            mouseClick(findField(panel, "debugRefreshButton"));
+            compare(refreshRequestedSpy.count, 1, "Refresh asks for one read");
+            mouseClick(findField(panel, "devtoolsCloseButton"));
+            compare(closeRequestedSpy.count, 1, "the close button asks once");
         }
     }
 }

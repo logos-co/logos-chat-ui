@@ -4,6 +4,7 @@
 
 #include "ChatBackend.h"
 #include "ConversationListModel.h"
+#include "Identity.h"
 #include "logos_sdk.h"
 
 class TestChatBackend : public QObject
@@ -26,6 +27,8 @@ private slots:
     void createsAConversationWhileDeliveryIsOffline();
     void countsANewConversationsFirstMessageOnce();
     void leavesTheModuleRunningWhenTheViewCloses();
+    void showsAGroupsDebugDataThisAccountFirst();
+    void readsTheDebugDataAgainOnlyWhileShown();
 
 private:
     QTemporaryDir m_logs;
@@ -354,6 +357,108 @@ void TestChatBackend::leavesTheModuleRunningWhenTheViewCloses()
     }
 
     QCOMPARE(modules.chat_module.get_address(), modules.chat_module.address);
+}
+
+// A GroupV3 group's debug data: its epoch, each member named by account with
+// this account first, and a count per state in a fixed order.
+void TestChatBackend::showsAGroupsDebugDataThisAccountFirst()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { group };
+    const QString raya = QStringLiteral("757f1dbb07648825b8b55ce8d56279bd8d40d42a8e10713eed631b8d48dbb2cc");
+    modules.chat_module.debugData = QVariantMap{
+        {QStringLiteral("epoch"), 4},
+        {QStringLiteral("epoch_fingerprint"), QStringLiteral("a2434d2747f3f5")},
+        {QStringLiteral("members"),
+         QVariantList{
+             QVariantMap{{QStringLiteral("signer"), QStringLiteral("52c9")},
+                         {QStringLiteral("account"), raya},
+                         {QStringLiteral("sync"), QStringLiteral("behind")},
+                         {QStringLiteral("epoch"), 3},
+                         {QStringLiteral("epoch_fingerprint"), QStringLiteral("5e81c09b2a7d44")}},
+             QVariantMap{{QStringLiteral("signer"), QStringLiteral("34e8")},
+                         {QStringLiteral("sync"), QStringLiteral("unconfirmed")}},
+             QVariantMap{{QStringLiteral("signer"), QStringLiteral("1233")},
+                         {QStringLiteral("account"), modules.chat_module.address},
+                         {QStringLiteral("sync"), QStringLiteral("synced")},
+                         {QStringLiteral("epoch"), 4},
+                         {QStringLiteral("epoch_fingerprint"), QStringLiteral("a2434d2747f3f5")}},
+         }},
+    };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    backend.selectConversation(QStringLiteral("group"));
+    backend.refreshDebugData();
+
+    const QVariantMap data = backend.debugData();
+    QCOMPARE(data.value(QStringLiteral("epoch")).toInt(), 4);
+    QCOMPARE(data.value(QStringLiteral("epochFingerprint")).toString(), QStringLiteral("a2434d2747f3f5"));
+    const QVariantList members = data.value(QStringLiteral("members")).toList();
+    QCOMPARE(members.size(), 3);
+    const QVariantMap self = members.at(0).toMap();
+    QVERIFY(self.value(QStringLiteral("isSelf")).toBool());
+    QCOMPARE(self.value(QStringLiteral("label")).toString(), Identity::shortLabel(modules.chat_module.address));
+    const QVariantMap behind = members.at(1).toMap();
+    QCOMPARE(behind.value(QStringLiteral("label")).toString(), Identity::shortLabel(raya));
+    QCOMPARE(behind.value(QStringLiteral("epoch")).toInt(), 3);
+    const QVariantMap unheard = members.at(2).toMap();
+    QCOMPARE(unheard.value(QStringLiteral("label")).toString(), QStringLiteral("unknown_account"));
+    QCOMPARE(unheard.value(QStringLiteral("epoch")).toInt(), -1);
+
+    QStringList counts;
+    for (const QVariant& count : data.value(QStringLiteral("counts")).toList())
+        counts << QStringLiteral("%1 %2").arg(count.toMap().value(QStringLiteral("count")).toInt())
+                      .arg(count.toMap().value(QStringLiteral("sync")).toString());
+    QCOMPARE(counts, QStringList({QStringLiteral("1 synced"), QStringLiteral("1 behind"),
+                                  QStringLiteral("1 unconfirmed")}));
+    QVERIFY(data.value(QStringLiteral("json")).toString().contains(QStringLiteral("\"epoch_fingerprint\"")));
+    QVERIFY(!data.value(QStringLiteral("readAt")).toString().isEmpty());
+}
+
+// The debug data is read while the tools show it, again on the conversation's
+// events, and not at all while they are closed.
+void TestChatBackend::readsTheDebugDataAgainOnlyWhileShown()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    ChatModule::Conversation other;
+    other.convo_id = QStringLiteral("other");
+    other.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { group, other };
+    modules.chat_module.debugData = QVariantMap{{QStringLiteral("epoch"), 4}};
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.selectConversation(QStringLiteral("group"));
+    const QVariantList sent = {QStringLiteral("group"), QStringLiteral("hi"), 1, QStringLiteral("m1")};
+    modules.chat_module.emitEvent(QStringLiteral("message_sent"), sent);
+    QTest::qWait(50);
+    QCOMPARE(modules.chat_module.debugDataReads, 0);
+
+    backend.setDebugDataShown(true);
+    QCOMPARE(modules.chat_module.debugDataReads, 1);
+    modules.chat_module.emitEvent(QStringLiteral("message_sent"), sent);
+    QTRY_COMPARE_WITH_TIMEOUT(modules.chat_module.debugDataReads, 2, 1000);
+    modules.chat_module.emitEvent(QStringLiteral("members_changed"), {QStringLiteral("other")});
+    QTest::qWait(50);
+    QCOMPARE(modules.chat_module.debugDataReads, 2);
+
+    backend.selectConversation(QStringLiteral("other"));
+    QCOMPARE(modules.chat_module.debugDataReads, 3);
+
+    backend.setDebugDataShown(false);
+    backend.selectConversation(QStringLiteral("group"));
+    QVERIFY(backend.debugData().isEmpty());
+    QCOMPARE(modules.chat_module.debugDataReads, 3);
 }
 
 QTEST_MAIN(TestChatBackend)
