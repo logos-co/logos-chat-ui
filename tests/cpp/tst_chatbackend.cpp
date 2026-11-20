@@ -15,11 +15,13 @@ private slots:
     void showsTheAddressWhenDeliveryComesUpDuringTheFirstSnapshot();
     void reportsTheNodeDeliveryCameUpOn();
     void readsTheNodeFromStatusWhenAlreadyOnline();
+    void asksForThePresetTheEnvironmentNames();
     void marksAConversationFromAPreviousSession();
     void listsAPreviousSessionAfterThisOne();
     void previewsAMultiLineMessageOnOneLine();
     void namesAGroupOnOneLine();
     void reportsAMultiLineFailureOnOneLine();
+    void createsAConversationWhileDeliveryIsOffline();
     void countsANewConversationsFirstMessageOnce();
     void leavesTheModuleRunningWhenTheViewCloses();
 
@@ -89,6 +91,21 @@ void TestChatBackend::readsTheNodeFromStatusWhenAlreadyOnline()
     backend._logosCoreSetLogosModulesPtr_(&modules);
 
     QCOMPARE(backend.deliveryAdopted(), true);
+}
+
+// Both the request and the card follow LOGOS_CHAT_DELIVERY_PRESET.
+void TestChatBackend::asksForThePresetTheEnvironmentNames()
+{
+    LogosModules modules;
+    place(modules);
+
+    qputenv("LOGOS_CHAT_DELIVERY_PRESET", "logos.dev");
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    qunsetenv("LOGOS_CHAT_DELIVERY_PRESET");
+
+    QCOMPARE(modules.chat_module.initialisedPreset, QStringLiteral("logos.dev"));
+    QCOMPARE(backend.deliveryPreset(), QStringLiteral("logos.dev"));
 }
 
 // The module keeps earlier sessions' conversations for their history, and the
@@ -212,6 +229,25 @@ void TestChatBackend::reportsAMultiLineFailureOnOneLine()
     QCOMPARE(reported.count(), 1);
     QCOMPARE(reported.first().first().toString(), line);
     QCOMPARE(backend.errors().first().toMap().value(QStringLiteral("message")).toString(), line);
+}
+
+// A node with no peers for the moment still takes actions, and is no error.
+void TestChatBackend::createsAConversationWhileDeliveryIsOffline()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+    modules.chat_module.goOffline();
+    QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Offline);
+
+    backend.createConversation(QStringLiteral("peer"));
+
+    QCOMPARE(modules.chat_module.conversationsCreated, 1);
+    QCOMPARE(reported.count(), 0);
 }
 
 // Being invited marks a new conversation unread, and the message the invite

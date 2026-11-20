@@ -17,6 +17,8 @@ QtObject {
     readonly property var memberModel: typeof logos !== "undefined" && logos ? logos.model("chat_ui", "memberModel") : null
 
     readonly property bool online: backend ? backend.chatStatus === ChatBackend.Online : false
+    // Delivery's node runs, online or offline, so the actions work.
+    readonly property bool running: online || (backend ? backend.chatStatus === ChatBackend.Offline : false)
     readonly property bool hasError: backend ? backend.chatStatus === ChatBackend.Error : false
     // The delivery node: whether it was already running when Chat opened, and
     // the network Chat asks for when it starts the node itself.
@@ -58,6 +60,8 @@ QtObject {
             return qsTr("Initialising...");
         case ChatBackend.Online:
             return qsTr("Online");
+        case ChatBackend.Offline:
+            return qsTr("Offline");
         case ChatBackend.Error:
             return qsTr("Error");
         default:

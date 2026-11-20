@@ -6,7 +6,7 @@ import Logos.Theme
 import Logos.Controls
 
 // First-time explainer for adding a group member: the commit is asynchronous, so
-// a newly invited member can take up to a minute to appear. Open it, and connect
+// a newly invited member takes about two minutes to appear. Open it, and connect
 // confirmed() — it carries whether the user ticked "Don't show this again", so the
 // caller can persist that and skip the dialog next time. Standalone: instantiate
 // with no context, open(), and read the signal.
@@ -49,7 +49,7 @@ LogosDialog {
 
         LogosText {
             //: Explains that a new member shows up only after the group updates
-            text: qsTr("Adding a member isn't instant. Membership updates apply on a timer, so a new member can take up to a minute to appear.")
+            text: qsTr("Adding a member isn't instant. Membership updates apply on a timer, so a new member takes about two minutes to appear. Until then, adding another member fails.")
             color: Theme.palette.textSecondary
             font.pixelSize: Theme.typography.secondaryText
             wrapMode: Text.WordWrap

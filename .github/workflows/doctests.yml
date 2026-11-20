@@ -105,6 +105,8 @@ jobs:
           # doctest's work dirs and the apps' data dirs land under TMPDIR, and
           # --keep-workdir keeps doctest's, so the log upload below finds them.
           TMPDIR: ${{ runner.temp }}
+          # logos.test needs an RLN membership to send, which these runs lack.
+          LOGOS_CHAT_DELIVERY_PRESET: logos.dev
         run: |
           # The exchange and group specs mark their live sections `platform:
           # linux`, so the macOS leg skips them.

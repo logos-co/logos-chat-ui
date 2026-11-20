@@ -34,10 +34,10 @@ Conversations and their messages are kept across restarts, but each launch start
 
 - **New chat > Group** asks for a name and an optional description, neither of which can be changed later, then creates the group with you as its only member.
 - Collect peers' addresses (each copies theirs from their account card), paste one into **Add member** at the foot of the members card, and confirm to invite.
-- Membership changes are asynchronous: on devnet the group's steward commits an add only after a ~60s commit-inactivity window, then the welcome is delivered, so a peer joins **minutes** after the invite. A peer you invited sits on the roster as a dimmed row reading **Waiting to join** until the group commits it, and stays there across chat switches. The roster refreshes on selection, a message from a new member, or your own add.
+- Membership changes are asynchronous: your instance applies an add, and sends the peer its welcome, about two minutes after the invite, so a peer joins **minutes** after it, and another add of yours to the group fails until then. A peer you invited sits on the roster as a dimmed row reading **Waiting to join** until your instance applies the add, and stays there across chat switches. The roster refreshes on selection, a message from a new member, or your own add.
 - A right-click on a roster row offers **Copy address**, for passing a member's address on.
-- Any member can add another; the invite routes from whoever proposed it.
-- During the brief windows while the group is finalizing a membership change, de-mls rejects sends; these surface on the status bar at the foot of the window, so retry after a moment.
+- Any member can add another, and the welcome comes from whoever added them.
+- Each member applies a membership change on its own timer, a few seconds apart, and a message sent in those seconds can miss a member that has applied the change when its sender has not, or the other way round.
 
 ## How to Run
 
@@ -78,6 +78,7 @@ state apart; it defaults to the platform application data location.
 | Variable | Purpose |
 |---|---|
 | `LOGOS_USER_DIR` | The standalone app's session directory, for when setting it by environment is easier than by flag. `--user-dir` wins over it. |
+| `LOGOS_CHAT_DELIVERY_PRESET` | The delivery network Chat starts its node on, `logos.test` when unset. The doc-tests set `logos.dev`. |
 | `QML_INSPECTOR_PORT` | Only needed when attaching the [logos-qt-mcp](https://github.com/logos-co/logos-qt-mcp) inspector to drive an instance programmatically (default 3768); give each a distinct one then. Interactive use does not need it. |
 
 Each node joins the `logos.test` Waku fleet and publishes its key package during
@@ -87,7 +88,8 @@ copy one window's address from its account card and paste it into another
 panel for a group). For
 the full walkthrough with screenshots, and the scripted drivers that automate it
 (`doctests/exchange/run-exchange.sh` for a two-party exchange,
-`doctests/group/run-group.sh` for a three-party group), see
+`doctests/group/run-group.sh` for a three-party group that also fetches a
+missed message from Store), see
 [Two-instance message exchange](docs/two-instance-exchange.md).
 
 ### In Basecamp
@@ -144,7 +146,7 @@ arrived in [chat-module PR #66](https://github.com/logos-co/logos-chat-module/pu
   [Run the automated message-exchange test](doctests/chat-ui-exchange.test.yaml)
   (the real two-party round-trip, captured) and
   [Run the automated group-chat test](doctests/chat-ui-group.test.yaml)
-  (a real three-party group, captured).
+  (a real three-party group, with a missed message fetched from Store, captured).
 
   Enabling the report links is a one-time repo setup: Settings -> Pages ->
   "Deploy from a branch", branch `gh-pages` / `(root)` (the CI publish-report

@@ -90,12 +90,22 @@ public:
     QList<Conversation> conversations;
     // The reason create_conversation fails with; it succeeds while empty.
     QString createConversationError;
+    // How many create_conversation calls succeeded.
+    int conversationsCreated = 0;
+    // The delivery_preset init was called with.
+    QString initialisedPreset;
 
     void goOnline()
     {
         deliveryState = QStringLiteral("online");
         if (auto handler = m_handlers.value(QStringLiteral("delivery_state_changed")))
             handler({QStringLiteral("online"), QString(), deliveryAdopted});
+    }
+    void goOffline()
+    {
+        deliveryState = QStringLiteral("offline");
+        if (auto handler = m_handlers.value(QStringLiteral("delivery_state_changed")))
+            handler({QStringLiteral("offline"), QString(), deliveryAdopted});
     }
 
     bool on(const QString& name, EventCallback cb)
@@ -110,8 +120,9 @@ public:
             handler(args);
     }
 
-    LogosResult init(const ChatConfig&, logos::CallError* = nullptr)
+    LogosResult init(const ChatConfig& config, logos::CallError* = nullptr)
     {
+        initialisedPreset = config.delivery_preset.value_or(QString());
         m_initialised = true;
         return {true, {}, {}};
     }
@@ -136,6 +147,7 @@ public:
     {
         if (!createConversationError.isEmpty())
             return {false, {}, createConversationError};
+        ++conversationsCreated;
         return {true, {}, {}};
     }
     LogosResult create_group_conversation(const QString&, const QString&, logos::CallError* = nullptr)
