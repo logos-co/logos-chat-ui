@@ -20,6 +20,8 @@ private slots:
     void listsAPreviousSessionAfterThisOne();
     void previewsAMultiLineMessageOnOneLine();
     void namesAGroupOnOneLine();
+    void showsAGroupsProtocol();
+    void marksASentMessageDelivered();
     void reportsAMultiLineFailureOnOneLine();
     void createsAConversationWhileDeliveryIsOffline();
     void countsANewConversationsFirstMessageOnce();
@@ -207,6 +209,71 @@ void TestChatBackend::namesAGroupOnOneLine()
     QCOMPARE(model->data(model->index(0, 0), ConversationListModel::DisplayNameRole).toString(),
              QStringLiteral("Book Club"));
     QCOMPARE(backend.currentDisplayName(), QStringLiteral("Book Club"));
+}
+
+// A GroupV3 group names its protocol; a conversation from a previous session
+// may not.
+void TestChatBackend::showsAGroupsProtocol()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    group.protocol = QStringLiteral("GroupV3");
+    ChatModule::Conversation kept;
+    kept.convo_id = QStringLiteral("kept");
+    kept.kind = QStringLiteral("group");
+    kept.history_only = true;
+    modules.chat_module.conversations = { group, kept };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+
+    backend.selectConversation(QStringLiteral("group"));
+    QCOMPARE(backend.currentProtocol(), QStringLiteral("GroupV3"));
+    backend.selectConversation(QStringLiteral("kept"));
+    QCOMPARE(backend.currentProtocol(), QString());
+}
+
+// A sent message reads back as delivered once another member has received it,
+// whether the thread loads it so or the module reports it while the thread is
+// open.
+void TestChatBackend::marksASentMessageDelivered()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { group };
+    ChatModule::Message held;
+    held.from_self = true;
+    held.content = QStringLiteral("held");
+    held.timestamp_ms = 1000;
+    held.message_id = QStringLiteral("m1");
+    held.delivered = true;
+    modules.chat_module.messages = { held };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.selectConversation(QStringLiteral("group"));
+    const QAbstractItemModel* model = backend.messageModel();
+    const auto delivered = [model](int row) {
+        return model->data(model->index(row, 0), MessageListModel::DeliveredRole).toBool();
+    };
+    QCOMPARE(delivered(0), true);
+
+    modules.chat_module.emitEvent(QStringLiteral("message_sent"),
+                                  { QStringLiteral("group"), QStringLiteral("sent"), 2000, QStringLiteral("m2") });
+    QCOMPARE(model->rowCount(), 2);
+    QCOMPARE(delivered(0), false);
+    modules.chat_module.emitEvent(QStringLiteral("message_delivered"),
+                                  { QStringLiteral("elsewhere"), QStringLiteral("m2") });
+    QCOMPARE(delivered(0), false);
+    modules.chat_module.emitEvent(QStringLiteral("message_delivered"),
+                                  { QStringLiteral("group"), QStringLiteral("m2") });
+    QCOMPARE(delivered(0), true);
 }
 
 // A module failure can carry a server's response body, and reaches the status

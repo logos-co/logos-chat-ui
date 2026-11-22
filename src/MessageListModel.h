@@ -11,6 +11,10 @@ struct MessageItem {
     QString content;
     QDateTime timestamp;
     bool isMe;
+    // The chat module's id for a message this account sent; empty otherwise.
+    QString messageId;
+    // Another member received this sent message.
+    bool delivered = false;
 };
 
 class MessageListModel : public QAbstractListModel
@@ -35,7 +39,9 @@ public:
         // Avatar identity for the sender, on the same rule as the roster's, so
         // a member wears one colour in the thread and in the member list.
         AvatarInitialsRole,
-        AvatarRampRole
+        AvatarRampRole,
+        // Another member received this message, which this account sent.
+        DeliveredRole
     };
 
     explicit MessageListModel(QObject* parent = nullptr);
@@ -45,9 +51,11 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     void addMessage(const QString& sender, const QString& content,
-                    const QDateTime& timestamp, bool isMe);
+                    const QDateTime& timestamp, bool isMe, const QString& messageId = QString());
     void addMessages(QVector<MessageItem> items);
     void setMessages(QVector<MessageItem> items);
+    // Marks the sent message `messageId` delivered; no-op for an id no row has.
+    void markDelivered(const QString& messageId);
     void clear();
 
 private:

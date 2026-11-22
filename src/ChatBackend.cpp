@@ -332,6 +332,8 @@ void ChatBackend::subscribeToEvents()
             [this](const QVariantList& a) { applyMessageReceived(a); });
     chat.on(QStringLiteral("message_sent"),
             [this](const QVariantList& a) { applyMessageSent(a); });
+    chat.on(QStringLiteral("message_delivered"),
+            [this](const QVariantList& a) { applyMessageDelivered(a); });
     chat.on(QStringLiteral("conversation_created"),
             [this](const QVariantList& a) { applyConversationCreated(a); });
     chat.on(QStringLiteral("conversation_updated"),
@@ -369,6 +371,7 @@ void ChatBackend::rehydrateConversations()
         m_conversationModel->addConversation(convoId, displayName, description,
                                              msToDateTime(lastActivity), isGroup, preview,
                                              convo.history_only);
+        m_conversationModel->updateProtocol(convoId, convo.protocol.value_or(QString()));
     }
     m_conversationModel->restoreUnreadCounts(unread);
     // The rebuilt list may now know the current conversation's kind/name.
@@ -401,6 +404,7 @@ void ChatBackend::syncCurrentConversationMeta()
     setCurrentDisplayName(m_conversationModel->displayNameFor(id));
     setCurrentDescription(m_conversationModel->descriptionFor(id));
     setCurrentHistoryOnly(m_conversationModel->historyOnlyFor(id));
+    setCurrentProtocol(m_conversationModel->protocolFor(id));
     setCurrentAvatarInitials(Identity::initials(id));
     setCurrentAvatarRamp(Identity::avatarRamp(Identity::shortLabel(id)));
 }
@@ -431,7 +435,8 @@ bool ChatBackend::showConversationMessages(const QString& convoId)
     for (const ChatModule::Message& msg : msgs) {
         const QString sender = msg.sender.value_or(QString());
         rows.append({ msg.from_self ? QStringLiteral("Me") : shortSenderLabel(sender),
-                      msg.content, msToDateTime(msg.timestamp_ms), msg.from_self });
+                      msg.content, msToDateTime(msg.timestamp_ms), msg.from_self,
+                      msg.message_id.value_or(QString()), msg.delivered });
     }
     m_messageModel->setMessages(std::move(rows));
     return true;
@@ -696,6 +701,7 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
     if (convoId.isEmpty()) return;
     const QString content = args.value(1).toString();
     const qint64 ts = args.value(2).toLongLong();
+    const QString messageId = args.value(3).toString();
     const QDateTime when = msToDateTime(ts);
     const QString preview = content.left(kPreviewMaxChars);
 
@@ -707,7 +713,14 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
     m_conversationModel->updatePreview(convoId, preview);
 
     if (convoId == currentConversationId())
-        m_messageModel->addMessage(QStringLiteral("Me"), content, when, true);
+        m_messageModel->addMessage(QStringLiteral("Me"), content, when, true, messageId);
+}
+
+void ChatBackend::applyMessageDelivered(const QVariantList& args)
+{
+    // A conversation not on screen reads the flag back when it is opened.
+    if (args.value(0).toString() == currentConversationId())
+        m_messageModel->markDelivered(args.value(1).toString());
 }
 
 void ChatBackend::applyConversationCreated(const QVariantList& args)
@@ -730,6 +743,9 @@ void ChatBackend::applyConversationCreated(const QVariantList& args)
         m_conversationModel->updateDescription(convoId, description);
         m_conversationModel->updateLastActivity(convoId, now);
     }
+    // The event names no protocol; the list does. Deferred: this
+    // runs inside a module event callback (see deferToEventLoop).
+    deferToEventLoop([this] { rehydrateConversations(); });
 
     // Open a conversation we just created, so creating a chat or group lands
     // the user in it. Deferred: selectConversation makes a synchronous module

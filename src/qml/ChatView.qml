@@ -145,6 +145,7 @@ Rectangle {
                 running: store.running
                 ready: root.selectionLoaded
                 historyOnly: root.selectedHistoryOnly
+                tracksDelivery: store.currentTracksDelivery
                 // To the conversation on screen, which the backend may not have
                 // switched to yet.
                 onMessageSubmitted: function (text) {
@@ -171,6 +172,7 @@ Rectangle {
                     memberCount: store.memberCount
                     pendingMemberCount: store.pendingMemberCount
                     historyOnly: root.selectedHistoryOnly
+                    protocol: store.currentProtocol
                     onCloseRequested: root.detailsShown = false
                 }
 

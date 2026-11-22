@@ -55,6 +55,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: false
                 dayLabel: "Today"
+                delivered: false
             }
             ListElement {
                 sender: "Me"
@@ -66,6 +67,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: false
                 dayLabel: "Today"
+                delivered: false
             }
             ListElement {
                 sender: "Saro"
@@ -77,6 +79,7 @@ Item {
                 sameSenderAsPrevious: false
                 showDaySeparator: true
                 dayLabel: "Today"
+                delivered: false
             }
         }
         members: ListModel {
