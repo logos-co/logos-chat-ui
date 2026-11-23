@@ -111,9 +111,6 @@ private:
     static QString fallbackDisplayName(const QString& convoId, const QString& peerLabel = QString(),
                                        bool isGroup = false);
 
-    // Short display form of a message sender; "Peer" when the sender is empty.
-    static QString shortSenderLabel(const QString& sender);
-
     ConversationListModel* m_conversationModel;
     // Sorts m_conversationModel newest-first for the view; the source keeps
     // insertion order and every internal edit stays on the source.
