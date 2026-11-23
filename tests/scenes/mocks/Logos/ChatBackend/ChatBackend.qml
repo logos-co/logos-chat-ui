@@ -19,6 +19,7 @@ QtObject {
     property string myAddress: ""
     property string myLabel: ""
     property string myInitials: ""
+    property string myAccountName: ""
     property string currentConversationId: ""
     property string loadedConversationId: ""
     property bool currentIsGroup: false
@@ -29,6 +30,7 @@ QtObject {
     property int memberCount: 0
     property int pendingMemberCount: 0
     property string currentPeerAddress: ""
+    property string currentPeerLabel: ""
     property bool currentHistoryOnly: false
     property string currentProtocol: ""
     property string logDir: ""

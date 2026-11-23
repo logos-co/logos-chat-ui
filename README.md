@@ -23,6 +23,7 @@ Core functionality:
 
 - **Identity** — on startup, initializes a chat identity; the account card at the foot of the sidebar shows the account's short form and its connection state
 - **Addresses** — your own address sits on the account card with a copy button beside it; share it with others to let them start a conversation with you
+- **Names** — a person shows as the name their account set, followed by the first eight characters of their address, which they cannot pick; someone who set no name shows as those characters alone. A direct conversation is titled by the other person
 - **Direct messages** — paste another user's address into **New chat > Direct message** to open a private (1:1) conversation
 - **Group conversations** — start a group with **New chat > Group**, then invite peers by address from the members panel (see below)
 - **Messaging** — send and receive messages in real-time over the Logos network
@@ -167,6 +168,7 @@ logos-chat-ui/
     ├── ConversationListModel.h/cpp  # QAbstractListModel for conversations
     ├── MessageListModel.h/cpp       # QAbstractListModel for messages
     ├── MemberListModel.h/cpp        # QAbstractListModel for a group's roster
+    ├── NameBook.h/cpp               # The name each account set, by address
     ├── Identity.h/cpp               # Avatar initials + colour ramp for an address
     ├── TimeFormat.h/cpp             # Clock-time and day-label formatting
     ├── ErrorLog.h/cpp               # The run's failures, newest first, repeats collapsed
@@ -197,9 +199,10 @@ view module.
 |------|------|
 | `ChatBackend.rep` | Defines the C++/QML boundary — `ChatStatus` enum, state props, lifecycle slots, signals |
 | `ChatBackend` | Derives `ChatBackendSimpleSource` + `LogosUiPluginContext`; initialises the module and subscribes to `chat_module` events in `onContextReady()`; drives the three models |
-| `ConversationListModel` | A row per conversation: its id, display name, kind, description, last activity and the label for it, message preview, unread count, avatar |
-| `MessageListModel` | A row per message: sender, content, timestamp and the label for it, whether it is yours, where a run of one sender and a new day begin, avatar |
-| `MemberListModel` | A row per member: address, label, whether it is you, whether the invite is still uncommitted, avatar |
+| `ConversationListModel` | A row per conversation: its id, display name (a direct conversation's comes from its peer), kind, description, last activity and the label for it, message preview, unread count, avatar, the peer's short address |
+| `MessageListModel` | A row per message: sender, content, timestamp and the label for it, whether it is yours, where a run of one sender and a new day begin, avatar, the sender's name |
+| `MemberListModel` | A row per member: address, label, whether it is you, whether the invite is still uncommitted, avatar, the account's name |
+| `NameBook` | The name each account set, by address, as chat_module reports it; every model reads its names here |
 | `Identity` | Derives a row's initials and colour ramp from an address, in one place, so an account keeps its avatar across every list |
 | `TimeFormat` | The single formatter for clock times and day labels, so no view formats its own |
 | `ErrorLog` | Every failure the run reported, newest first, consecutive repeats collapsed to one row with a count |

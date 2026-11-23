@@ -25,6 +25,9 @@ class ChatBackend
     // the two-letter form its avatar carries.
     PROP(QString myLabel READONLY)
     PROP(QString myInitials READONLY)
+    // The name this account set, from its log on the chat registry; empty while
+    // it has not been read and when it set none.
+    PROP(QString myAccountName READONLY)
     PROP(QString currentConversationId)
     // The conversation whose messages and roster the models currently hold.
     // Empty while a selection is being loaded, so the view can tell a loaded
@@ -48,8 +51,10 @@ class ChatBackend
     // Members invited into the current group and awaiting its commit.
     PROP(int pendingMemberCount READONLY)
     // The other participant's address in the current direct conversation, empty
-    // for a group or while the roster is unknown.
+    // for a group or while the module has not learned it.
     PROP(QString currentPeerAddress READONLY)
+    // Short form of currentPeerAddress, on the same rule as a roster row's label.
+    PROP(QString currentPeerLabel READONLY)
     // The current conversation is from a previous session, kept for its
     // history only: it can be read, but not sent into or invited to.
     PROP(bool currentHistoryOnly READONLY)

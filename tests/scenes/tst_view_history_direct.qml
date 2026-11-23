@@ -23,13 +23,14 @@ Item {
                 conversationId: "c1"
                 displayName: "Pax"
                 isGroup: false
-                avatarInitials: "pa"
-                avatarRamp: 2
+                avatarInitials: "f6"
+                avatarRamp: 4
                 unreadCount: 1
                 lastActivityDisplay: "14:02"
                 preview: "Here's my new address"
                 description: ""
                 historyOnly: false
+                peerLabel: "f6e5d4c3"
             }
             ListElement {
                 conversationId: "c2"
@@ -42,18 +43,20 @@ Item {
                 preview: "Raya: the new tokens look right"
                 description: ""
                 historyOnly: false
+                peerLabel: ""
             }
             ListElement {
                 conversationId: "c3"
                 displayName: "Saro"
                 isGroup: false
-                avatarInitials: "sa"
-                avatarRamp: 0
+                avatarInitials: "a1"
+                avatarRamp: 1
                 unreadCount: 0
                 lastActivityDisplay: "Mon"
                 preview: "Sounds good, talk soon"
                 description: ""
                 historyOnly: true
+                peerLabel: "a1b2c3d4"
             }
             ListElement {
                 conversationId: "c4"
@@ -66,26 +69,29 @@ Item {
                 preview: "Raya: notes are up for review, comments welcome before Friday"
                 description: "Release planning for 0.3"
                 historyOnly: true
+                peerLabel: ""
             }
             ListElement {
                 conversationId: "c5"
                 displayName: "Raya"
                 isGroup: false
-                avatarInitials: "ra"
+                avatarInitials: "0b"
                 avatarRamp: 1
                 unreadCount: 0
                 lastActivityDisplay: "10 Sep"
                 preview: "Did the build go through?"
                 description: ""
                 historyOnly: true
+                peerLabel: "0b2c3d4e"
             }
         }
         // Newest first: the thread is bottom-anchored.
         messages: ListModel {
             ListElement {
-                sender: "Saro"
-                avatarInitials: "sa"
-                avatarRamp: 0
+                sender: "a1b2c3d4"
+                senderName: "Saro"
+                avatarInitials: "a1"
+                avatarRamp: 1
                 content: "Sounds good, talk soon"
                 timeDisplay: "18:12"
                 isMe: false
@@ -96,6 +102,7 @@ Item {
             }
             ListElement {
                 sender: "Me"
+                senderName: ""
                 avatarInitials: "4b"
                 avatarRamp: 0
                 content: "I'll send the notes after lunch"
@@ -107,9 +114,10 @@ Item {
                 delivered: false
             }
             ListElement {
-                sender: "Saro"
-                avatarInitials: "sa"
-                avatarRamp: 0
+                sender: "a1b2c3d4"
+                senderName: "Saro"
+                avatarInitials: "a1"
+                avatarRamp: 1
                 content: "Hi, did the new theme land?"
                 timeDisplay: "17:58"
                 isMe: false
@@ -131,7 +139,10 @@ Item {
         setup: () => {
             const b = stage.logos.backend;
             b.currentDisplayName = "Saro";
-            b.currentAvatarInitials = "sa";
+            b.currentAvatarInitials = "a1";
+            b.currentAvatarRamp = 1;
+            b.currentPeerAddress = "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9";
+            b.currentPeerLabel = "a1b2c3d4";
             b.currentHistoryOnly = true;
             b.selectConversation("c3");
         }

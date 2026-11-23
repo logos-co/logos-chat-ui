@@ -11,6 +11,8 @@ Rectangle {
     id: root
 
     required property string title
+    // The peer's short address, after the title; empty for a group.
+    property string titleLabel: ""
     // One line under the title; empty for a conversation without one.
     property string description: ""
     required property bool isGroup
@@ -46,15 +48,33 @@ Rectangle {
             Layout.fillWidth: true
             spacing: 2
 
-            LogosText {
-                objectName: "threadTitle"
-                text: root.title
-                textFormat: Text.PlainText
-                color: Theme.palette.text
-                font.pixelSize: Theme.typography.subtitleText
-                font.weight: Theme.typography.weightBold
-                elide: Text.ElideRight
+            RowLayout {
+                spacing: Theme.spacing.small
                 Layout.fillWidth: true
+
+                LogosText {
+                    objectName: "threadTitle"
+                    text: root.title
+                    textFormat: Text.PlainText
+                    color: Theme.palette.text
+                    font.pixelSize: Theme.typography.subtitleText
+                    font.weight: Theme.typography.weightBold
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: implicitWidth
+                }
+
+                LogosText {
+                    objectName: "threadTitleLabel"
+                    visible: root.titleLabel !== "" && root.titleLabel !== root.title
+                    text: root.titleLabel
+                    textFormat: Text.PlainText
+                    color: Theme.palette.textTertiary
+                    font.family: Theme.typography.mono
+                    font.pixelSize: Theme.typography.secondaryText
+                    Layout.alignment: Qt.AlignBaseline
+                    Layout.fillWidth: true
+                }
             }
 
             LogosText {

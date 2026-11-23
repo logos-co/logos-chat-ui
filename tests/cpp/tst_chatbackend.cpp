@@ -24,6 +24,11 @@ private slots:
     void marksASentMessageDelivered();
     void startsANewRunForAnotherSenderWithTheSameShortAddress();
     void keepsTheSameWordsFromTwoSenders();
+    void titlesADirectConversationAfterItsPeer();
+    void titlesADirectConversationWithoutANameByItsPeer();
+    void namesTheSendersOfAThread();
+    void namesTheRosterAndThisAccount();
+    void keepsANameWhenAReadFails();
     void reportsAMultiLineFailureOnOneLine();
     void createsAConversationWhileDeliveryIsOffline();
     void countsANewConversationsFirstMessageOnce();
@@ -337,6 +342,170 @@ void TestChatBackend::keepsTheSameWordsFromTwoSenders()
                                       { QStringLiteral("group"), QStringLiteral("yes"), 1000, sender });
 
     QCOMPARE(backend.messageModel()->rowCount(), 2);
+}
+
+namespace {
+
+ChatModule::Conversation direct(const QString& id, const QString& peer)
+{
+    ChatModule::Conversation conversation;
+    conversation.convo_id = id;
+    conversation.kind = QStringLiteral("direct");
+    if (!peer.isEmpty())
+        conversation.peer = peer;
+    return conversation;
+}
+
+} // namespace
+
+// What a direct conversation's row and header show of the person on the other
+// side, and that both follow their name when it changes.
+void TestChatBackend::titlesADirectConversationAfterItsPeer()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.conversations = { direct(QStringLiteral("dm"), kRaya) };
+    modules.chat_module.displayNames.insert(kRaya, QStringLiteral("Raya"));
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    const QAbstractItemModel* model = backend.conversationModel();
+    const auto data = [model](int role) { return model->data(model->index(0, 0), role); };
+    QTRY_COMPARE_WITH_TIMEOUT(data(ConversationListModel::DisplayNameRole).toString(), QStringLiteral("Raya"), 1000);
+    QCOMPARE(data(ConversationListModel::PeerLabelRole).toString(), QStringLiteral("4be1c07a"));
+    QCOMPARE(data(ConversationListModel::AvatarInitialsRole).toString(), QStringLiteral("4b"));
+
+    backend.selectConversation(QStringLiteral("dm"));
+    QCOMPARE(backend.currentDisplayName(), QStringLiteral("Raya"));
+    QCOMPARE(backend.currentPeerAddress(), kRaya);
+    QCOMPARE(backend.currentPeerLabel(), QStringLiteral("4be1c07a"));
+    QCOMPARE(backend.currentAvatarInitials(), QStringLiteral("4b"));
+
+    modules.chat_module.emitEvent(QStringLiteral("display_name_changed"),
+                                  { kRaya, QStringLiteral("Raya\nof the theme") });
+    QCOMPARE(data(ConversationListModel::DisplayNameRole).toString(), QStringLiteral("Raya of the theme"));
+    QCOMPARE(backend.currentDisplayName(), QStringLiteral("Raya of the theme"));
+}
+
+void TestChatBackend::titlesADirectConversationWithoutANameByItsPeer()
+{
+    LogosModules modules;
+    place(modules);
+    // An invite whose first message has not arrived has no peer yet.
+    ChatModule::Conversation named = direct(QStringLiteral("named"), kRaya);
+    named.last_activity_ms = 2000;
+    ChatModule::Conversation invite = direct(QStringLiteral("0123456789abcdef"), QString());
+    invite.last_activity_ms = 1000;
+    modules.chat_module.conversations = { named, invite };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    const QAbstractItemModel* model = backend.conversationModel();
+    const auto title = [model](int row) {
+        return model->data(model->index(row, 0), ConversationListModel::DisplayNameRole).toString();
+    };
+    QCOMPARE(title(0), QStringLiteral("4be1c07a"));
+    QCOMPARE(title(1), QStringLiteral("DM 01234567"));
+
+    backend.selectConversation(QStringLiteral("0123456789abcdef"));
+    QCOMPARE(backend.currentPeerAddress(), QString());
+    QCOMPARE(backend.currentPeerLabel(), QString());
+}
+
+void TestChatBackend::namesTheSendersOfAThread()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { group };
+    ChatModule::Message mine;
+    mine.from_self = true;
+    mine.content = QStringLiteral("mine");
+    mine.timestamp_ms = 2000;
+    modules.chat_module.messages = { received(kRaya, QStringLiteral("named"), 1000),
+                                     received(kRaya, QStringLiteral("again"), 1500), mine };
+    modules.chat_module.displayNames.insert(kRaya, QStringLiteral("Raya"));
+    modules.chat_module.displayNames.insert(kPax, QStringLiteral("Pax"));
+    modules.chat_module.displayNames.insert(modules.chat_module.address, QStringLiteral("Saro"));
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.selectConversation(QStringLiteral("group"));
+    const QAbstractItemModel* model = backend.messageModel();
+    const auto name = [model](int row) {
+        return model->data(model->index(row, 0), MessageListModel::SenderNameRole).toString();
+    };
+    QTRY_COMPARE_WITH_TIMEOUT(name(2), QStringLiteral("Raya"), 1000);
+    QCOMPARE(name(1), QStringLiteral("Raya"));
+    QCOMPARE(name(0), QString());
+
+    // Someone first heard after the thread opened is looked up then.
+    modules.chat_module.emitEvent(QStringLiteral("message_received"),
+                                  { QStringLiteral("group"), QStringLiteral("hello"), 3000, kPax });
+    QTRY_COMPARE_WITH_TIMEOUT(name(0), QStringLiteral("Pax"), 1000);
+
+    // A name set since arrives as display_name_changed, and every row of
+    // theirs takes it.
+    modules.chat_module.emitEvent(QStringLiteral("display_name_changed"),
+                                  { kRaya, QStringLiteral("Raya of the theme") });
+    QCOMPARE(name(2), QStringLiteral("Raya of the theme"));
+    QCOMPARE(name(3), QStringLiteral("Raya of the theme"));
+}
+
+void TestChatBackend::namesTheRosterAndThisAccount()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { group };
+    modules.chat_module.members = { { modules.chat_module.address, false }, { kRaya, false } };
+    modules.chat_module.displayNames.insert(modules.chat_module.address, QStringLiteral("Saro"));
+    modules.chat_module.displayNames.insert(kRaya, QStringLiteral("Raya"));
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAccountName(), QStringLiteral("Saro"), 1000);
+
+    backend.selectConversation(QStringLiteral("group"));
+    const QAbstractItemModel* model = backend.memberModel();
+    const auto name = [model](int row) {
+        return model->data(model->index(row, 0), MemberListModel::AccountNameRole).toString();
+    };
+    QCOMPARE(model->rowCount(), 2);
+    QCOMPARE(name(0), QStringLiteral("Saro"));
+    QTRY_COMPARE_WITH_TIMEOUT(name(1), QStringLiteral("Raya"), 1000);
+
+    modules.chat_module.emitEvent(QStringLiteral("display_name_changed"),
+                                  { modules.chat_module.address, QString() });
+    QCOMPARE(backend.myAccountName(), QString());
+    QCOMPARE(name(0), QString());
+}
+
+// A read that fails says so, and a name already shown stays rather than reading
+// as one the account removed.
+void TestChatBackend::keepsANameWhenAReadFails()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.conversations = { direct(QStringLiteral("dm"), kRaya) };
+    modules.chat_module.displayNames.insert(kRaya, QStringLiteral("Raya"));
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.selectConversation(QStringLiteral("dm"));
+    QTRY_COMPARE_WITH_TIMEOUT(backend.currentDisplayName(), QStringLiteral("Raya"), 1000);
+
+    QSignalSpy reported(&backend, &ChatBackend::error);
+    modules.chat_module.displayNameError = "timeout";
+    modules.chat_module.emitEvent(QStringLiteral("conversation_updated"), { QStringLiteral("dm") });
+    QTRY_VERIFY_WITH_TIMEOUT(reported.count() > 0, 1000);
+    QCOMPARE(reported.first().first().toString(), QStringLiteral("Could not read a name: the read failed"));
+    QCOMPARE(backend.currentDisplayName(), QStringLiteral("Raya"));
 }
 
 // A module failure can carry a server's response body, and reaches the status

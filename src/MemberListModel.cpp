@@ -1,9 +1,12 @@
 #include "MemberListModel.h"
 #include "Identity.h"
+#include "NameBook.h"
 
-MemberListModel::MemberListModel(QObject* parent)
+MemberListModel::MemberListModel(const NameBook& names, QObject* parent)
     : QAbstractListModel(parent)
+    , m_names(names)
 {
+    connect(&names, &NameBook::changed, this, &MemberListModel::nameChanged);
 }
 
 int MemberListModel::rowCount(const QModelIndex& parent) const
@@ -29,6 +32,7 @@ QVariant MemberListModel::data(const QModelIndex& index, int role) const
     case PendingRole: return item.pending;
     case AvatarInitialsRole: return Identity::initials(item.address);
     case AvatarRampRole:     return Identity::avatarRamp(Identity::shortLabel(item.address));
+    case AccountNameRole:    return m_names.name(item.address);
     default:          return {};
     }
 }
@@ -41,7 +45,8 @@ QHash<int, QByteArray> MemberListModel::roleNames() const
         { IsSelfRole,  "isSelf" },
         { PendingRole, "pending" },
         { AvatarInitialsRole, "avatarInitials" },
-        { AvatarRampRole,     "avatarRamp" }
+        { AvatarRampRole,     "avatarRamp" },
+        { AccountNameRole,    "accountName" }
     };
 }
 
@@ -58,6 +63,14 @@ void MemberListModel::clear()
     beginResetModel();
     m_items.clear();
     endResetModel();
+}
+
+void MemberListModel::nameChanged(const QString& address)
+{
+    for (int row = 0; row < m_items.size(); ++row) {
+        if (m_items.at(row).address == address)
+            emit dataChanged(index(row), index(row), { AccountNameRole });
+    }
 }
 
 bool MemberListModel::contains(const QString& address) const

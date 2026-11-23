@@ -6,6 +6,8 @@
 #include <QString>
 #include <QVector>
 
+class NameBook;
+
 struct MessageItem {
     // The sender's account address; empty for this account's own messages and
     // for a sender the module did not name.
@@ -43,10 +45,15 @@ public:
         AvatarInitialsRole,
         AvatarRampRole,
         // Another member received this message, which this account sent.
-        DeliveredRole
+        DeliveredRole,
+        // The name the sender's account set; empty for this account's own
+        // messages, a sender the module did not name, and an account that set
+        // none.
+        SenderNameRole
     };
 
-    explicit MessageListModel(QObject* parent = nullptr);
+    // Senders are named from `names`, which outlives the model.
+    explicit MessageListModel(const NameBook& names, QObject* parent = nullptr);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role) const override;
@@ -63,7 +70,9 @@ public:
 private:
     // "Today" / "Yesterday" / short date for a day-separator heading.
     QString dayLabel(const QDateTime& timestamp) const;
+    void nameChanged(const QString& address);
 
+    const NameBook& m_names;
     QVector<MessageItem> m_items;
 };
 
