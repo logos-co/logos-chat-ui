@@ -33,16 +33,36 @@ private slots:
     void createsAConversationWhileDeliveryIsOffline();
     void countsANewConversationsFirstMessageOnce();
     void leavesTheModuleRunningWhenTheViewCloses();
+    void offersTheChoiceBeforeInit();
+    void runsAsTheAccountAccountsEndorsed();
+    void returnsToTheChoiceWhenAccountsDoesNotEndorse_data();
+    void returnsToTheChoiceWhenAccountsDoesNotEndorse();
+    void returnsToTheChoiceWhenInitRefusesTheAccount();
+    void asksForTheNewKeyAfterInitTookTheAccountUp();
+    void failsWhenTheInitCallGetsNoAnswer();
+    void runsOnItsOwnAccountWhenNoAccountsAppAnswers();
+    void failsWhenTheRequestIsWrong();
+    void attachesToARunningModuleWithoutTheChoice();
 
 private:
     QTemporaryDir m_logs;
     // A chat module whose run log lands in this test's own directory.
     void place(LogosModules& modules) const;
+    // Opens the view on a module that is not running yet and goes on without an
+    // account, as the doc-tests do, then waits for the module's answer to init.
+    void start(ChatBackend& backend, LogosModules& modules) const;
 };
 
 void TestChatBackend::place(LogosModules& modules) const
 {
     modules.chat_module.logPath = m_logs.filePath(QStringLiteral("chat_module_20260921_120000.log"));
+}
+
+void TestChatBackend::start(ChatBackend& backend, LogosModules& modules) const
+{
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.continueWithoutAccount();
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.myAddress().isEmpty(), 1000);
 }
 
 void TestChatBackend::showsTheAddressWhileDeliveryIsComingUp()
@@ -51,7 +71,7 @@ void TestChatBackend::showsTheAddressWhileDeliveryIsComingUp()
     place(modules);
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
 
     QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Initialising);
     QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
@@ -64,7 +84,7 @@ void TestChatBackend::showsTheAddressWhenDeliveryComesUpDuringTheFirstSnapshot()
     modules.chat_module.whileListingConversations = [&modules] { modules.chat_module.goOnline(); };
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
 
     QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Online);
     QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
@@ -76,7 +96,7 @@ void TestChatBackend::reportsTheNodeDeliveryCameUpOn()
     place(modules);
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     QCOMPARE(backend.deliveryAdopted(), false);
 
     modules.chat_module.deliveryAdopted = true;
@@ -97,7 +117,7 @@ void TestChatBackend::readsTheNodeFromStatusWhenAlreadyOnline()
     modules.chat_module.deliveryAdopted = true;
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
 
     QCOMPARE(backend.deliveryAdopted(), true);
 }
@@ -110,7 +130,7 @@ void TestChatBackend::asksForThePresetTheEnvironmentNames()
 
     qputenv("LOGOS_CHAT_DELIVERY_PRESET", "logos.dev");
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     qunsetenv("LOGOS_CHAT_DELIVERY_PRESET");
 
     QCOMPARE(modules.chat_module.initialisedPreset, QStringLiteral("logos.dev"));
@@ -135,7 +155,7 @@ void TestChatBackend::marksAConversationFromAPreviousSession()
     modules.chat_module.conversations = { live, kept };
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
 
     const QAbstractItemModel* model = backend.conversationModel();
     QCOMPARE(model->rowCount(), 2);
@@ -168,7 +188,7 @@ void TestChatBackend::listsAPreviousSessionAfterThisOne()
     modules.chat_module.conversations = { kept, live };
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
 
     const QAbstractItemModel* model = backend.conversationModel();
     QCOMPARE(model->rowCount(), 2);
@@ -189,7 +209,7 @@ void TestChatBackend::previewsAMultiLineMessageOnOneLine()
     modules.chat_module.conversations = { convo };
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
 
     const QAbstractItemModel* model = backend.conversationModel();
     QCOMPARE(model->data(model->index(0, 0), ConversationListModel::PreviewRole).toString(),
@@ -209,7 +229,7 @@ void TestChatBackend::namesAGroupOnOneLine()
     modules.chat_module.conversations = { convo };
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     backend.selectConversation(QStringLiteral("group"));
 
     const QAbstractItemModel* model = backend.conversationModel();
@@ -235,7 +255,7 @@ void TestChatBackend::showsAGroupsProtocol()
     modules.chat_module.conversations = { group, kept };
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
 
     backend.selectConversation(QStringLiteral("group"));
     QCOMPARE(backend.currentProtocol(), QStringLiteral("GroupV3"));
@@ -263,7 +283,7 @@ void TestChatBackend::marksASentMessageDelivered()
     modules.chat_module.messages = { held };
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     backend.selectConversation(QStringLiteral("group"));
     const QAbstractItemModel* model = backend.messageModel();
     const auto delivered = [model](int row) {
@@ -312,7 +332,7 @@ void TestChatBackend::startsANewRunForAnotherSenderWithTheSameShortAddress()
                                      received(kPax, QStringLiteral("hey"), 2000) };
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     backend.selectConversation(QStringLiteral("group"));
     const QAbstractItemModel* model = backend.messageModel();
     const auto data = [model](int row, int role) { return model->data(model->index(row, 0), role); };
@@ -335,7 +355,7 @@ void TestChatBackend::keepsTheSameWordsFromTwoSenders()
     modules.chat_module.conversations = { group };
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     backend.selectConversation(QStringLiteral("group"));
     for (const QString& sender : { kRaya, kPax })
         modules.chat_module.emitEvent(QStringLiteral("message_received"),
@@ -368,7 +388,7 @@ void TestChatBackend::titlesADirectConversationAfterItsPeer()
     modules.chat_module.displayNames.insert(kRaya, QStringLiteral("Raya"));
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     const QAbstractItemModel* model = backend.conversationModel();
     const auto data = [model](int role) { return model->data(model->index(0, 0), role); };
     QTRY_COMPARE_WITH_TIMEOUT(data(ConversationListModel::DisplayNameRole).toString(), QStringLiteral("Raya"), 1000);
@@ -399,7 +419,7 @@ void TestChatBackend::titlesADirectConversationWithoutANameByItsPeer()
     modules.chat_module.conversations = { named, invite };
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     const QAbstractItemModel* model = backend.conversationModel();
     const auto title = [model](int row) {
         return model->data(model->index(row, 0), ConversationListModel::DisplayNameRole).toString();
@@ -431,7 +451,7 @@ void TestChatBackend::namesTheSendersOfAThread()
     modules.chat_module.displayNames.insert(modules.chat_module.address, QStringLiteral("Saro"));
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     backend.selectConversation(QStringLiteral("group"));
     const QAbstractItemModel* model = backend.messageModel();
     const auto name = [model](int row) {
@@ -468,7 +488,7 @@ void TestChatBackend::namesTheRosterAndThisAccount()
     modules.chat_module.displayNames.insert(kRaya, QStringLiteral("Raya"));
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     QTRY_COMPARE_WITH_TIMEOUT(backend.myAccountName(), QStringLiteral("Saro"), 1000);
 
     backend.selectConversation(QStringLiteral("group"));
@@ -496,7 +516,7 @@ void TestChatBackend::keepsANameWhenAReadFails()
     modules.chat_module.displayNames.insert(kRaya, QStringLiteral("Raya"));
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     backend.selectConversation(QStringLiteral("dm"));
     QTRY_COMPARE_WITH_TIMEOUT(backend.currentDisplayName(), QStringLiteral("Raya"), 1000);
 
@@ -519,7 +539,7 @@ void TestChatBackend::reportsAMultiLineFailureOnOneLine()
         QStringLiteral("server returned status 503: <html>\n<body>busy</body>\n</html>");
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     QSignalSpy reported(&backend, &ChatBackend::error);
     backend.createConversation(QStringLiteral("peer"));
 
@@ -538,7 +558,7 @@ void TestChatBackend::createsAConversationWhileDeliveryIsOffline()
     modules.chat_module.deliveryState = QStringLiteral("online");
 
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     QSignalSpy reported(&backend, &ChatBackend::error);
     modules.chat_module.goOffline();
     QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Offline);
@@ -556,7 +576,7 @@ void TestChatBackend::countsANewConversationsFirstMessageOnce()
     LogosModules modules;
     place(modules);
     ChatBackend backend;
-    backend._logosCoreSetLogosModulesPtr_(&modules);
+    start(backend, modules);
     const QAbstractItemModel* model = backend.conversationModel();
     const auto unread = [model] {
         return model->data(model->index(0, 0), ConversationListModel::UnreadCountRole).toInt();
@@ -581,11 +601,225 @@ void TestChatBackend::leavesTheModuleRunningWhenTheViewCloses()
     place(modules);
     {
         ChatBackend backend;
-        backend._logosCoreSetLogosModulesPtr_(&modules);
+        start(backend, modules);
         QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
     }
 
     QCOMPARE(modules.chat_module.get_address(), modules.chat_module.address);
+}
+
+namespace {
+
+// The account the Accounts app answers with.
+const QString kAccount = QStringLiteral("a1b2c3d4") + QString(56, QLatin1Char('d'));
+
+} // namespace
+
+// A view opened on a module that is not running asks whose account to run as
+// before anything starts.
+void TestChatBackend::offersTheChoiceBeforeInit()
+{
+    LogosModules modules;
+    place(modules);
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+
+    QCOMPARE(backend.accountStep(), ChatBackendSimpleSource::ChoosingAccount);
+    QCOMPARE(backend.installationKey(), modules.chat_module.installationKey);
+    QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Stopped);
+    QCOMPARE(modules.chat_module.inits, 0);
+}
+
+void TestChatBackend::runsAsTheAccountAccountsEndorsed()
+{
+    LogosModules modules;
+    place(modules);
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.awaitAccount();
+    QCOMPARE(backend.accountStep(), ChatBackendSimpleSource::WaitingForAccounts);
+    QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Stopped);
+
+    backend.settleAccount(kAccount, QString());
+    QCOMPARE(backend.accountStep(), ChatBackendSimpleSource::AccountSettled);
+    QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Initialising);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), kAccount, 1000);
+    QCOMPARE(modules.chat_module.initialisedAccount, kAccount);
+
+    // The choice is made: a late or second answer changes nothing.
+    backend.settleAccount(QString(), QStringLiteral("cancelled"));
+    backend.continueWithoutAccount();
+    QCOMPARE(backend.accountStep(), ChatBackendSimpleSource::AccountSettled);
+    QCOMPARE(modules.chat_module.inits, 1);
+}
+
+void TestChatBackend::returnsToTheChoiceWhenAccountsDoesNotEndorse_data()
+{
+    QTest::addColumn<QString>("error");
+    QTest::addColumn<QString>("problem");
+    QTest::newRow("cancelled") << QStringLiteral("cancelled")
+                               << QStringLiteral("Accounts did not endorse this installation: the request was cancelled");
+    QTest::newRow("timeout") << QStringLiteral("timeout")
+                             << QStringLiteral("Accounts did not endorse this installation: it did not answer in time");
+    QTest::newRow("failed") << QStringLiteral("failed")
+                            << QStringLiteral("Accounts did not endorse this installation: it could not publish the endorsement");
+}
+
+void TestChatBackend::returnsToTheChoiceWhenAccountsDoesNotEndorse()
+{
+    QFETCH(QString, error);
+    QFETCH(QString, problem);
+    LogosModules modules;
+    place(modules);
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.awaitAccount();
+    backend.settleAccount(QString(), error);
+
+    QCOMPARE(backend.accountStep(), ChatBackendSimpleSource::AccountFailed);
+    QCOMPARE(backend.accountProblem(), problem);
+    QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Stopped);
+    QCOMPARE(modules.chat_module.inits, 0);
+
+    // Both ways on are still open.
+    backend.awaitAccount();
+    QCOMPARE(backend.accountStep(), ChatBackendSimpleSource::WaitingForAccounts);
+    QCOMPARE(backend.accountProblem(), QString());
+    backend.settleAccount(QString(), error);
+    backend.continueWithoutAccount();
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    QCOMPARE(modules.chat_module.initialisedAccount, QString());
+}
+
+// An account that does not endorse this key is refused by the module, and
+// trying again endorses the same key.
+void TestChatBackend::returnsToTheChoiceWhenInitRefusesTheAccount()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.initError = QStringLiteral("the account's log does not endorse this key");
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+    backend.awaitAccount();
+    backend.settleAccount(kAccount, QString());
+    QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Initialising);
+
+    const QString line =
+        QStringLiteral("Chat could not run as that account: the account's log does not endorse this key");
+    QTRY_COMPARE_WITH_TIMEOUT(backend.accountStep(), ChatBackendSimpleSource::AccountFailed, 1000);
+    QCOMPARE(backend.accountProblem(), line);
+    QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Stopped);
+    QCOMPARE(reported.count(), 1);
+    QCOMPARE(reported.first().first().toString(), line);
+    QCOMPARE(backend.installationKey(), modules.chat_module.installationKey);
+
+    modules.chat_module.initError.clear();
+    backend.awaitAccount();
+    backend.settleAccount(kAccount, QString());
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), kAccount, 1000);
+}
+
+// Init can fail after taking the account up, which replaces the key, so trying
+// again must ask the Accounts app to endorse the new one.
+void TestChatBackend::asksForTheNewKeyAfterInitTookTheAccountUp()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.initFailsAfterTakingAccount = QStringLiteral("open chat.db failed");
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    const QString firstKey = backend.installationKey();
+    backend.awaitAccount();
+    backend.settleAccount(kAccount, QString());
+
+    QTRY_COMPARE_WITH_TIMEOUT(backend.accountStep(), ChatBackendSimpleSource::AccountFailed, 1000);
+    QCOMPARE(backend.accountProblem(), QStringLiteral("Chat could not run as that account: open chat.db failed"));
+    QVERIFY(backend.installationKey() != firstKey);
+    QCOMPARE(backend.installationKey(), modules.chat_module.installationKey);
+}
+
+// A call that times out leaves the module's state unknown: it may still come up
+// as the account, so going on without one is not offered.
+void TestChatBackend::failsWhenTheInitCallGetsNoAnswer()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.initCallError = "timeout";
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+    backend.awaitAccount();
+    backend.settleAccount(kAccount, QString());
+
+    QTRY_COMPARE_WITH_TIMEOUT(backend.chatStatus(), ChatBackendSimpleSource::Error, 1000);
+    QCOMPARE(backend.accountStep(), ChatBackendSimpleSource::AccountSettled);
+    QCOMPARE(reported.count(), 1);
+    QCOMPARE(reported.first().first().toString(),
+             QStringLiteral("Failed to initialise chat: init did not answer in time"));
+}
+
+// No Accounts app, or a host that routes no requests, as the doc-tests' is.
+void TestChatBackend::runsOnItsOwnAccountWhenNoAccountsAppAnswers()
+{
+    LogosModules modules;
+    place(modules);
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.awaitAccount();
+    backend.settleAccount(QString(), QStringLiteral("unavailable"));
+
+    QCOMPARE(backend.accountStep(), ChatBackendSimpleSource::RunningWithoutAccounts);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    QCOMPARE(modules.chat_module.initialisedAccount, QString());
+}
+
+// A request the shell refuses, or an answer with no address, is a fault in
+// this package or the provider that asking again cannot mend.
+void TestChatBackend::failsWhenTheRequestIsWrong()
+{
+    for (const QString& error : { QStringLiteral("not_declared"), QStringLiteral("bad_request"), QString() }) {
+        LogosModules modules;
+        place(modules);
+
+        ChatBackend backend;
+        backend._logosCoreSetLogosModulesPtr_(&modules);
+        QSignalSpy reported(&backend, &ChatBackend::error);
+        backend.awaitAccount();
+        backend.settleAccount(QString(), error);
+
+        QCOMPARE(backend.chatStatus(), ChatBackendSimpleSource::Error);
+        QCOMPARE(backend.accountStep(), ChatBackendSimpleSource::AccountSettled);
+        QCOMPARE(reported.count(), 1);
+        QCOMPARE(modules.chat_module.inits, 0);
+    }
+}
+
+void TestChatBackend::attachesToARunningModuleWithoutTheChoice()
+{
+    LogosModules modules;
+    place(modules);
+    {
+        ChatBackend backend;
+        start(backend, modules);
+    }
+
+    // It inits again, which the module ignores but for restarting a delivery
+    // that failed before its node started.
+    ChatBackend reopened;
+    reopened._logosCoreSetLogosModulesPtr_(&modules);
+
+    QCOMPARE(reopened.accountStep(), ChatBackendSimpleSource::AccountSettled);
+    QTRY_COMPARE_WITH_TIMEOUT(reopened.myAddress(), modules.chat_module.address, 1000);
+    QCOMPARE(modules.chat_module.inits, 2);
+    QCOMPARE(modules.chat_module.initialisedAccount, QString());
 }
 
 QTEST_MAIN(TestChatBackend)

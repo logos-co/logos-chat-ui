@@ -447,6 +447,14 @@ Item {
         signalName: "confirmed"
     }
     SignalSpy {
+        id: useAccountSpy
+        signalName: "useAccountRequested"
+    }
+    SignalSpy {
+        id: continueWithoutSpy
+        signalName: "continueWithoutRequested"
+    }
+    SignalSpy {
         id: groupDetailsSpy
         signalName: "groupDetailsEntered"
     }
@@ -1013,6 +1021,49 @@ Item {
             verify(name.visible && label.visible, "a named account shows both");
             compare(name.text, "Saro");
             compare(label.color, Theme.palette.textTertiary, "and the short address steps back");
+        }
+
+        // Before init the card offers both accounts Chat can run as, and its
+        // buttons exist only while offered: a hidden one would still be found.
+        function test_accountCardOffersTheChoice() {
+            const card = createTemporaryObject(accountCardC, testRoot, {
+                address: "",
+                label: "",
+                initials: "",
+                online: false,
+                statusLabel: "Not started",
+                accountStep: "choose"
+            });
+            verify(card, "the card must instantiate");
+            const text = findField(card, "accountChoiceText");
+            verify(text && text.visible, "the choice is explained");
+            const use = findField(card, "useAccountButton");
+            const without = findField(card, "continueWithoutButton");
+            verify(use && without, "both ways on are offered");
+            compare(use.text, "Use an account");
+
+            useAccountSpy.target = card;
+            useAccountSpy.clear();
+            use.clicked();
+            compare(useAccountSpy.count, 1, "using an account asks for one");
+            continueWithoutSpy.target = card;
+            continueWithoutSpy.clear();
+            without.clicked();
+            compare(continueWithoutSpy.count, 1, "and going on without one says so");
+
+            card.accountStep = "waiting";
+            verify(!findField(card, "useAccountButton") && !findField(card, "continueWithoutButton"), "a request in flight offers nothing");
+            compare(text.text, "Confirm in Accounts to go on.");
+
+            card.accountProblem = "Accounts did not endorse this installation: the request was cancelled";
+            card.accountStep = "failed";
+            tryVerify(() => findField(card, "useAccountButton") !== null, 1000, "a failed hand-off offers the choice again");
+            compare(findField(card, "useAccountButton").text, "Try again");
+            compare(text.text, card.accountProblem, "with the reason");
+            compare(text.color, Theme.palette.warning);
+
+            card.accountStep = "";
+            verify(!text.visible, "a settled choice leaves no line behind");
         }
 
         // Before init there is no address to show, and a card showing an empty

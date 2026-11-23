@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 
@@ -21,6 +23,10 @@ Rectangle {
     required property string initials
     // The name this account set; empty when it set none.
     property string accountName: ""
+    // Before init: "choose", "waiting" for Accounts, "failed" with
+    // accountProblem; "own" once Chat runs on an account of its own.
+    property string accountStep: ""
+    property string accountProblem: ""
     required property bool online
     // Short connectivity label ("Online", "Initialising...").
     required property string statusLabel
@@ -32,6 +38,8 @@ Rectangle {
 
     // The unknown-network link after the status was activated.
     signal unknownNetworkRequested
+    signal useAccountRequested
+    signal continueWithoutRequested
 
     // True briefly after a copy, so the tooltip can confirm it.
     readonly property bool copiedFlashing: copiedTimer.running
@@ -237,6 +245,56 @@ Rectangle {
                         placement: LogosToolTip.Top
                         visible: copyButton.hovered
                     }
+                }
+            }
+        }
+
+        LogosText {
+            objectName: "accountChoiceText"
+            visible: root.accountStep !== ""
+            text: {
+                switch (root.accountStep) {
+                case "failed":
+                    return root.accountProblem;
+                case "waiting":
+                    return qsTr("Confirm in Accounts to go on.");
+                case "own":
+                    return qsTr("No Accounts app answered, so Chat runs on an account of its own that only this run uses.");
+                default:
+                    return qsTr("Chat can run as your account from the Accounts app, or on an account of its own that only this run uses.");
+                }
+            }
+            textFormat: Text.PlainText
+            color: root.accountStep === "failed" ? Theme.palette.warning : Theme.palette.textSecondary
+            font.pixelSize: Theme.typography.secondaryText
+            wrapMode: Text.Wrap
+            Layout.fillWidth: true
+        }
+
+        // Created only while offered, so nothing finds a hidden button.
+        Loader {
+            active: root.accountStep === "choose" || root.accountStep === "failed"
+            visible: active
+            Layout.fillWidth: true
+
+            sourceComponent: ColumnLayout {
+                spacing: Theme.spacing.tiny
+
+                LogosButton {
+                    objectName: "useAccountButton"
+                    text: root.accountStep === "failed" ? qsTr("Try again") : qsTr("Use an account")
+                    variant: LogosButton.Variant.Primary
+                    compact: true
+                    Layout.fillWidth: true
+                    onClicked: root.useAccountRequested()
+                }
+
+                LogosButton {
+                    objectName: "continueWithoutButton"
+                    text: qsTr("Continue without an account")
+                    compact: true
+                    Layout.fillWidth: true
+                    onClicked: root.continueWithoutRequested()
                 }
             }
         }

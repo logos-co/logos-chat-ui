@@ -10,7 +10,27 @@ class ChatBackend
         Offline = 4
     }
 
+    // Choosing the account Chat runs as, before init: the Accounts app's, or
+    // one of Chat's own that only this run uses.
+    ENUM AccountStep {
+        // Init has been asked for, or the view opened on a module already
+        // running.
+        AccountSettled = 0,
+        ChoosingAccount = 1,
+        // The view asked the Accounts app, and is waiting for its answer.
+        WaitingForAccounts = 2,
+        // The last hand-off ended without an account; accountProblem says why.
+        AccountFailed = 3,
+        // No Accounts app answered, so Chat runs on an account of its own.
+        RunningWithoutAccounts = 4
+    }
+
     PROP(ChatStatus chatStatus READONLY)
+    PROP(AccountStep accountStep READONLY)
+    PROP(QString accountProblem READONLY)
+    // The key this run's installation signs under, for the Accounts app to
+    // endorse.
+    PROP(QString installationKey READONLY)
     // True when delivery was already running a node the chat module's current
     // process did not start, so it keeps the settings it was started with.
     // Settled by the time chatStatus reaches Online.
@@ -75,6 +95,13 @@ class ChatBackend
     // `message`, and `count` for a message that repeated.
     PROP(QVariantList errors READONLY)
 
+    // The view asked the Accounts app to endorse installationKey.
+    SLOT(void awaitAccount())
+    // The Accounts app's answer: the address of the account that endorsed the
+    // key, or the request's error code.
+    SLOT(void settleAccount(QString address, QString error))
+    // Runs Chat on an account of its own, which only this run uses.
+    SLOT(void continueWithoutAccount())
     SLOT(void createConversation(QString peerAddress))
     SLOT(void createGroupConversation(QString name, QString description))
     SLOT(void addGroupMember(QString conversationId, QString peerAddress))

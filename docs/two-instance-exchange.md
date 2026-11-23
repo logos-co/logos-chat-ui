@@ -34,9 +34,11 @@ nix run . -- --user-dir ~/.local/share/chat_a
 nix run . -- --user-dir ~/.local/share/chat_b
 ```
 
-Both nodes join the `logos.test` Waku fleet (and publish their key packages to
-the key-package registry during `init`), so this needs internet and ~5-20s to
-reach **Online**. Then, in window A copy the address off the account card; in window B
+In each window press **Continue without an account** on the account card: the
+standalone app passes no requests to other apps, so **Use an account** runs Chat
+on an account of its own there too. Both nodes then join the
+`logos.test` Waku fleet (and publish their key packages to the key-package
+registry during `init`), so this needs internet and ~5-20s to reach **Online**. Then, in window A copy the address off the account card; in window B
 pick **New chat > Direct message** and paste A's address — the conversation opens on B's
 side and the invite goes out. Once it appears in A's list (she has joined),
 send the first message from B; reply from either side.
@@ -63,7 +65,8 @@ shows them.
 
 ### 1. Alice shares her address
 
-Alice waits for the network to come up (**Online**), at which point the backend
+Alice presses **Continue without an account** and waits for the network to come
+up (**Online**), at which point the backend
 has called `get_address()` and her account card carries her address. Her key
 package was published to the registry during `init`, so the address alone lets a
 peer open a conversation with her.

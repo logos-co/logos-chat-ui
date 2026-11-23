@@ -21,15 +21,15 @@ the conversation's details are open:
 
 Core functionality:
 
-- **Identity** — on startup, initializes a chat identity; the account card at the foot of the sidebar shows the account's short form and its connection state
+- **Identity** — on startup, the account card at the foot of the sidebar asks whose account Chat runs as: **Use an account** asks the Accounts app to endorse this run's installation, and Chat runs as the account you hold there; **Continue without an account** runs it on one of its own that only this run uses. The card then shows the account's name, short form and connection state
 - **Addresses** — your own address sits on the account card with a copy button beside it; share it with others to let them start a conversation with you
 - **Names** — a person shows as the name their account set, followed by the first eight characters of their address, which they cannot pick; someone who set no name shows as those characters alone. A direct conversation is titled by the other person
 - **Direct messages** — paste another user's address into **New chat > Direct message** to open a private (1:1) conversation
 - **Group conversations** — start a group with **New chat > Group**, then invite peers by address from the members panel (see below)
 - **Messaging** — send and receive messages in real-time over the Logos network
-- **Chat lifecycle** — auto-initializes and starts on launch; the connection state shows on the account card
+- **Chat lifecycle** — starts once the account is chosen; the connection state shows on the account card
 
-Conversations and their messages are kept across restarts, but each launch starts a new identity with a new address. Conversations from an earlier launch stay readable under **Previous sessions** and cannot be sent to: share your new address to talk again, and a group comes back once a member invites it.
+Conversations and their messages are kept across restarts, but each launch runs a new installation: on an account from the Accounts app it keeps that account's address, and without one it gets a new address as well. Conversations from an earlier launch stay readable under **Previous sessions** and cannot be sent to: open a new one to talk again (sharing your new address first, if it changed), and a group comes back once a member invites it.
 
 ### Group conversations
 
@@ -84,8 +84,11 @@ state apart; it defaults to the platform application data location.
 | `LOGOS_CHAT_DELIVERY_PRESET` | The delivery network Chat starts its node on, `logos.test` when unset. The doc-tests set `logos.dev`. |
 | `QML_INSPECTOR_PORT` | Only needed when attaching the [logos-qt-mcp](https://github.com/logos-co/logos-qt-mcp) inspector to drive an instance programmatically (default 3768); give each a distinct one then. Interactive use does not need it. |
 
-Each node joins the `logos.test` Waku fleet and publishes its key package during
-init, so this needs internet and ~5-20s per window to reach **Online**. Then
+Press **Continue without an account** in each window: the standalone app passes no
+requests to other apps, so **Use an account** runs Chat on an account of its own
+there too. Each node then joins the `logos.test` Waku fleet and
+publishes its key package during init, so this needs internet and ~5-20s per
+window to reach **Online**. Then
 copy one window's address from its account card and paste it into another
 (**New chat > Direct message** for a 1:1, or **New chat > Group** then the members
 panel for a group). For
@@ -198,7 +201,7 @@ view module.
 | File | Role |
 |------|------|
 | `ChatBackend.rep` | Defines the C++/QML boundary — `ChatStatus` enum, state props, lifecycle slots, signals |
-| `ChatBackend` | Derives `ChatBackendSimpleSource` + `LogosUiPluginContext`; initialises the module and subscribes to `chat_module` events in `onContextReady()`; drives the three models |
+| `ChatBackend` | Derives `ChatBackendSimpleSource` + `LogosUiPluginContext`; in `onContextReady()` attaches to a running module or offers the account choice, then initialises the module and subscribes to `chat_module` events; drives the three models |
 | `ConversationListModel` | A row per conversation: its id, display name (a direct conversation's comes from its peer), kind, description, last activity and the label for it, message preview, unread count, avatar, the peer's short address |
 | `MessageListModel` | A row per message: sender, content, timestamp and the label for it, whether it is yours, where a run of one sender and a new day begin, avatar, the sender's name |
 | `MemberListModel` | A row per member: address, label, whether it is you, whether the invite is still uncommitted, avatar, the account's name |

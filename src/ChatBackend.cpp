@@ -13,6 +13,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QFileInfo>
+#include <QHash>
 #include <QPointer>
 #include <QSet>
 #include <QVariantMap>
@@ -45,6 +46,13 @@ constexpr int kHealthTimeoutMs = 2000;
 // Probes that must go unanswered before the module is called gone. One is a
 // hiccup; the announcement is not worth being wrong about.
 constexpr int kHealthMissesBeforeGone = 2;
+
+// A failed action and the module's account of it, in one line.
+QString failureLine(const QString& action, const QString& reason)
+{
+    return reason.isEmpty() ? action + QStringLiteral(": the chat module gave no reason")
+                            : action + QStringLiteral(": ") + reason;
+}
 
 QDateTime msToDateTime(qint64 ms)
 {
@@ -144,6 +152,9 @@ ChatBackend::ChatBackend(QObject* parent)
     m_conversationProxy->sort(0, Qt::DescendingOrder);
 
     setChatStatus(ChatBackendSimpleSource::Stopped);
+    setAccountStep(ChatBackendSimpleSource::AccountSettled);
+    setAccountProblem(QString());
+    setInstallationKey(QString());
     setDeliveryAdopted(false);
     setDeliveryPreset(requestedDeliveryPreset());
     setMyAddress(QString());
@@ -169,10 +180,72 @@ ChatBackend::ChatBackend(QObject* parent)
 
 void ChatBackend::onContextReady()
 {
-    // Fires after the framework has wired modules(), so the typed chat_module
-    // surface is live and the QtRO source is registered — the right point to
-    // initialise the module and arm event subscriptions.
-    initialiseModule();
+    // A host closing the view leaves the module running. A view reopened on it
+    // inits again without asking for an account: the module ignores the
+    // config, but restarts a delivery that failed before its node started.
+    if (!modules().chat_module.get_address().isEmpty()) {
+        initialiseModule(QString());
+        return;
+    }
+    setInstallationKey(modules().chat_module.get_installation_key());
+    setAccountStep(ChatBackendSimpleSource::ChoosingAccount);
+}
+
+bool ChatBackend::choosingAccount() const
+{
+    return accountStep() == ChatBackendSimpleSource::ChoosingAccount
+        || accountStep() == ChatBackendSimpleSource::AccountFailed;
+}
+
+void ChatBackend::awaitAccount()
+{
+    if (!choosingAccount())
+        return;
+    setAccountProblem(QString());
+    setAccountStep(ChatBackendSimpleSource::WaitingForAccounts);
+}
+
+void ChatBackend::settleAccount(QString address, QString error)
+{
+    if (accountStep() != ChatBackendSimpleSource::WaitingForAccounts)
+        return;
+
+    if (error.isEmpty() && !address.isEmpty()) {
+        setAccountStep(ChatBackendSimpleSource::AccountSettled);
+        initialiseModule(address);
+        return;
+    }
+    // Nothing provides the intent, or the host routes none.
+    if (error == QStringLiteral("unavailable")) {
+        setAccountStep(ChatBackendSimpleSource::RunningWithoutAccounts);
+        initialiseModule(QString());
+        return;
+    }
+    static const QHash<QString, QString> kWhy = {
+        { QStringLiteral("cancelled"), QStringLiteral("the request was cancelled") },
+        { QStringLiteral("timeout"), QStringLiteral("it did not answer in time") },
+        { QStringLiteral("failed"), QStringLiteral("it could not publish the endorsement") },
+    };
+    if (kWhy.contains(error)) {
+        setAccountProblem(QStringLiteral("Accounts did not endorse this installation: ") + kWhy.value(error));
+        setAccountStep(ChatBackendSimpleSource::AccountFailed);
+        return;
+    }
+    // not_declared, bad_request, or an answer with no address: the request or
+    // this package is wrong, which no retry mends.
+    setAccountStep(ChatBackendSimpleSource::AccountSettled);
+    setChatStatus(ChatBackendSimpleSource::Error);
+    reportFailure(QStringLiteral("Failed to get an account from Accounts"),
+                  error.isEmpty() ? QStringLiteral("it answered with no address") : error);
+}
+
+void ChatBackend::continueWithoutAccount()
+{
+    if (!choosingAccount())
+        return;
+    setAccountProblem(QString());
+    setAccountStep(ChatBackendSimpleSource::AccountSettled);
+    initialiseModule(QString());
 }
 
 QAbstractItemModel* ChatBackend::conversationModel() const
@@ -192,21 +265,60 @@ MemberListModel* ChatBackend::memberModel() const
 
 // ── lifecycle ───────────────────────────────────────────────────────────────
 
-void ChatBackend::initialiseModule()
+void ChatBackend::initialiseModule(const QString& account)
 {
     setChatStatus(ChatBackendSimpleSource::Initialising);
 
     ChatModule::ChatConfig config;
     config.delivery_preset = deliveryPreset();
     config.log_level = QString::fromLatin1(kChatLogLevel);
-    const LogosResult res = modules().chat_module.init(config);
-    if (!res.success) {
-        const QString reason = res.getError<QString>();
+    if (!account.isEmpty())
+        config.account = account;
+    QPointer<ChatBackend> self(this);
+    modules().chat_module.initAsyncResult(
+        config, [self, account](const logos::AsyncResult<LogosResult>& answer) {
+            if (!self)
+                return;
+            // A failed call, a timeout say, is no answer: the module may still
+            // come up as `account`, so the choice is not offered again.
+            if (!answer.ok()) {
+                self->setChatStatus(ChatBackendSimpleSource::Error);
+                self->reportFailure(QStringLiteral("Failed to initialise chat"),
+                                    QString::fromStdString(answer.error.message));
+                return;
+            }
+            // The reason is read only from a failure: reading it off a success
+            // throws.
+            const bool succeeded = answer.value.success;
+            self->onInitAnswered(account, succeeded,
+                                 succeeded ? QString() : answer.value.getError<QString>());
+        });
+}
+
+void ChatBackend::onInitAnswered(const QString& account, bool succeeded, const QString& reason)
+{
+    if (succeeded) {
+        attach();
+        return;
+    }
+    if (account.isEmpty()) {
         setChatStatus(ChatBackendSimpleSource::Error);
         reportFailure(QStringLiteral("Failed to initialise chat"), reason);
         return;
     }
+    // The account does not endorse this key on chat-store, say, or init failed
+    // after taking the account up, which replaces the key: another try asks
+    // for the key the module holds now.
+    setInstallationKey(modules().chat_module.get_installation_key());
+    const QString line = failureLine(QStringLiteral("Chat could not run as that account"), reason);
+    setChatStatus(ChatBackendSimpleSource::Stopped);
+    setAccountProblem(line);
+    setAccountStep(ChatBackendSimpleSource::AccountFailed);
+    report(line);
+}
 
+void ChatBackend::attach()
+{
     m_moduleInitialised = true;
 
     // After init, because that is when the module opens the file it names.
@@ -330,8 +442,7 @@ void ChatBackend::report(const QString& message)
 
 void ChatBackend::reportFailure(const QString& action, const QString& reason)
 {
-    report(reason.isEmpty() ? action + QStringLiteral(": the chat module gave no reason")
-                            : action + QStringLiteral(": ") + reason);
+    report(failureLine(action, reason));
 }
 
 void ChatBackend::subscribeToEvents()

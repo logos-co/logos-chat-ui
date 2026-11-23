@@ -13,6 +13,9 @@
     { "name": "chat_module", "version": ">=0.3.0" },
     { "name": "delivery_module", "version": ">=0.3.0" }
   ],
+  "uses": [
+    { "intent": "accounts.signer.endorse" }
+  ],
   "codegen": {
     "rep": "src/ChatBackend.rep",
     "backend_class": "ChatBackend",

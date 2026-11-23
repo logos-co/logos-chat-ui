@@ -20,6 +20,27 @@ QtObject {
     // Delivery's node runs, online or offline, so the actions work.
     readonly property bool running: online || (backend ? backend.chatStatus === ChatBackend.Offline : false)
     readonly property bool hasError: backend ? backend.chatStatus === ChatBackend.Error : false
+    // Choosing the account Chat runs as, before init, as the account card
+    // draws it: "choose", "waiting" for Accounts, "failed" with accountProblem,
+    // "own" once Chat runs on an account of its own for want of an Accounts
+    // app, and empty once settled.
+    readonly property string accountStep: {
+        if (!backend)
+            return "";
+        switch (backend.accountStep) {
+        case ChatBackend.ChoosingAccount:
+            return "choose";
+        case ChatBackend.WaitingForAccounts:
+            return "waiting";
+        case ChatBackend.AccountFailed:
+            return "failed";
+        case ChatBackend.RunningWithoutAccounts:
+            return "own";
+        default:
+            return "";
+        }
+    }
+    readonly property string accountProblem: backend ? backend.accountProblem : ""
     // The delivery node: whether it was already running when Chat opened, and
     // the network Chat asks for when it starts the node itself.
     readonly property bool deliveryAdopted: backend ? backend.deliveryAdopted : false
@@ -60,6 +81,10 @@ QtObject {
     readonly property string statusLabel: {
         if (!backend)
             return qsTr("No backend");
+        if (accountStep === "waiting")
+            return qsTr("Waiting for Accounts...");
+        if (accountStep === "choose" || accountStep === "failed")
+            return qsTr("Not started");
         switch (backend.chatStatus) {
         case ChatBackend.Stopped:
             return qsTr("Stopped");
@@ -82,6 +107,24 @@ QtObject {
     signal sendFailed(string conversationId, string content)
 
     // Actions. Discrete effects, so imperative here is appropriate.
+
+    // Asks the Accounts app for the account to run as, by endorsing the key this
+    // run's installation signs under; the backend reads the answer.
+    function useAccount() {
+        if (!backend)
+            return;
+        backend.awaitAccount();
+        logos.request("accounts.signer.endorse", {
+            key: backend.installationKey
+        }, function (answer) {
+            const address = answer.ok && answer.data && answer.data.address ? String(answer.data.address) : "";
+            backend.settleAccount(address, answer.ok ? "" : answer.error);
+        });
+    }
+    function continueWithoutAccount() {
+        if (backend)
+            backend.continueWithoutAccount();
+    }
     function selectConversation(conversationId) {
         if (backend)
             backend.selectConversation(conversationId);

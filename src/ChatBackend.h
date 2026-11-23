@@ -33,11 +33,15 @@ public:
     MessageListModel* messageModel() const;
     MemberListModel* memberModel() const;
 
-    // Fires once the generated plugin glue has wired modules(); the typed
-    // chat_module surface is live, so init + event subscriptions happen here.
+    // Fires once the generated plugin glue has wired modules(). A module that is
+    // already running is taken up without asking; otherwise init waits for the
+    // account choice.
     void onContextReady() override;
 
 public slots:
+    void awaitAccount() override;
+    void settleAccount(QString address, QString error) override;
+    void continueWithoutAccount() override;
     void createConversation(QString peerAddress) override;
     void createGroupConversation(QString name, QString description) override;
     void addGroupMember(QString conversationId, QString peerAddress) override;
@@ -50,7 +54,17 @@ public slots:
     void refreshSessionLogs() override;
 
 private:
-    void initialiseModule();
+    // Asks the module to init as `account`, or on an account of its own when it
+    // is empty. The answer comes on a later turn of the event loop: the view is
+    // connected by now, and a blocking call would stall it for the registry
+    // read an account takes.
+    void initialiseModule(const QString& account);
+    void onInitAnswered(const QString& account, bool succeeded, const QString& reason);
+    // Takes up a module that has initialised: its logs, address, events and
+    // conversations.
+    void attach();
+    // Whether the view may still choose the account.
+    bool choosingAccount() const;
     // Opens this run's logs: the chat module names the file it is writing, and
     // its directory is where this view writes beside it, for want of one of its
     // own. Reports rather than falls back when there is nowhere to write.

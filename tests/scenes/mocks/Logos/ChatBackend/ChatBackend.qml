@@ -12,8 +12,18 @@ QtObject {
         Error,
         Offline
     }
+    enum AccountStep {
+        AccountSettled,
+        ChoosingAccount,
+        WaitingForAccounts,
+        AccountFailed,
+        RunningWithoutAccounts
+    }
 
     property int chatStatus: ChatBackend.Stopped
+    property int accountStep: ChatBackend.AccountSettled
+    property string accountProblem: ""
+    property string installationKey: ""
     property bool deliveryAdopted: false
     property string deliveryPreset: "logos.test"
     property string myAddress: ""
@@ -40,6 +50,12 @@ QtObject {
     signal sendFailed(string conversationId, string content)
     signal error(string message)
 
+    function awaitAccount() {
+    }
+    function settleAccount(address: string, error: string) {
+    }
+    function continueWithoutAccount() {
+    }
     function createConversation(peerAddress: string) {
     }
     function createGroupConversation(name: string, description: string) {

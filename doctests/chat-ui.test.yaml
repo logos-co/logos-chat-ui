@@ -26,7 +26,7 @@ what_you_build: "A running Logos chat app, connected to the network and sharing 
 
 what_you_learn:
   - "How a `type: ui_qml`, `interface: universal` module is built and run"
-  - "The connection lifecycle: init is non-blocking and the UI goes Online when delivery connects"
+  - "The connection lifecycle: init waits for the account choice, returns without waiting for delivery, and the UI goes Online when delivery connects"
   - "Sharing your address — what a peer needs to open an encrypted conversation with you"
 
 prerequisites:
@@ -65,9 +65,12 @@ sections:
 
       - **Left:** your conversations, under a **New chat** button (start a
         direct message from someone's address, or a group), with your own
-        account card at the foot: its short form, the delivery state
-        (`Stopped` → `Initialising...` → `Online`), and your address with a
-        copy button beside it.
+        account card at the foot. Before anything starts the card asks whose
+        account Chat runs as: **Use an account** asks the Accounts app for
+        yours, and **Continue without an account** runs Chat on one of its
+        own that only this run uses. It then shows your name and short form,
+        the delivery state (`Not started` → `Initialising...` → `Online`),
+        and your address with a copy button beside it.
       - **Right:** the message thread for the selected conversation, under a
         header carrying its avatar, its description and who is in it, and a
         composer with the send action at its end.
@@ -98,14 +101,26 @@ sections:
               action: wait_for
               texts: ["New chat"]
               timeout: 30000
-              text: "The chat window opens; the account card starts at **Stopped** while delivery boots."
+              text: "The chat window opens, and the account card asks whose account Chat runs as."
+            - name: "Account choice offered"
+              action: wait_for
+              texts: ["Continue without an account"]
+              timeout: 30000
+            - name: "Continue without an account"
+              action: click_object
+              find_by: "objectName"
+              find_value: "continueWithoutButton"
+              text: |
+                The standalone app routes no requests to other apps, so **Use an
+                account** would answer that no Accounts app is there. The tour
+                goes on with an account of Chat's own, and `init` runs.
             - name: "Network connects"
               action: wait_for
               texts: ["Online"]
               timeout: 90000
               text: |
-                `init` returned right away and the delivery node bootstrapped in
-                the background. When it connects, the `delivery_state_changed`
+                `init` returned without waiting for delivery, and the node
+                bootstrapped in the background. When it connects, the `delivery_state_changed`
                 event lands and the state flips to **Online** — **New chat**
                 enables and the backend reads `get_address()` onto the account
                 card. That address is what a peer needs to open a conversation

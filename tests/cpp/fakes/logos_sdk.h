@@ -85,8 +85,20 @@ public:
     // The delivery state status() reports, and the node it is on.
     QString deliveryState = QStringLiteral("initialising");
     bool deliveryAdopted = false;
-    // The address init settles on.
+    // The address init settles on without an account.
     QString address = QStringLiteral("fake-account-address-0123456789abcdef");
+    QString installationKey = QStringLiteral("fake-installation-key-0123456789abcdef");
+    // The reason init refuses an account with, keeping the key; it accepts one
+    // while empty.
+    QString initError;
+    // The reason init fails with after taking an account up, which replaces the
+    // key as accepting it does.
+    QString initFailsAfterTakingAccount;
+    // The code the init call itself fails with, as on a timeout.
+    std::string initCallError;
+    // How many inits the module took, and the account the last one ran as.
+    int inits = 0;
+    QString initialisedAccount;
     QString logPath;
     // Runs while list_conversations is answering. The real client waits for a
     // reply in a nested event loop, which is where an event pushed meanwhile
@@ -134,11 +146,35 @@ public:
             handler(args);
     }
 
-    LogosResult init(const ChatConfig& config, logos::CallError* = nullptr)
+    // Answers on a later turn of the event loop, as the real client does.
+    void initAsyncResult(const ChatConfig& config,
+                         std::function<void(logos::AsyncResult<LogosResult>)> callback,
+                         Timeout = Timeout())
     {
-        initialisedPreset = config.delivery_preset.value_or(QString());
-        m_initialised = true;
-        return {true, {}, {}};
+        logos::AsyncResult<LogosResult> answer;
+        const QString account = config.account.value_or(QString());
+        if (!initCallError.empty()) {
+            answer.error = { initCallError, "init did not answer in time" };
+        } else if (m_initialised) {
+            // A second init succeeds and ignores its config.
+            ++inits;
+            answer.value = {true, {}, {}};
+        } else if (!account.isEmpty() && !initError.isEmpty()) {
+            answer.value = {false, {}, initError};
+        } else if (!account.isEmpty() && !initFailsAfterTakingAccount.isEmpty()) {
+            replaceInstallationKey();
+            answer.value = {false, {}, initFailsAfterTakingAccount};
+        } else {
+            ++inits;
+            initialisedPreset = config.delivery_preset.value_or(QString());
+            initialisedAccount = account;
+            if (!account.isEmpty())
+                address = account;
+            m_initialised = true;
+            replaceInstallationKey();
+            answer.value = {true, {}, {}};
+        }
+        QTimer::singleShot(0, [callback, answer] { callback(answer); });
     }
     LogosResult shutdown(logos::CallError* = nullptr)
     {
@@ -147,6 +183,7 @@ public:
     }
     QString get_log_path(logos::CallError* = nullptr) { return logPath; }
     QString get_address(logos::CallError* = nullptr) { return m_initialised ? address : QString(); }
+    QString get_installation_key(logos::CallError* = nullptr) { return installationKey; }
     QList<Conversation> list_conversations(logos::CallError* = nullptr)
     {
         if (whileListingConversations)
@@ -190,8 +227,14 @@ public:
     }
 
 private:
+    void replaceInstallationKey()
+    {
+        installationKey = QStringLiteral("fake-installation-key-%1").arg(++m_keysMade);
+    }
+
     QHash<QString, EventCallback> m_handlers;
     bool m_initialised = false;
+    int m_keysMade = 0;
 };
 
 struct LogosModules {

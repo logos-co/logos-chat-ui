@@ -117,6 +117,10 @@ Rectangle {
                     label: store.myLabel
                     initials: store.myInitials
                     accountName: store.myAccountName
+                    accountStep: store.accountStep
+                    accountProblem: store.accountProblem
+                    onUseAccountRequested: store.useAccount()
+                    onContinueWithoutRequested: store.continueWithoutAccount()
                     online: store.online
                     statusLabel: store.statusLabel
                     deliveryAdopted: store.deliveryAdopted

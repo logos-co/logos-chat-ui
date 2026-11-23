@@ -58,6 +58,17 @@ async function waitFor(fn, { timeout = 180000, interval = 1000, what = "conditio
   throw new Error(`timed out waiting for ${what}${last ? " (" + last.message + ")" : ""}`);
 }
 
+// Press "Continue without an account" once the account card offers the choice.
+// The standalone app routes no requests to the Accounts app, so this is how a
+// run gets going. The button exists only while the choice is offered.
+async function continueWithoutAccount(insp, who) {
+  await waitFor(async () => (await evalq(insp, "store.accountStep")) === "choose", { timeout: 60000, what: `${who} offered the account choice` });
+  const found = await insp.send("findByProperty", { property: "objectName", value: "continueWithoutButton" });
+  if (found.error || !found.matches || found.matches.length === 0) throw new Error(`${who}: no Continue without an account button`);
+  const pressed = await insp.send("click", { objectId: found.matches[0].id });
+  if (pressed.error) throw new Error(`${who}: Continue without an account: ${pressed.error}`);
+}
+
 async function shoot(insp, outDir, name) {
   const r = await insp.send("screenshot", {});
   if (r.error || !r.image) throw new Error(`screenshot ${name}: ${r.error || "no image"}`);
@@ -112,6 +123,8 @@ async function main() {
   const bob = new Inspector("127.0.0.1", parseInt(process.env.BOB_PORT || "3769", 10));
   await alice.connect(); await bob.connect();
   console.log("connected to both inspectors");
+  await continueWithoutAccount(alice, "alice");
+  await continueWithoutAccount(bob, "bob");
 
   console.log("waiting for both instances to reach Online...");
   await waitFor(async () => (await evalq(alice, "store.online")) === true, { what: "alice Online" });
