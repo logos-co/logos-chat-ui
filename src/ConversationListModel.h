@@ -7,8 +7,12 @@
 #include <QString>
 #include <QVector>
 
+class NameBook;
+
 struct ConversationItem {
     QString conversationId;
+    // The title it was given: a nickname, or a group's shared name. Empty when
+    // it has none, and the model names it after its peer or its id.
     QString displayName;
     QString description;
     QDateTime lastActivity;
@@ -23,6 +27,9 @@ struct ConversationItem {
     // The protocol the conversation runs, as the chat module names it
     // ("GroupV3"); empty while unknown.
     QString protocol;
+    // A direct conversation's other side, as its account's address; empty for a
+    // group and while the module has not learned it.
+    QString peer;
 };
 
 class ConversationListModel : public QAbstractListModel
@@ -32,7 +39,9 @@ class ConversationListModel : public QAbstractListModel
 public:
     enum Roles {
         ConversationIdRole = Qt::UserRole + 1,
-        // On one line, as PreviewRole.
+        // The title it was given, else a direct conversation's peer as the
+        // thread names a person (the name it set, else its short address), else
+        // one generated from the id. On one line, as PreviewRole.
         DisplayNameRole,
         LastActivityRole,
         UnreadCountRole,
@@ -46,16 +55,21 @@ public:
         // whitespace, line breaks included, reads as single spaces.
         PreviewRole,
         DescriptionRole,
-        // Avatar identity, derived from the conversation id rather than the
-        // display name: a direct conversation's name is generated from that id
-        // too, and a group's avatar carries a glyph instead of initials.
+        // Avatar identity: a direct conversation's peer's, on the roster's rule,
+        // so a person keeps one face; else derived from the conversation id, as
+        // while the peer is unknown and for a group, whose avatar carries a
+        // glyph instead of initials.
         AvatarInitialsRole,
         AvatarRampRole,
         // From a previous session, kept for its history only.
-        HistoryOnlyRole
+        HistoryOnlyRole,
+        // A direct conversation's peer as its short address; empty for a group
+        // and while the peer is unknown.
+        PeerLabelRole
     };
 
-    explicit ConversationListModel(QObject* parent = nullptr);
+    // Peers are named from `names`, which outlives the model.
+    explicit ConversationListModel(const NameBook& names, QObject* parent = nullptr);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role) const override;
@@ -69,6 +83,7 @@ public:
     void updatePreview(const QString& id, const QString& preview);
     void updateLastActivity(const QString& id, const QDateTime& lastActivity);
     void updateProtocol(const QString& id, const QString& protocol);
+    void updatePeer(const QString& id, const QString& peer);
     void incrementUnread(const QString& id);
     // Marks a row unread for being new; its first message counts as that one
     // rather than a second.
@@ -104,10 +119,19 @@ public:
     // The protocol a conversation runs; empty for an unknown id.
     QString protocolFor(const QString& id) const;
 
+    // A direct conversation's peer; empty for a group or an unknown id.
+    QString peerFor(const QString& id) const;
+
 private:
+    QString title(const ConversationItem& item) const;
+    // Whose face the avatar shows: the peer's when known, else the id's.
+    static QString face(const ConversationItem& item);
+    void nameChanged(const QString& address);
+
     // Relative label for the last-activity timestamp (see LastActivityDisplayRole).
     QString formatLastActivity(const QDateTime& lastActivity) const;
 
+    const NameBook& m_names;
     QVector<ConversationItem> m_items;
 };
 

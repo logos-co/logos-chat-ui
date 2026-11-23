@@ -14,7 +14,8 @@ LogosItemDelegate {
     required property string conversationId
     required property string displayName
     required property bool isGroup
-    // Avatar identity, computed by the model from the conversation id.
+    // Avatar identity, computed by the model: the peer's for a direct
+    // conversation, else from the conversation id.
     required property string avatarInitials
     required property int avatarRamp
     required property int unreadCount
@@ -27,6 +28,9 @@ LogosItemDelegate {
     required property string description
     // From a previous session, kept for its history only.
     required property bool historyOnly
+    // A direct conversation's peer as its short address, for the header a
+    // selection draws; empty for a group.
+    required property string peerLabel
     // The open conversation, so this row highlights when it is the current one.
     property string currentConversationId: ""
 
@@ -43,7 +47,8 @@ LogosItemDelegate {
             isGroup: root.isGroup,
             avatarInitials: root.avatarInitials,
             avatarRamp: root.avatarRamp,
-            historyOnly: root.historyOnly
+            historyOnly: root.historyOnly,
+            peerLabel: root.peerLabel
         })
 
     readonly property bool unread: root.unreadCount > 0

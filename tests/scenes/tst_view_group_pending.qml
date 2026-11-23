@@ -24,13 +24,14 @@ Item {
                 conversationId: "c1"
                 displayName: "Saro"
                 isGroup: false
-                avatarInitials: "sa"
-                avatarRamp: 0
+                avatarInitials: "a1"
+                avatarRamp: 1
                 unreadCount: 3
                 lastActivityDisplay: "12:44"
                 preview: "Did you get a chance to look?"
                 description: ""
                 historyOnly: false
+                peerLabel: "a1b2c3d4"
             }
             ListElement {
                 conversationId: "c2"
@@ -43,6 +44,7 @@ Item {
                 preview: "You: Merged, thanks all"
                 description: "Design reviews and theme work, with a description long enough to be clamped to one line in the header"
                 historyOnly: false
+                peerLabel: ""
             }
             ListElement {
                 conversationId: "c3"
@@ -55,24 +57,27 @@ Item {
                 preview: "Raya: the release notes are up for review, comments welcome before Friday"
                 description: ""
                 historyOnly: false
+                peerLabel: ""
             }
             ListElement {
                 conversationId: "c4"
                 displayName: "Pax"
                 isGroup: false
-                avatarInitials: "pa"
-                avatarRamp: 2
+                avatarInitials: "f6"
+                avatarRamp: 4
                 unreadCount: 0
                 lastActivityDisplay: "Mon"
                 preview: ""
                 description: ""
                 historyOnly: false
+                peerLabel: "f6e5d4c3"
             }
         }
         // Newest first: the thread is bottom-anchored.
         messages: ListModel {
             ListElement {
                 sender: "Me"
+                senderName: ""
                 avatarInitials: "4b"
                 avatarRamp: 0
                 content: "Merged, thanks all"
@@ -84,8 +89,9 @@ Item {
                 delivered: false
             }
             ListElement {
-                sender: "Raya"
-                avatarInitials: "ra"
+                sender: "0b2c3d4e"
+                senderName: "Raya"
+                avatarInitials: "0b"
                 avatarRamp: 1
                 content: "Pushed the fix, please review"
                 timeDisplay: "12:39"
@@ -96,8 +102,9 @@ Item {
                 delivered: false
             }
             ListElement {
-                sender: "Raya"
-                avatarInitials: "ra"
+                sender: "0b2c3d4e"
+                senderName: "Raya"
+                avatarInitials: "0b"
                 avatarRamp: 1
                 content: "Found the elide bug in the header"
                 timeDisplay: "12:38"
@@ -108,9 +115,10 @@ Item {
                 delivered: false
             }
             ListElement {
-                sender: "Saro"
-                avatarInitials: "sa"
-                avatarRamp: 0
+                sender: "a1b2c3d4"
+                senderName: "Saro"
+                avatarInitials: "a1"
+                avatarRamp: 1
                 content: "Morning! Anyone looked at the facepile yet?"
                 timeDisplay: "09:02"
                 isMe: false
@@ -121,6 +129,7 @@ Item {
             }
             ListElement {
                 sender: "Me"
+                senderName: ""
                 avatarInitials: "4b"
                 avatarRamp: 0
                 content: "See you tomorrow"
@@ -132,9 +141,10 @@ Item {
                 delivered: true
             }
             ListElement {
-                sender: "Saro"
-                avatarInitials: "sa"
-                avatarRamp: 0
+                sender: "a1b2c3d4"
+                senderName: "Saro"
+                avatarInitials: "a1"
+                avatarRamp: 1
                 content: "A longer message that wraps across several lines in the bubble, to show where the seventy-percent cap on a bubble's width lands and how the time sits under the last line."
                 timeDisplay: "18:10"
                 isMe: false
@@ -146,34 +156,38 @@ Item {
         }
         members: ListModel {
             ListElement {
-                address: "4be1c07a9d22"
+                address: "4be1c07a9d22f0e8b5a6c3d7e9f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2"
                 label: "4be1c07a"
+                accountName: ""
                 avatarInitials: "4b"
-                avatarRamp: 0
+                avatarRamp: 2
                 isSelf: true
                 pending: false
             }
             ListElement {
-                address: "0b2c3d4e5f60"
-                label: "Raya"
-                avatarInitials: "ra"
+                address: "0b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9a"
+                label: "0b2c3d4e"
+                accountName: "Raya"
+                avatarInitials: "0b"
                 avatarRamp: 1
                 isSelf: false
                 pending: false
             }
             ListElement {
-                address: "a1b2c3d4e5f6"
-                label: "Saro"
-                avatarInitials: "sa"
-                avatarRamp: 0
+                address: "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9"
+                label: "a1b2c3d4"
+                accountName: "Saro"
+                avatarInitials: "a1"
+                avatarRamp: 1
                 isSelf: false
                 pending: false
             }
             ListElement {
-                address: "f6e5d4c3b2a1"
-                label: "Pax"
-                avatarInitials: "pa"
-                avatarRamp: 2
+                address: "f6e5d4c3b2a1908172635445362718f6e5d4c3b2a1908172635445362718f6e5"
+                label: "f6e5d4c3"
+                accountName: "Pax"
+                avatarInitials: "f6"
+                avatarRamp: 4
                 isSelf: false
                 pending: true
             }

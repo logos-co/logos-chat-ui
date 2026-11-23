@@ -16,6 +16,8 @@ Rectangle {
     required property var messageModel
     required property bool currentIsGroup
     required property string title
+    // A direct conversation's peer as its short address, drawn after the title.
+    property string titleLabel: ""
     // Group description shown under the title; empty for direct conversations
     // and unnamed groups.
     property string description: ""
@@ -133,6 +135,7 @@ Rectangle {
             Layout.fillWidth: true
             visible: root.hasConversation
             title: root.title
+            titleLabel: root.titleLabel
             description: root.description
             isGroup: root.currentIsGroup
             avatarInitials: root.avatarInitials

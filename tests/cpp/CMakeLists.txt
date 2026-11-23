@@ -55,6 +55,7 @@ add_executable(tst_chatbackend
     ../../src/Identity.cpp
     ../../src/MemberListModel.cpp
     ../../src/MessageListModel.cpp
+    ../../src/NameBook.cpp
     ../../src/ProcessLog.cpp
     ../../src/RunLog.cpp
     ../../src/SessionLogFiles.cpp
@@ -79,6 +80,7 @@ add_executable(tst_threadpane
     tst_threadpane.cpp
     ../../src/Identity.cpp
     ../../src/MessageListModel.cpp
+    ../../src/NameBook.cpp
     ../../src/TimeFormat.cpp
 )
 target_include_directories(tst_threadpane PRIVATE ../../src)

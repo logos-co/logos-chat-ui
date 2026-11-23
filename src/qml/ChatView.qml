@@ -30,6 +30,7 @@ Rectangle {
     readonly property bool selectedIsGroup: root.optimisticSelection ? root.optimisticSelection.isGroup : store.currentIsGroup
     readonly property string selectedAvatarInitials: root.optimisticSelection ? root.optimisticSelection.avatarInitials : store.currentAvatarInitials
     readonly property int selectedAvatarRamp: root.optimisticSelection ? root.optimisticSelection.avatarRamp : store.currentAvatarRamp
+    readonly property string selectedPeerLabel: root.optimisticSelection ? root.optimisticSelection.peerLabel : store.currentPeerLabel
     readonly property bool selectedHistoryOnly: root.optimisticSelection ? root.optimisticSelection.historyOnly : store.currentHistoryOnly
     // Whether the models hold the selected conversation's data.
     readonly property bool selectionLoaded: store.loadedConversationId === root.selectedConversationId
@@ -140,6 +141,7 @@ Rectangle {
                     address: store.myAddress
                     label: store.myLabel
                     initials: store.myInitials
+                    accountName: store.myAccountName
                     online: store.online
                     statusLabel: store.statusLabel
                     deliveryAdopted: store.deliveryAdopted
@@ -162,6 +164,7 @@ Rectangle {
                 messageModel: store.messageModel
                 currentIsGroup: root.selectedIsGroup
                 title: root.selectedDisplayName
+                titleLabel: root.selectedPeerLabel
                 description: root.selectedDescription
                 avatarInitials: root.selectedAvatarInitials
                 avatarRamp: root.selectedAvatarRamp

@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "MessageListModel.h"
+#include "NameBook.h"
 
 // The thread pane over the model the backend fills. Opening a conversation
 // replaces that model's rows in one reset, which no QML model stands in for.
@@ -50,7 +51,8 @@ void TestThreadPane::initTestCase()
 
 void TestThreadPane::opensAConversationAtItsNewestMessage()
 {
-    MessageListModel messages;
+    NameBook names;
+    MessageListModel messages(names);
     messages.setMessages(messagesWith(QStringLiteral("Raya"), 40));
 
     QQmlComponent component(&m_engine);

@@ -76,11 +76,13 @@ Item {
                 preview: "You: Merged, thanks all"
                 description: ""
                 historyOnly: false
+                peerLabel: ""
             }
         }
         messages: ListModel {
             ListElement {
                 sender: "Me"
+                senderName: ""
                 avatarInitials: "4b"
                 avatarRamp: 0
                 content: "Merged, thanks all"
@@ -95,6 +97,7 @@ Item {
             ListElement {
                 address: "4be1c07a9d22"
                 label: "4be1c07a"
+                accountName: ""
                 avatarInitials: "4b"
                 avatarRamp: 0
                 isSelf: true
@@ -103,6 +106,7 @@ Item {
             ListElement {
                 address: "0b2c3d4e5f60"
                 label: "0b2c3d4e"
+                accountName: ""
                 avatarInitials: "0b"
                 avatarRamp: 1
                 isSelf: false
@@ -111,6 +115,7 @@ Item {
             ListElement {
                 address: "a1b2c3d4e5f6"
                 label: "a1b2c3d4"
+                accountName: ""
                 avatarInitials: "a1"
                 avatarRamp: 2
                 isSelf: false

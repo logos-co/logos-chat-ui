@@ -22,13 +22,14 @@ Item {
                 conversationId: "c1"
                 displayName: "Saro"
                 isGroup: false
-                avatarInitials: "sa"
-                avatarRamp: 0
+                avatarInitials: "a1"
+                avatarRamp: 1
                 unreadCount: 0
                 lastActivityDisplay: "12:44"
                 preview: "Did you get a chance to look?"
                 description: ""
                 historyOnly: false
+                peerLabel: "a1b2c3d4"
             }
         }
     }
@@ -43,7 +44,10 @@ Item {
         setup: () => {
             const b = stage.logos.backend;
             b.currentDisplayName = "Saro";
-            b.currentAvatarInitials = "sa";
+            b.currentAvatarInitials = "a1";
+            b.currentAvatarRamp = 1;
+            b.currentPeerAddress = "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9";
+            b.currentPeerLabel = "a1b2c3d4";
             b.currentConversationId = "c1";
         }
     }
