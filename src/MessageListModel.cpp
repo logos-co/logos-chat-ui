@@ -8,6 +8,18 @@
 #include <algorithm>
 #include <utility>
 
+namespace {
+
+// What the thread calls a sender: "Me", its short address, or "Peer" when the
+// module did not name it.
+QString senderLabel(const MessageItem& item)
+{
+    if (item.isMe) return QStringLiteral("Me");
+    return item.sender.isEmpty() ? QStringLiteral("Peer") : Identity::shortLabel(item.sender);
+}
+
+} // namespace
+
 MessageListModel::MessageListModel(QObject* parent)
     : QAbstractListModel(parent)
 {
@@ -29,7 +41,7 @@ QVariant MessageListModel::data(const QModelIndex& index, int role) const
     // BottomToTop list), so index+1 is the chronologically previous message.
     const int older = index.row() + 1;
     switch (role) {
-    case SenderRole:    return item.sender;
+    case SenderRole:    return senderLabel(item);
     case ContentRole:   return item.content;
     case TimestampRole: return item.timestamp;
     case IsMeRole:      return item.isMe;
@@ -43,8 +55,8 @@ QVariant MessageListModel::data(const QModelIndex& index, int role) const
         return older >= m_items.size() || item.timestamp.date() != m_items.at(older).timestamp.date();
     case DayLabelRole:  return dayLabel(item.timestamp);
     case TimeDisplayRole: return TimeFormat::shortTime(item.timestamp);
-    case AvatarInitialsRole: return Identity::initials(item.sender);
-    case AvatarRampRole:     return Identity::avatarRamp(item.sender);
+    case AvatarInitialsRole: return Identity::initials(senderLabel(item));
+    case AvatarRampRole:     return Identity::avatarRamp(senderLabel(item));
     case DeliveredRole: return item.delivered;
     default:            return {};
     }
@@ -77,7 +89,8 @@ void MessageListModel::addMessage(const QString& sender, const QString& content,
     // + sender. The model is newest-first, so the newest row is the front.
     if (!m_items.isEmpty()) {
         const MessageItem& newest = m_items.first();
-        if (newest.isMe == isMe && newest.timestamp == timestamp && newest.content == content)
+        if (newest.isMe == isMe && newest.sender == sender && newest.timestamp == timestamp
+            && newest.content == content)
             return;
     }
 

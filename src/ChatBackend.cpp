@@ -496,8 +496,7 @@ bool ChatBackend::showConversationMessages(const QString& convoId)
     QVector<MessageItem> rows;
     rows.reserve(msgs.size());
     for (const ChatModule::Message& msg : msgs) {
-        const QString sender = msg.sender.value_or(QString());
-        rows.append({ msg.from_self ? QStringLiteral("Me") : shortSenderLabel(sender),
+        rows.append({ msg.from_self ? QString() : msg.sender.value_or(QString()),
                       msg.content, msToDateTime(msg.timestamp_ms), msg.from_self,
                       msg.message_id.value_or(QString()), msg.delivered });
     }
@@ -777,7 +776,7 @@ void ChatBackend::applyMessageReceived(const QVariantList& args)
     m_conversationModel->updatePreview(convoId, preview);
 
     if (convoId == currentConversationId()) {
-        m_messageModel->addMessage(shortSenderLabel(sender), content, when, false);
+        m_messageModel->addMessage(sender, content, when, false);
         // A message from someone not yet on the roster means the group grew;
         // refetch (deferred: sync module read from inside an event callback).
         if (!sender.isEmpty() && !m_memberModel->contains(sender))
@@ -806,7 +805,7 @@ void ChatBackend::applyMessageSent(const QVariantList& args)
     m_conversationModel->updatePreview(convoId, preview);
 
     if (convoId == currentConversationId()) {
-        m_messageModel->addMessage(QStringLiteral("Me"), content, when, true, messageId);
+        m_messageModel->addMessage(QString(), content, when, true, messageId);
         refreshDebugDataAfter(convoId);
     }
 }
@@ -914,9 +913,4 @@ QString ChatBackend::fallbackDisplayName(const QString& convoId, const QString& 
 {
     const QString label = peerLabel.isEmpty() ? Identity::shortLabel(convoId) : peerLabel;
     return (isGroup ? QStringLiteral("Group ") : QStringLiteral("DM ")) + label;
-}
-
-QString ChatBackend::shortSenderLabel(const QString& sender)
-{
-    return sender.isEmpty() ? QStringLiteral("Peer") : Identity::shortLabel(sender);
 }

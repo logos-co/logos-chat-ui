@@ -7,6 +7,8 @@
 #include <QVector>
 
 struct MessageItem {
+    // The sender's account address; empty for this account's own messages and
+    // for a sender the module did not name.
     QString sender;
     QString content;
     QDateTime timestamp;
