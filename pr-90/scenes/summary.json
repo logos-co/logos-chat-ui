@@ -2,6 +2,8 @@
   "base": true,
   "scenes": [
     "view-adopted",
+    "view-devtools-errors",
+    "view-devtools-state",
     "view-direct",
     "view-direct-details",
     "view-group-pending",
@@ -9,7 +11,6 @@
     "view-history-group",
     "view-initialising",
     "view-loading",
-    "view-logs-dialog",
     "view-offline",
     "view-online-empty",
     "view-unknown-network-dialog"
