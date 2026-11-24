@@ -34,6 +34,8 @@ QtObject {
     property string logDir: ""
     property var logRuns: []
     property var errors: []
+    property var debugData: ({})
+    property bool debugDataShown: false
 
     signal sendFailed(string conversationId, string content)
     signal error(string message)
@@ -53,5 +55,7 @@ QtObject {
     function refreshMembers() {
     }
     function refreshSessionLogs() {
+    }
+    function refreshDebugData() {
     }
 }

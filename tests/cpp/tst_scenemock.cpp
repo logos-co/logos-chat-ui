@@ -32,12 +32,13 @@ const QMetaObject& replica = ChatBackendReplica::staticMetaObject;
 const QMetaObject& replicaBase = QRemoteObjectReplica::staticMetaObject;
 
 // The type a QML property declares for the replica's: an enum is an int there,
-// and a list of maps a var.
+// and a list or a map a var.
 QByteArray qmlTypeName(const QMetaProperty& property)
 {
     if (property.isEnumType())
         return "int";
-    if (property.metaType() == QMetaType::fromType<QVariantList>())
+    if (property.metaType() == QMetaType::fromType<QVariantList>()
+        || property.metaType() == QMetaType::fromType<QVariantMap>())
         return "QVariant";
     return property.typeName();
 }

@@ -308,8 +308,31 @@ async function main() {
   console.log("alice: her first message reads delivered");
   await shoot(alice, outDir, "06-alice-delivered.png");
 
+  // What the developer tools' State tab reads: the group's debug data, which
+  // crosses from chat_module to the view as one map. All three members' Chats
+  // must report one epoch and fingerprint, three members, and their own entry
+  // synced.
+  console.log("each member: read the group's debug data...");
+  const readDebugData = async (insp) => {
+    await evalq(insp, "store.refreshDebugData()");
+    return JSON.parse(await evalq(insp, "JSON.stringify(store.debugData)"));
+  };
+  let readings = [];
+  await waitFor(async () => {
+    readings = [];
+    for (const [name, insp] of [["alice", alice], ["bob", bob], ["carol", carol]]) {
+      const data = await readDebugData(insp);
+      const self = (data.members || []).find((m) => m.isSelf);
+      readings.push({ name, epoch: data.epoch, fingerprint: data.epochFingerprint, members: (data.members || []).length, selfSync: self ? self.sync : "none" });
+    }
+    return readings.every((r) => r.members === 3 && r.selfSync === "synced" && r.epoch >= 0 && r.epoch === readings[0].epoch && r.fingerprint === readings[0].fingerprint);
+  }, { timeout: 60000, interval: 4000, what: "the same group state on all three" }).catch((e) => {
+    throw new Error(`${e.message}: ${JSON.stringify(readings)}`);
+  });
+  console.log(`SAME_GROUP_STATE epoch=${readings[0].epoch}`);
+
   alice.disconnect(); bob.disconnect(); carol.disconnect();
-  console.log("\nGROUP COMPLETE: three-member group formed, message fanned out to both peers and read back delivered, a missed message fetched from Store; screenshots in " + outDir);
+  console.log("\nGROUP COMPLETE: three-member group formed, message fanned out to both peers and read back delivered, a missed message fetched from Store, all three on one group state; screenshots in " + outDir);
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error("\nFAILED:", e.message); process.exit(1); });

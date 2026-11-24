@@ -5,7 +5,8 @@ import ChatUiScenes
 
 import "../../src/qml"
 
-// The logs dialog over the view, opened the way the status bar opens it.
+// The developer tools opened from the account card's icon while failures are
+// unseen, which lands them on Errors.
 Item {
     id: stage
     width: 1024
@@ -34,11 +35,13 @@ Item {
     ChatView {
         id: view
         anchors.fill: parent
+        lastError: "Could not send to Design Team: delivery is not connected"
+        unseenErrorCount: 4
     }
 
     Shot {
-        name: "view-logs-dialog"
+        name: "view-devtools-errors"
         target: stage
-        setup: () => view.showLogs()
+        setup: () => view.toggleDevtools()
     }
 }

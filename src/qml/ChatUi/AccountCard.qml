@@ -31,6 +31,14 @@ Rectangle {
     // The unknown-network link after the status was activated.
     signal unknownNetworkRequested
 
+    // Whether the developer tools are open, and the failures nobody has looked
+    // at yet, the newest of which the icon names on hover.
+    property bool devtoolsOpen: false
+    property int unseenErrors: 0
+    property string newestError: ""
+    // The developer tools icon was activated.
+    signal devtoolsRequested
+
     // True briefly after a copy, so the tooltip can confirm it.
     readonly property bool copiedFlashing: copiedTimer.running
 
@@ -163,6 +171,49 @@ Rectangle {
                             visible: networkLink.hovered
                         }
                     }
+                }
+            }
+
+            // On this card because the failures it carries belong to the run,
+            // not to a conversation.
+            ChatIconButton {
+                id: devtoolsButton
+                objectName: "devtoolsButton"
+                Layout.alignment: Qt.AlignVCenter
+                iconSize: 18
+                lit: root.devtoolsOpen
+                iconSource: Qt.resolvedUrl("icons/devtools.png")
+                Accessible.role: Accessible.Button
+                Accessible.name: qsTr("Developer tools")
+                onClicked: root.devtoolsRequested()
+
+                Rectangle {
+                    objectName: "unseenErrorBadge"
+                    visible: root.unseenErrors > 0
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.rightMargin: -4
+                    anchors.topMargin: -4
+                    width: Math.max(15, badgeLabel.implicitWidth + 8)
+                    height: 15
+                    radius: Theme.spacing.radiusPill
+                    color: Theme.palette.error
+
+                    LogosText {
+                        id: badgeLabel
+                        anchors.centerIn: parent
+                        text: root.unseenErrors
+                        font.pixelSize: Theme.typography.badgeText
+                        font.weight: Theme.typography.weightBold
+                        color: Theme.palette.backgroundBlack
+                    }
+                }
+
+                LogosToolTip {
+                    objectName: "devtoolsHint"
+                    text: root.unseenErrors > 0 ? root.newestError : qsTr("Developer tools (F12)")
+                    placement: LogosToolTip.Top
+                    visible: devtoolsButton.hovered
                 }
             }
         }

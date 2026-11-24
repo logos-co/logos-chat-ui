@@ -67,7 +67,6 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/ClipboardProxy.qml
             src/qml/ChatUi/ChatMenuItem.qml
             src/qml/ChatUi/MessageComposer.qml
-            src/qml/ChatUi/StatusBar.qml
             src/qml/ChatUi/MessageDelegate.qml
             src/qml/ChatUi/DayChip.qml
             src/qml/ChatUi/Facepile.qml
@@ -83,7 +82,8 @@ if(CHAT_UI_QML_DEVTOOLS)
             src/qml/ChatUi/MemberAddInfoDialog.qml
             src/qml/ChatUi/AddMemberDialog.qml
             src/qml/ChatUi/SelectableText.qml
-            src/qml/ChatUi/SessionLogsDialog.qml
+            src/qml/ChatUi/SessionLogsView.qml
+            src/qml/ChatUi/DevToolsPanel.qml
             src/qml/ChatUi/DeliveryNotice.qml
             src/qml/ChatUi/UnknownNetworkDialog.qml
     )

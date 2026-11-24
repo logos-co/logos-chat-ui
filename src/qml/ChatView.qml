@@ -41,21 +41,46 @@ Rectangle {
     // thread header and left as the user last set it.
     property bool detailsShown: false
 
-    // The newest failure the status bar is holding, and how many nobody has
-    // looked at yet. Both stand until the logs are opened, which is what marks
-    // them seen; the failures themselves are retained by the backend either way.
+    // The newest failure, and how many nobody has looked at yet, which the
+    // account card's icon carries. The count stands until the Errors tab is on
+    // screen, which is what marks them seen; the failures themselves are
+    // retained by the backend either way.
     property string lastError: ""
     property int unseenErrorCount: 0
 
+    // Whether the developer tools are docked open, and how tall.
+    property bool devtoolsOpen: false
+    property real devtoolsHeight: devToolsPanel.implicitHeight
+    readonly property bool errorsOnScreen: root.devtoolsOpen && devToolsPanel.currentTab === 0
+    // The log files rotate and get pruned while the app runs, so the list is
+    // read each time it comes on screen.
+    readonly property bool logsOnScreen: root.devtoolsOpen && devToolsPanel.currentTab === 1
+
+    onErrorsOnScreenChanged: {
+        if (root.errorsOnScreen)
+            root.unseenErrorCount = 0;
+    }
+    onLogsOnScreenChanged: {
+        if (root.logsOnScreen)
+            store.refreshLogRuns();
+    }
+
     ChatStore {
         id: store
+        debugDataShown: root.devtoolsOpen && devToolsPanel.conversationTab
+    }
+
+    Shortcut {
+        sequence: "F12"
+        onActivated: root.toggleDevtools()
     }
 
     Connections {
         target: store
         function onErrorOccurred(message) {
             root.lastError = message;
-            root.unseenErrorCount += 1;
+            if (!root.errorsOnScreen)
+                root.unseenErrorCount += 1;
         }
         function onSendFailed(conversationId, content) {
             threadPane.restoreFailedSend(conversationId, content);
@@ -119,7 +144,11 @@ Rectangle {
                     statusLabel: store.statusLabel
                     deliveryAdopted: store.deliveryAdopted
                     deliveryPreset: store.deliveryPreset
+                    devtoolsOpen: root.devtoolsOpen
+                    unseenErrors: root.unseenErrorCount
+                    newestError: root.lastError
                     onUnknownNetworkRequested: unknownNetworkDialog.open()
+                    onDevtoolsRequested: root.toggleDevtools()
                 }
             }
 
@@ -197,31 +226,65 @@ Rectangle {
             }
         }
 
-        StatusBar {
+        // The grip fills the gap above the developer tools, and dragging it
+        // resizes them: from the height their pages are laid out for, up to
+        // half the view, so the chat stays the larger part.
+        Item {
+            objectName: "devtoolsGrip"
+            visible: root.devtoolsOpen
             Layout.fillWidth: true
-            errorMessage: root.lastError
-            errorCount: root.unseenErrorCount
-            onErrorActivated: root.showLogs()
-            onLogsRequested: root.showLogs()
+            Layout.topMargin: -Theme.spacing.medium
+            Layout.bottomMargin: -Theme.spacing.medium
+            implicitHeight: Theme.spacing.medium
+
+            Rectangle {
+                anchors.centerIn: parent
+                width: 40
+                height: 4
+                radius: Theme.spacing.radiusPill
+                color: gripHover.hovered || gripDrag.active ? Theme.palette.textTertiary : Theme.palette.borderStrong
+            }
+
+            HoverHandler {
+                id: gripHover
+                cursorShape: Qt.SizeVerCursor
+            }
+
+            DragHandler {
+                id: gripDrag
+                property real startHeight: 0
+                target: null
+                xAxis.enabled: false
+                onActiveChanged: {
+                    if (active)
+                        startHeight = root.devtoolsHeight;
+                }
+                onActiveTranslationChanged: root.devtoolsHeight = Math.max(devToolsPanel.implicitHeight, Math.min(root.height / 2, startHeight - activeTranslation.y))
+            }
+        }
+
+        DevToolsPanel {
+            id: devToolsPanel
+            visible: root.devtoolsOpen
+            Layout.fillWidth: true
+            Layout.preferredHeight: root.devtoolsHeight
+            errors: store.errors
+            runs: store.logRuns
+            logDir: store.logDir
+            conversationName: root.selectedConversationId !== "" ? root.selectedDisplayName : ""
+            historyOnly: root.selectedHistoryOnly
+            debugData: store.debugData
+            onRefreshRequested: store.refreshDebugData()
+            onCloseRequested: root.devtoolsOpen = false
         }
     }
 
-    // Opening the logs is what marks the held failures seen: the strip goes
-    // quiet, and nothing is discarded — the list is behind the button.
-    function showLogs() {
-        // The files rotate and get pruned while the app runs, so the list is
-        // read at the moment it is shown.
-        store.refreshLogRuns();
-        root.lastError = "";
-        root.unseenErrorCount = 0;
-        sessionLogsDialog.open();
-    }
-
-    SessionLogsDialog {
-        id: sessionLogsDialog
-        errors: store.errors
-        runs: store.logRuns
-        logDir: store.logDir
+    // Opening lands on Errors while a failure is unseen, which marks it seen,
+    // and otherwise where the tools were left.
+    function toggleDevtools() {
+        if (!root.devtoolsOpen && root.unseenErrorCount > 0)
+            devToolsPanel.currentTab = 0;
+        root.devtoolsOpen = !root.devtoolsOpen;
     }
 
     UnknownNetworkDialog {

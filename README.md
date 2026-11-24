@@ -27,6 +27,7 @@ Core functionality:
 - **Group conversations** — start a group with **New chat > Group**, then invite peers by address from the members panel (see below)
 - **Messaging** — send and receive messages in real-time over the Logos network
 - **Chat lifecycle** — auto-initializes and starts on launch; the connection state shows on the account card
+- **Developer tools** — the icon on the account card, or F12, docks a panel under the cards: the run's failures and log files, and what the open conversation reports about itself for debugging (a GroupV3 group's epoch and each member's sync state), laid out and as raw JSON
 
 Conversations and their messages are kept across restarts, but each launch starts a new identity with a new address. Conversations from an earlier launch stay readable under **Previous sessions** and cannot be sent to: share your new address to talk again, and a group comes back once a member invites it.
 
@@ -182,6 +183,7 @@ logos-chat-ui/
             ├── ThreadHeader.qml       # Conversation name, facepile, details toggle
             ├── DetailsPanel.qml       # The conversation's facts (right, on demand)
             ├── MembersPane.qml        # Group roster + add-member (right)
+            ├── DevToolsPanel.qml      # Failures, logs and debug data, docked under the cards
             ├── ...                    # dialogs, delegates, leaf components
             └── qmldir
 ```
@@ -212,9 +214,10 @@ Two writers keep a log of this run, both in the chat module's instance
 directory. The chat module was assigned that directory; this view borrows it,
 because the platform assigns a view module none of its own
 (`LogosUiPluginContext` has no `instancePersistencePath`) and picking one would
-mean two instances of the app writing into the same folder. The **Show logs**
-button at the foot of the window lists both, a tab per writer, alongside every
-failure the run reported.
+mean two instances of the app writing into the same folder. The developer
+tools' **Logs** tab lists both, one writer at a time, beside the **Errors** tab
+with every failure the run reported. The icon that opens them counts the
+failures nobody has looked at yet.
 
 Each writer's files are `<stem>_<stamp>.log` for the file being written and
 `<stem>_<stamp>.NNN.log` for a rotation of it, ten runs kept. A list is grouped

@@ -69,6 +69,19 @@ class ChatBackend
     // Every failure this run reported, newest first, one map per entry: `when`,
     // `message`, and `count` for a message that repeated.
     PROP(QVariantList errors READONLY)
+    // What the current conversation reported about itself for debugging at its
+    // last read; empty until one, and again once the selection moves. `epoch`
+    // (-1 without one) and `epochFingerprint` are the group's. `members` holds
+    // one map per member, this account first: `label`, `signer`, `sync`,
+    // `epoch` (-1 until heard), `epochFingerprint` and `isSelf`. `counts` holds
+    // one map per sync state present, synced first: `sync` and `count`. `json`
+    // is the whole map the chat module returned, indented, and `readAt` the
+    // time of the read.
+    PROP(QVariantMap debugData READONLY)
+    // Setting it reads debugData; while it stays set, debugData is read again
+    // when the current conversation changes or reports a message or a roster
+    // change.
+    PROP(bool debugDataShown READWRITE)
 
     SLOT(void createConversation(QString peerAddress))
     SLOT(void createGroupConversation(QString name, QString description))
@@ -80,6 +93,8 @@ class ChatBackend
     // get pruned while the app runs, so the view asks for a fresh list when it is
     // about to show one rather than holding what the last read found.
     SLOT(void refreshSessionLogs())
+    // Reads the current conversation's debug data into debugData.
+    SLOT(void refreshDebugData())
 
     // A message the module refused, so the composer can offer the text back.
     SIGNAL(sendFailed(QString conversationId, QString content))

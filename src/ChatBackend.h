@@ -47,6 +47,9 @@ public slots:
     // deferToEventLoop.
     void refreshMembers() override;
     void refreshSessionLogs() override;
+    // A synchronous module read, so never call it from inside a module event
+    // callback without deferToEventLoop.
+    void refreshDebugData() override;
 
 private:
     void initialiseModule();
@@ -103,6 +106,9 @@ private:
     void applyConversationUpdated(const QVariantList& args);
     void applyMembersChanged(const QVariantList& args);
     void applyConversationDeleted(const QVariantList& args);
+    // Re-reads the debug data after an event in `convoId`, while it is shown
+    // and on screen.
+    void refreshDebugDataAfter(const QString& convoId);
 
     // The other participant in a direct conversation's roster; empty for a group
     // or when no other account is on it.
