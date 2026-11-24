@@ -1,0 +1,37 @@
+{
+  "base": true,
+  "scenes": [
+    "view-adopted",
+    "view-devtools-errors",
+    "view-devtools-state",
+    "view-direct",
+    "view-direct-details",
+    "view-group-pending",
+    "view-history-direct",
+    "view-history-group",
+    "view-initialising",
+    "view-loading",
+    "view-naming",
+    "view-offline",
+    "view-online-empty",
+    "view-unknown-network-dialog"
+  ],
+  "changed": [
+    "view-adopted",
+    "view-devtools-errors",
+    "view-devtools-state",
+    "view-direct",
+    "view-direct-details",
+    "view-group-pending",
+    "view-history-direct",
+    "view-history-group",
+    "view-loading",
+    "view-offline",
+    "view-online-empty",
+    "view-unknown-network-dialog"
+  ],
+  "added": [
+    "view-naming"
+  ],
+  "removed": []
+}
