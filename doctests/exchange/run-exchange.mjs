@@ -103,7 +103,24 @@ async function getAddress(insp) {
 }
 
 const CONV_ID_ROLE = 257; // ConversationListModel::ConversationIdRole (Qt::UserRole + 1)
+const DISPLAY_NAME_ROLE = 258; // ConversationListModel::DisplayNameRole
 const PREVIEW_ROLE = 263; // ConversationListModel::PreviewRole
+
+// Names the instance's account as the card's Save does, and waits for the card
+// to show the name, which it does once the account's log holds it.
+async function nameAccount(insp, who, name) {
+  await evalq(insp, `store.saveMyAccountName(${JSON.stringify(name)})`);
+  await waitFor(async () => (await evalq(insp, "store.myAccountName")) === name,
+    { timeout: 60000, what: `${who}'s card to show the name ${name}` });
+}
+
+// Wait until the instance's only conversation is titled by its peer's name,
+// which arrives after a read of the peer's account log on the chat registry.
+async function waitForPeerName(insp, who, name) {
+  await waitFor(
+    async () => (await evalq(insp, `store.conversationModel.data(store.conversationModel.index(0,0), ${DISPLAY_NAME_ROLE})`)) === name,
+    { timeout: 60000, what: `${who}'s conversation titled ${name}` });
+}
 
 async function main() {
   const outDir = process.env.OUT_DIR || "./images";
@@ -120,6 +137,10 @@ async function main() {
   // A chat_module RPC issued the instant after Online can time out while the
   // module is still settling; let it quiesce before the first call.
   await sleep(3000);
+
+  console.log("name both accounts...");
+  await nameAccount(alice, "alice", "Alice");
+  await nameAccount(bob, "bob", "Bob");
 
   console.log("alice: read her address...");
   const address = await getAddress(alice);
@@ -148,6 +169,7 @@ async function main() {
     async () => (await evalq(bob, `store.conversationModel.data(store.conversationModel.index(0,0), ${PREVIEW_ROLE})`)) === BOB_MSG,
     { timeout: 15000, what: "bob's sidebar preview to match the sent message" });
   console.log("bob: sidebar preview matches the sent message");
+  await waitForPeerName(bob, "bob", "Alice");
   await shoot(bob, outDir, "02-bob-sent.png");
 
   // Bob's message still has to cross the network here (the join wait above
@@ -155,6 +177,8 @@ async function main() {
   // propagation waits.
   await loadThread(alice, await evalq(alice, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`), 1, { timeout: 150000 });
   console.log("alice: received Bob's message");
+  // Bob's first message is what tells Alice whose the conversation is.
+  await waitForPeerName(alice, "alice", "Bob");
   await shoot(alice, outDir, "03-alice-received.png");
 
   const ALICE_REPLY = "Hi Bob, got it";

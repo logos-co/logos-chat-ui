@@ -36,7 +36,10 @@ nix run . -- --user-dir ~/.local/share/chat_b
 
 Both nodes join the `logos.test` Waku fleet (and publish their key packages to
 the key-package registry during `init`), so this needs internet and ~5-20s to
-reach **Online**. Then, in window A copy the address off the account card; in window B
+reach **Online**. Each window makes its account on its first start and keeps it
+in its session dir; name it with **Add your name** on the account card, so the
+other side sees a name rather than the first eight characters of an address.
+Then, in window A copy the address off the account card; in window B
 pick **New chat > Direct message** and paste A's address — the conversation opens on B's
 side and the invite goes out. Once it appears in A's list (she has joined),
 send the first message from B; reply from either side.
@@ -48,7 +51,7 @@ doctests/exchange/run-exchange.sh docs/images/exchange
 ```
 
 The wrapper builds the standalone app from the flake, launches Alice and Bob
-offscreen, runs the exchange, writes the PNGs below, and tears both instances
+offscreen, names each account, runs the exchange, writes the PNGs below, and tears both instances
 down. It exits non-zero if the round-trip does not complete, so it doubles as an
 end-to-end integration check. CI's doc-test run on Linux uploads a fresh set as
 the `chat-ui-flow-screenshots` artifact.
@@ -61,12 +64,14 @@ shows them.
 
 ## The exchange
 
-### 1. Alice shares her address
+### 1. Alice names her account and shares her address
 
 Alice waits for the network to come up (**Online**), at which point the backend
 has called `get_address()` and her account card carries her address. Her key
 package was published to the registry during `init`, so the address alone lets a
-peer open a conversation with her.
+peer open a conversation with her. She and Bob each name their account on the
+card, which calls `set_display_name(name)`: the name goes into the account's log
+on the registry, and the card shows it once it is there.
 
 ![Alice's account card](images/exchange/01-alice-address.png)
 
@@ -76,14 +81,16 @@ Bob pastes Alice's address into **New chat > Direct message**. The backend calls
 `create_conversation(address)`, which fetches her key package from the registry
 and sends her the cryptographic invite; the new thread opens empty. Once Alice
 has joined (the conversation shows up in her list), Bob sends the first
-message. Bob's window shows the message sent.
+message. Bob's window shows the message sent, in a conversation titled by
+Alice's name, which his module read from her account's log.
 
 ![Bob's first message](images/exchange/02-bob-sent.png)
 
 ### 3. Alice receives it
 
 Bob's message lands, the `message_received` event fires, and the thread of the
-conversation she joined shows it.
+conversation she joined shows it. The message also tells her whose conversation
+it is, so her list titles it by Bob's name from then on.
 
 ![Alice receives Bob's message](images/exchange/03-alice-received.png)
 

@@ -65,7 +65,8 @@ sections:
 
       - **Left:** your conversations, under a **New chat** button (start a
         direct message from someone's address, or a group), with your own
-        account card at the foot: its short form, the delivery state
+        account card at the foot: your name, or a link to add one, beside the
+        address's short form, the delivery state
         (`Stopped` → `Initialising...` → `Online`), and your address with a
         copy button beside it.
       - **Right:** the message thread for the selected conversation, under a
@@ -73,23 +74,26 @@ sections:
         composer with the send action at its end.
 
       Under the hood the backend calls `modules().chat_module` — typed methods
-      (`init`, `get_address`, `create_conversation`, `send_message`, …)
+      (`init`, `get_address`, `set_display_name`, `create_conversation`,
+      `send_message`, …)
       and string-keyed event subscriptions (`message_received`,
       `delivery_state_changed`, …) that push updates into the view with no
       polling. `init` kicks off the delivery node asynchronously and returns
       immediately; the UI flips to **Online** when the
       `delivery_state_changed` event reports the network is up.
 
-  - title: "Launch and connect, then share your address"
+  - title: "Launch and connect, name your account, then share your address"
     step: true
     text: |
       Run the app headless (offscreen Qt) and drive it: wait for the network to
-      come up, then copy your address — the everything-a-single-window-shows
-      half of the tour.
+      come up, name your account, then copy your address — the
+      everything-a-single-window-shows half of the tour. The app gets a session
+      directory of its own in the doc-test's work directory, so each run starts
+      with a new account.
     steps:
       - title: "Drive the app"
         ui_test:
-          launch: "nix run 'github:logos-co/logos-chat-ui{release}'"
+          launch: "nix run 'github:logos-co/logos-chat-ui{release}' -- --user-dir ./chat-user"
           setup:
             - "nix build 'github:logos-co/logos-qt-mcp{release}' -o result-mcp"
           qt_mcp: "result-mcp"
@@ -112,6 +116,35 @@ sections:
                 with you; your key package was published to the registry during
                 `init`, so the address alone is enough.
               screenshot: "connected.png"
+            - name: "Add your name"
+              action: click_object
+              find_by: "objectName"
+              find_value: "addNameLink"
+              text: |
+                The card offers a name where it would show one. Chat made this
+                account on its first start and keeps it in the session
+                directory, so the name, like the address, stays across restarts.
+            - name: "Type it"
+              action: set_text
+              find_by: "objectName"
+              find_value: "nameField"
+              value: " Saro "
+            - name: "Save it"
+              action: click_object
+              find_by: "objectName"
+              find_value: "saveNameButton"
+            - name: "Name published"
+              action: wait_for
+              # Only the card's name line ever holds the trimmed name exactly:
+              # findByProperty matches the whole `text`, and the field keeps
+              # the spaces it was given.
+              texts: ["Saro"]
+              timeout: 30000
+              text: |
+                Save publishes the name, trimmed, to your account's log on the
+                chat registry, where anyone with your address can read it. The
+                card shows it once it is there.
+              screenshot: "named.png"
             - name: "Copy your address"
               action: click_object
               find_by: "objectName"

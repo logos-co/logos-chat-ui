@@ -20,6 +20,8 @@ QtObject {
     property string myLabel: ""
     property string myInitials: ""
     property string myAccountName: ""
+    property bool myAccountNameSaving: false
+    property string myAccountNameProblem: ""
     property string currentConversationId: ""
     property string loadedConversationId: ""
     property bool currentIsGroup: false
@@ -41,6 +43,7 @@ QtObject {
 
     signal sendFailed(string conversationId, string content)
     signal error(string message)
+    signal myAccountNameSaved
 
     function createConversation(peerAddress: string) {
     }
@@ -53,6 +56,8 @@ QtObject {
     function selectConversation(conversationId: string) {
         currentConversationId = conversationId;
         loadedConversationId = conversationId;
+    }
+    function saveMyAccountName(name: string) {
     }
     function refreshMembers() {
     }

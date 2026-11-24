@@ -46,8 +46,9 @@ sections:
     step: true
     text: |
       The `group` app launches three instances offscreen and runs the real flow
-      over the live network — Alice creates the group, invites Bob and Carol,
-      and once all three are in she sends a message that fans out to both.
+      over the live network — each names its account, Alice creates the group,
+      invites Bob and Carol, and once all three are in she sends a message that
+      fans out to both.
 
       Then Carol misses one. The flow has her delivery node drop the group's
       topic while Alice sends "Next pick: Dune", so the message never reaches
@@ -61,8 +62,8 @@ sections:
 
       The app then opens the capture port onto Carol's live window. The whole
       flow happens while the launch is still coming up, so the screenshot below
-      captures the finished group: all three messages, each with its sender
-      label, beside the three-member roster.
+      captures the finished group: all three messages, each under its sender's
+      name, beside the three-member roster.
     steps:
       - title: "Run the group flow and show the result"
         ui_test:
@@ -92,7 +93,7 @@ sections:
               timeout: 90000
               text: |
                 Carol's window after the group formed: Alice's two messages and
-                Bob's reply, received with their sender labels and
+                Bob's reply, received under their senders' names and
                 end-to-end-encrypted over `delivery_module`, beside the members
                 pane listing the three-member roster. "Next pick: Dune" came
                 from Store.

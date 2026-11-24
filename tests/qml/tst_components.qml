@@ -480,6 +480,10 @@ Item {
         signalName: "submitted"
     }
     SignalSpy {
+        id: nameSubmittedSpy
+        signalName: "accountNameSubmitted"
+    }
+    SignalSpy {
         id: addressSpy
         signalName: "addressEntered"
     }
@@ -1063,6 +1067,112 @@ Item {
             verify(name.visible && label.visible, "a named account shows both");
             compare(name.text, "Saro");
             compare(label.color, Theme.palette.textTertiary, "and the short address steps back");
+        }
+
+        // An unnamed account is offered a name where the name would be, and the
+        // short address leads the row while it is typed.
+        function test_accountCardOffersToAddAName() {
+            const card = createTemporaryObject(accountCardC, testRoot);
+            verify(card, "the card must instantiate");
+            const add = findField(card, "addNameLink");
+            const edit = findField(card, "editNameButton");
+            const field = findField(card, "nameField");
+            const label = findField(card, "myLabelText");
+            verify(add && edit && field && label, "the name controls must be reachable");
+            verify(add.visible && !edit.visible, "an unnamed account is offered a name, not a change");
+            verify(!field.visible, "and no editor until asked");
+
+            add.activated("");
+            verify(card.editingName, "the link opens the editor");
+            // The field hands its focus on to the input inside it.
+            tryVerify(() => field.visible && field.textInput.activeFocus, 2000, "with the field focused");
+            compare(field.text, "", "and empty");
+            verify(!add.visible, "the link gives way to the editor");
+            compare(label.color, Theme.palette.text, "and the short address leads the row");
+        }
+
+        // A change opens on the current name, saves only a different one,
+        // trimmed, and holds still while it is published.
+        function test_accountCardChangesTheName() {
+            const card = createTemporaryObject(accountCardC, testRoot, {
+                accountName: "Saro"
+            });
+            verify(card, "the card must instantiate");
+            nameSubmittedSpy.target = card;
+            nameSubmittedSpy.clear();
+            const edit = findField(card, "editNameButton");
+            const field = findField(card, "nameField");
+            const save = findField(card, "saveNameButton");
+            const cancel = findField(card, "cancelNameButton");
+            verify(edit && field && save && cancel, "the editor must be reachable");
+            verify(edit.visible, "a named account is offered a change");
+
+            edit.clicked();
+            tryVerify(() => field.visible, 2000, "the button opens the editor");
+            compare(field.text, "Saro", "on the current name");
+            verify(!save.enabled, "which there is nothing to save");
+            field.text = "   ";
+            verify(!save.enabled, "nor in blanks");
+
+            field.text = " Raya ";
+            verify(save.enabled, "a different name can be saved");
+            save.clicked();
+            compare(nameSubmittedSpy.count, 1);
+            compare(nameSubmittedSpy.signalArguments[0][0], "Raya", "trimmed");
+
+            card.accountNameSaving = true;
+            compare(save.text, "Saving...");
+            verify(!save.enabled && !cancel.enabled && field.readOnly, "the editor holds still while saving");
+            verify(card.editingName, "and stays open until the view closes it");
+        }
+
+        // Escape cancels as the button does, so not while a name is saving.
+        function test_accountCardCancelsWithEscape() {
+            const card = createTemporaryObject(accountCardC, testRoot, {
+                accountName: "Saro"
+            });
+            verify(card, "the card must instantiate");
+            const field = findField(card, "nameField");
+            card.editingName = true;
+            tryVerify(() => field.textInput.activeFocus, 2000, "the editor takes the focus");
+            card.accountNameSaving = true;
+            keyClick(Qt.Key_Escape);
+            verify(card.editingName, "Escape waits for the save");
+            card.accountNameSaving = false;
+            keyClick(Qt.Key_Escape);
+            verify(!card.editingName, "and then closes it");
+            tryVerify(() => !field.visible, 2000);
+        }
+
+        // A refused name says why where the hint was, in the warning colour,
+        // until the editor is given up on.
+        function test_accountCardShowsWhyANameWasRefused() {
+            const card = createTemporaryObject(accountCardC, testRoot);
+            verify(card, "the card must instantiate");
+            card.editingName = true;
+            const hint = findField(card, "nameHint");
+            const field = findField(card, "nameField");
+            const save = findField(card, "saveNameButton");
+            const cancel = findField(card, "cancelNameButton");
+            verify(hint && field && save && cancel, "the editor must be reachable");
+            compare(hint.text, "Anyone with your address can see this name.");
+
+            // As the backend does: saving, then the refusal once it ends.
+            field.text = "x".repeat(66);
+            save.clicked();
+            card.accountNameSaving = true;
+            card.accountNameSaving = false;
+            card.accountNameProblem = "a display name is limited to 64 bytes of UTF-8, and this one is 66";
+            compare(hint.text, card.accountNameProblem);
+            compare(hint.color, Theme.palette.warning);
+
+            cancel.clicked();
+            card.editingName = true;
+            compare(hint.text, "Anyone with your address can see this name.", "the next opening starts over");
+            compare(hint.color, Theme.palette.textTertiary);
+            field.text = "Raya";
+            save.clicked();
+            compare(hint.text, "Anyone with your address can see this name.", "nor on the next Save, before the backend clears the old reason");
         }
 
         // Before init there is no address to show, and a card showing an empty

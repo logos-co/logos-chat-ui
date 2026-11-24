@@ -49,6 +49,8 @@ QtObject {
     readonly property string myInitials: backend ? backend.myInitials : ""
     // The name this account set; empty when it set none.
     readonly property string myAccountName: backend ? backend.myAccountName : ""
+    readonly property bool myAccountNameSaving: backend ? backend.myAccountNameSaving : false
+    readonly property string myAccountNameProblem: backend ? backend.myAccountNameProblem : ""
 
     // The run's logs: every failure it reported, every run each writer kept, and
     // the directory they share.
@@ -85,6 +87,8 @@ QtObject {
     // object directly.
     signal errorOccurred(string message)
     signal sendFailed(string conversationId, string content)
+    // The name saveMyAccountName sent was published.
+    signal myAccountNameSaved
 
     // Actions. Discrete effects, so imperative here is appropriate.
     function selectConversation(conversationId) {
@@ -106,6 +110,10 @@ QtObject {
     function addMembers(conversationId, addresses) {
         if (backend && conversationId !== "")
             backend.addGroupMembers(conversationId, addresses);
+    }
+    function saveMyAccountName(name) {
+        if (backend)
+            backend.saveMyAccountName(name);
     }
     function refreshLogRuns() {
         if (backend)
@@ -130,6 +138,9 @@ QtObject {
         }
         function onSendFailed(conversationId, content) {
             root.sendFailed(conversationId, content);
+        }
+        function onMyAccountNameSaved() {
+            root.myAccountNameSaved();
         }
     }
 }
