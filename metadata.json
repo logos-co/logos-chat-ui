@@ -1,7 +1,7 @@
 {
   "name": "chat_ui",
   "display_name": "Chat",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "ui_qml",
   "interface": "universal",
   "category": "chat",
@@ -10,8 +10,8 @@
   "view": "qml/ChatView.qml",
   "icon": "src/icons/messages-square.png",
   "dependencies": [
-    { "name": "chat_module", "version": ">=0.3.0" },
-    { "name": "delivery_module", "version": ">=0.3.0" }
+    { "name": "chat_module", "version": ">=0.4.0" },
+    { "name": "delivery_module", "version": ">=0.4.0" }
   ],
   "codegen": {
     "rep": "src/ChatBackend.rep",
