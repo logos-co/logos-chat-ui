@@ -23,6 +23,8 @@ private slots:
     void namesAGroupOnOneLine();
     void showsAGroupsProtocol();
     void marksASentMessageDelivered();
+    void startsANewRunForAnotherSenderWithTheSameShortAddress();
+    void keepsTheSameWordsFromTwoSenders();
     void reportsAMultiLineFailureOnOneLine();
     void createsAConversationWhileDeliveryIsOffline();
     void countsANewConversationsFirstMessageOnce();
@@ -277,6 +279,67 @@ void TestChatBackend::marksASentMessageDelivered()
     modules.chat_module.emitEvent(QStringLiteral("message_delivered"),
                                   { QStringLiteral("group"), QStringLiteral("m2") });
     QCOMPARE(delivered(0), true);
+}
+
+namespace {
+
+// Two accounts whose addresses share the eight characters the thread shows.
+const QString kRaya = QStringLiteral("4be1c07a") + QString(56, QLatin1Char('a'));
+const QString kPax = QStringLiteral("4be1c07a") + QString(56, QLatin1Char('b'));
+
+ChatModule::Message received(const QString& sender, const QString& content, qlonglong ms)
+{
+    ChatModule::Message message;
+    message.sender = sender;
+    message.content = content;
+    message.timestamp_ms = ms;
+    return message;
+}
+
+} // namespace
+
+void TestChatBackend::startsANewRunForAnotherSenderWithTheSameShortAddress()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { group };
+    modules.chat_module.messages = { received(kRaya, QStringLiteral("hi"), 1000),
+                                     received(kPax, QStringLiteral("hey"), 2000) };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.selectConversation(QStringLiteral("group"));
+    const QAbstractItemModel* model = backend.messageModel();
+    const auto data = [model](int row, int role) { return model->data(model->index(row, 0), role); };
+    QCOMPARE(data(0, MessageListModel::SenderRole).toString(), QStringLiteral("4be1c07a"));
+    QCOMPARE(data(1, MessageListModel::SenderRole).toString(), QStringLiteral("4be1c07a"));
+    QCOMPARE(data(0, MessageListModel::SameSenderAsPreviousRole).toBool(), false);
+
+    modules.chat_module.emitEvent(QStringLiteral("message_received"),
+                                  { QStringLiteral("group"), QStringLiteral("again"), 3000, kPax });
+    QCOMPARE(data(0, MessageListModel::SameSenderAsPreviousRole).toBool(), true);
+}
+
+void TestChatBackend::keepsTheSameWordsFromTwoSenders()
+{
+    LogosModules modules;
+    place(modules);
+    ChatModule::Conversation group;
+    group.convo_id = QStringLiteral("group");
+    group.kind = QStringLiteral("group");
+    modules.chat_module.conversations = { group };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    backend.selectConversation(QStringLiteral("group"));
+    for (const QString& sender : { kRaya, kPax })
+        modules.chat_module.emitEvent(QStringLiteral("message_received"),
+                                      { QStringLiteral("group"), QStringLiteral("yes"), 1000, sender });
+
+    QCOMPARE(backend.messageModel()->rowCount(), 2);
 }
 
 // A module failure can carry a server's response body, and reaches the status
