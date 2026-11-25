@@ -100,9 +100,9 @@ QtObject {
         if (backend)
             backend.createGroupConversation(name, description);
     }
-    function addMember(conversationId, address) {
+    function addMembers(conversationId, addresses) {
         if (backend && conversationId !== "")
-            backend.addGroupMember(conversationId, address);
+            backend.addGroupMembers(conversationId, addresses);
     }
     function refreshLogRuns() {
         if (backend)

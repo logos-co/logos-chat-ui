@@ -76,8 +76,8 @@ sections:
           # 3768 opens (proxied onto Carol's live window) only once the flow is
           # done, so the capture below runs against the already-finished window.
           # Larger than the exchange's 1800: forming a three-member group runs
-          # two sequential membership commits plus the fan-out before Carol's
-          # window opens on 3768, so the port-wait must cover a longer flow.
+          # a membership commit plus the fan-out before Carol's window opens on
+          # 3768, so the port-wait must cover a longer flow.
           launch: "nix run 'github:logos-co/logos-chat-ui{release}#group'"
           launch_timeout: 2700
           tests:

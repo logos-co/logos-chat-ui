@@ -474,6 +474,10 @@ Item {
         signalName: "addressEntered"
     }
     SignalSpy {
+        id: addressesSpy
+        signalName: "addressesEntered"
+    }
+    SignalSpy {
         id: confirmedSpy
         signalName: "confirmed"
     }
@@ -1500,29 +1504,104 @@ Item {
             compare(field.text, "", "accept clears the address");
         }
 
-        // The add-member dialog gates Add on non-blank input, keeps its draft
-        // across a close, and clears on accept.
+        // The add-member dialog lists each typed address once, keeps the field and
+        // the list across a close, and invites the list with the typed address in
+        // one go, then starts over.
         function test_addMemberDialog() {
             const dlg = createTemporaryObject(addMemberDialogC, this);
             verify(dlg);
-            addressSpy.target = dlg;
-            addressSpy.clear();
+            addressesSpy.target = dlg;
+            addressesSpy.clear();
             const field = findField(dlg.contentItem, "addMemberField");
-            verify(field, "the address field must be reachable");
+            const invitees = findField(dlg.contentItem, "inviteeList");
+            const listButton = findField(dlg.contentItem, "listAddressButton");
+            const listedHint = findField(dlg.contentItem, "alreadyListedHint");
+            verify(field && invitees && listButton && listedHint, "the dialog's parts must be reachable");
+            const add = dlg.rightActions[0];
 
             dlg.open();
-            dlg.rightActions[0].clicked();
-            compare(addressSpy.count, 0, "an empty address must not be accepted");
+            verify(!add.enabled, "Add waits for someone to invite");
+            add.clicked();
+            compare(addressesSpy.count, 0, "nothing is invited without an address");
 
-            field.text = "0xpeer";
+            field.text = "raya";
+            field.textInput.accepted();
+            compare(invitees.count, 1, "Return lists the typed address");
+            compare(field.text, "", "listing clears the field");
+
+            field.text = " raya ";
+            verify(listedHint.visible, "an address already listed is pointed out");
+            verify(!listButton.enabled, "and cannot be listed again");
+            field.textInput.accepted();
+            compare(invitees.count, 1, "nor by Return");
+            compare(add.text, "Add", "nor counted twice");
+
+            field.text = "pax";
+            listButton.clicked();
+            compare(invitees.count, 2, "+ lists the typed address");
+
+            field.text = "saro";
             dlg.close();
-            compare(field.text, "0xpeer", "closing keeps the address draft");
+            compare(field.text, "saro", "closing keeps the typed address");
+            compare(invitees.count, 2, "and the list");
 
             dlg.open();
+            compare(add.text, "Add 3 members", "Add counts the typed address with the list");
+            add.clicked();
+            compare(addressesSpy.count, 1, "the addresses are invited in one go");
+            compare(Array.from(addressesSpy.signalArguments[0][0]), ["raya", "pax", "saro"], "every address, in the order listed");
+            compare(invitees.count, 0, "inviting empties the list");
+            compare(field.text, "", "and the field");
+        }
+
+        // + and × hand focus back to the field, so the next paste lands there.
+        function test_addMemberDialogKeepsTheFieldFocused() {
+            const dlg = createTemporaryObject(addMemberDialogC, testRoot);
+            const field = findField(dlg.contentItem, "addMemberField");
+            const listButton = findField(dlg.contentItem, "listAddressButton");
+            const invitees = findField(dlg.contentItem, "inviteeList");
+            dlg.open();
+            tryVerify(() => dlg.opened);
+
+            field.text = "raya";
+            mouseClick(listButton);
+            compare(invitees.count, 1);
+            verify(field.textInput.activeFocus, "+ leaves the field focused");
+
+            invitees.forceLayout();
+            // A real click needs the grown dialog and the new row laid out first.
+            waitForItemPolished(dlg.contentItem);
+            waitForItemPolished(invitees.itemAtIndex(0));
+            mouseClick(findField(invitees.itemAtIndex(0), "dropAddressButton"));
+            compare(invitees.count, 0);
+            verify(field.textInput.activeFocus, "× leaves the field focused");
+        }
+
+        // × takes an address off the list, and Add invites the rest.
+        function test_addMemberDialogDropsAnAddress() {
+            const dlg = createTemporaryObject(addMemberDialogC, this);
+            verify(dlg);
+            addressesSpy.target = dlg;
+            addressesSpy.clear();
+            const field = findField(dlg.contentItem, "addMemberField");
+            const invitees = findField(dlg.contentItem, "inviteeList");
+
+            dlg.open();
+            for (const address of ["raya", "pax"]) {
+                field.text = address;
+                field.textInput.accepted();
+            }
+            compare(invitees.count, 2);
+            invitees.forceLayout();
+            compare(findField(invitees.itemAtIndex(0), "inviteeAddress").text, "raya", "a row shows its address");
+            compare(findField(invitees.itemAtIndex(1), "inviteeAddress").text, "pax");
+            findField(invitees.itemAtIndex(0), "dropAddressButton").clicked();
+            compare(invitees.count, 1, "× drops the address");
+            invitees.forceLayout();
+            compare(findField(invitees.itemAtIndex(0), "inviteeAddress").text, "pax", "the other one stays");
+
             dlg.rightActions[0].clicked();
-            compare(addressSpy.count, 1, "a non-blank draft accepts");
-            compare(addressSpy.signalArguments[0][0], "0xpeer", "the address is emitted");
-            compare(field.text, "", "accept clears the address");
+            compare(Array.from(addressesSpy.signalArguments[0][0]), ["pax"], "the rest is invited");
         }
 
         // The Add member button follows the running node and requests a member add.
@@ -1551,8 +1630,8 @@ Item {
             tryCompare(del, "copiedFlashing", false, 3000, "the flash clears");
         }
 
-        // Confirming the explainer emits confirmed() so the caller can proceed
-        // with the invite and persist the "don't show again" choice.
+        // Confirming the explainer emits confirmed() so the caller can go on to
+        // the add dialog and persist the "don't show again" choice.
         function test_memberAddInfoDialogConfirms() {
             const dlg = instantiate(memberAddInfoDialogC);
             confirmedSpy.target = dlg;

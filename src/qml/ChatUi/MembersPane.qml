@@ -158,8 +158,8 @@ Rectangle {
 
         LogosButton {
             objectName: "addMemberButton"
-            //: Button that opens the dialog to invite a new group member
-            text: qsTr("Add member")
+            //: Button that opens the dialog to invite new group members
+            text: qsTr("Add members")
             radius: Theme.spacing.radiusLarge
             font.pixelSize: Theme.typography.primaryText
             leadingIcon.source: Qt.resolvedUrl("icons/add-member.png")

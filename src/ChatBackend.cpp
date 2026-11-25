@@ -547,7 +547,7 @@ void ChatBackend::createGroupConversation(QString name, QString description)
     // Members are added afterwards from the members panel.
 }
 
-void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
+void ChatBackend::addGroupMembers(QString conversationId, QStringList peerAddresses)
 {
     if (!deliveryRunning() || !isContextReady()) {
         report(QStringLiteral("Failed to add member: chat is not online"));
@@ -557,19 +557,19 @@ void ChatBackend::addGroupMember(QString conversationId, QString peerAddress)
         report(QStringLiteral("Failed to add member: no conversation selected"));
         return;
     }
-    if (peerAddress.isEmpty()) {
+    if (peerAddresses.isEmpty() || peerAddresses.contains(QString())) {
         report(QStringLiteral("Failed to add member: address cannot be empty"));
         return;
     }
 
-    const LogosResult res = modules().chat_module.add_group_member(conversationId, peerAddress);
+    const LogosResult res = modules().chat_module.add_group_members(conversationId, peerAddresses);
     if (!res.success) {
         const QString reason = res.getError<QString>();
         reportFailure(QStringLiteral("Failed to add member"), reason);
         return;
     }
-    // The commit is async, so the peer joins the roster as a pending busy row;
-    // the members_changed event reconciles it once committed.
+    // The commit is async, so the peers join the roster as pending busy rows;
+    // the members_changed event reconciles them once committed.
     if (conversationId == currentConversationId())
         refreshMembers();
 }

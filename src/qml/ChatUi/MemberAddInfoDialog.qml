@@ -5,8 +5,8 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-// First-time explainer for adding a group member: the commit is asynchronous, so
-// a newly invited member takes about two minutes to appear. Open it, and connect
+// Explainer shown before members are listed: the commit is asynchronous, so new
+// members take about two minutes to appear. Open it, and connect
 // confirmed() — it carries whether the user ticked "Don't show this again", so the
 // caller can persist that and skip the dialog next time. Standalone: instantiate
 // with no context, open(), and read the signal.
@@ -16,7 +16,7 @@ LogosDialog {
     // Emitted when the user confirms the add; `dontShowAgain` is the checkbox state.
     signal confirmed(bool dontShowAgain)
 
-    title: qsTr("Adding a member")
+    title: qsTr("Adding members")
     modal: true
     focus: true
     closePolicy: Popup.CloseOnEscape
@@ -35,8 +35,8 @@ LogosDialog {
         LogosButton {
             implicitWidth: 130
             implicitHeight: 36
-            //: Button that confirms inviting the member into the group
-            text: qsTr("Add member")
+            //: Button that goes on to list the members to invite
+            text: qsTr("Continue")
             onClicked: {
                 root.confirmed(dontShowAgain.checked);
                 root.close();
@@ -49,7 +49,7 @@ LogosDialog {
 
         LogosText {
             //: Explains that a new member shows up only after the group updates
-            text: qsTr("Adding a member isn't instant. Membership updates apply on a timer, so a new member takes about two minutes to appear. Until then, adding another member fails.")
+            text: qsTr("Adding members isn't instant. Membership updates apply on a timer, so new members take about two minutes to appear. Until then, adding more fails, so list everyone you want to invite before adding them.")
             color: Theme.palette.textSecondary
             font.pixelSize: Theme.typography.secondaryText
             wrapMode: Text.WordWrap
