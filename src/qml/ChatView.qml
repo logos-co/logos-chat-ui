@@ -214,7 +214,9 @@ Rectangle {
                     memberCount: store.memberCount
                     running: store.running
                     ready: root.selectionLoaded
-                    onAddMemberRequested: addMemberDialog.open()
+                    // Until the user opts out, the delay is explained before
+                    // anyone is listed.
+                    onAddMemberRequested: chatPrefs.memberAddExplained ? addMemberDialog.open() : memberAddInfoDialog.open()
                 }
 
                 // A column with nothing filling it centres what it holds, so
@@ -307,30 +309,17 @@ Rectangle {
 
     AddMemberDialog {
         id: addMemberDialog
-        onAddressEntered: function (address) {
-            // First member add: explain the async commit delay first, then invite.
-            if (chatPrefs.memberAddExplained) {
-                store.addMember(root.selectedConversationId, address);
-            } else {
-                memberAddInfoDialog.pendingConversationId = root.selectedConversationId;
-                memberAddInfoDialog.pendingAddress = address;
-                memberAddInfoDialog.open();
-            }
+        onAddressesEntered: function (addresses) {
+            store.addMembers(root.selectedConversationId, addresses);
         }
     }
 
     MemberAddInfoDialog {
         id: memberAddInfoDialog
-        // The add that opened the explainer, applied once confirmed.
-        property string pendingConversationId: ""
-        property string pendingAddress: ""
         onConfirmed: function (dontShowAgain) {
             if (dontShowAgain)
                 chatPrefs.memberAddExplained = true;
-            if (pendingAddress !== "")
-                store.addMember(pendingConversationId, pendingAddress);
-            pendingConversationId = "";
-            pendingAddress = "";
+            addMemberDialog.open();
         }
     }
 

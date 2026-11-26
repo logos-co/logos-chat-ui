@@ -27,6 +27,8 @@ private slots:
     void keepsTheSameWordsFromTwoSenders();
     void reportsAMultiLineFailureOnOneLine();
     void createsAConversationWhileDeliveryIsOffline();
+    void addsEveryMemberInOneCall();
+    void refusesAnAddNamingNoOne();
     void countsANewConversationsFirstMessageOnce();
     void leavesTheModuleRunningWhenTheViewCloses();
     void showsAGroupsDebugDataThisAccountFirst();
@@ -381,6 +383,41 @@ void TestChatBackend::createsAConversationWhileDeliveryIsOffline()
 
     QCOMPARE(modules.chat_module.conversationsCreated, 1);
     QCOMPARE(reported.count(), 0);
+}
+
+// The addresses go to the module together, so they join through one commit.
+void TestChatBackend::addsEveryMemberInOneCall()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+
+    const QStringList addresses{ QStringLiteral("raya-address"), QStringLiteral("pax-address") };
+    backend.addGroupMembers(QStringLiteral("group"), addresses);
+
+    QCOMPARE(modules.chat_module.membersAdded, QList<QStringList>{ addresses });
+    QCOMPARE(reported.count(), 0);
+}
+
+void TestChatBackend::refusesAnAddNamingNoOne()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QSignalSpy reported(&backend, &ChatBackend::error);
+
+    backend.addGroupMembers(QStringLiteral("group"), {});
+    backend.addGroupMembers(QStringLiteral("group"), { QStringLiteral("raya-address"), QString() });
+
+    QCOMPARE(modules.chat_module.membersAdded.count(), 0);
+    QCOMPARE(reported.count(), 2);
 }
 
 // Being invited marks a new conversation unread, and the message the invite

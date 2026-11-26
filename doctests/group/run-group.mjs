@@ -201,22 +201,19 @@ async function main() {
   const groupId = await evalq(alice, "store.backend.currentConversationId");
   console.log(`group id: ${groupId}`);
 
-  // Membership grows one commit at a time; wait for each invitee to actually
-  // join (their conversation list shows the group) before the next invite, so
-  // the second add starts from a settled group rather than racing the first.
-  console.log("alice: invite bob...");
-  await evalq(alice, `store.backend.addGroupMember(${JSON.stringify(groupId)}, ${JSON.stringify(bobAddr)})`);
+  // One add invites both, through one commit: a second add from Alice would
+  // fail until her first is applied. Each joins once Alice applies it, when
+  // their conversation list shows the group.
+  console.log("alice: invite bob and carol...");
+  await evalq(alice, `store.backend.addGroupMembers(${JSON.stringify(groupId)}, ${JSON.stringify([bobAddr, carolAddr])})`);
   await waitFor(async () => (await evalq(bob, "conversationsPane.count")) >= 1, { timeout: 300000, what: "bob joins the group" });
   console.log("bob joined");
-
-  console.log("alice: invite carol...");
-  await evalq(alice, `store.backend.addGroupMember(${JSON.stringify(groupId)}, ${JSON.stringify(carolAddr)})`);
   await waitFor(async () => (await evalq(carol, "conversationsPane.count")) >= 1, { timeout: 300000, what: "carol joins the group" });
   console.log("carol joined");
 
-  // Each member applies an add on its own timer, and one that has not applied
-  // Carol's yet cannot read a message sent after it, so every roster settles
-  // before the send. waitForRoster needs the group selected on each.
+  // Every window waits for three committed members before the send, so the
+  // message goes out in the epoch all three are in. waitForRoster needs the
+  // group selected on each.
   console.log("wait for every roster to converge to three...");
   const bobGroup = await evalq(bob, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
   const carolGroup = await evalq(carol, `store.conversationModel.data(store.conversationModel.index(0,0), ${CONV_ID_ROLE})`);
@@ -242,7 +239,7 @@ async function main() {
   console.log("alice: message sent");
   await shoot(alice, outDir, "02-alice-sent.png");
 
-  // Carol is the last to join; her window is the group story end to end — the
+  // Carol's window is the group story end to end — the
   // creator's message received with a sender label, beside the three-member
   // roster. Load her thread first (leaves the group selected), then converge
   // her roster.

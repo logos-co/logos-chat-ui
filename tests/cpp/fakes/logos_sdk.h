@@ -97,6 +97,8 @@ public:
     QString createConversationError;
     // How many create_conversation calls succeeded.
     int conversationsCreated = 0;
+    // The addresses of each add_group_members call.
+    QList<QStringList> membersAdded;
     // The delivery_preset init was called with.
     QString initialisedPreset;
     // What get_debug_data answers, and how many times it was asked.
@@ -162,8 +164,9 @@ public:
     {
         return {true, {}, {}};
     }
-    LogosResult add_group_member(const QString&, const QString&, logos::CallError* = nullptr)
+    LogosResult add_group_members(const QString&, const QStringList& peerAddresses, logos::CallError* = nullptr)
     {
+        membersAdded.append(peerAddresses);
         return {true, {}, {}};
     }
     LogosResult send_message(const QString&, const QString&, logos::CallError* = nullptr)

@@ -44,7 +44,7 @@ QtObject {
     }
     function createGroupConversation(name: string, description: string) {
     }
-    function addGroupMember(conversationId: string, peerAddress: string) {
+    function addGroupMembers(conversationId: string, peerAddresses: list<string>) {
     }
     function sendMessage(conversationId: string, content: string) {
     }
