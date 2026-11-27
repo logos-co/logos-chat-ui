@@ -1,6 +1,7 @@
 #include "MessageListModel.h"
 
 #include "Identity.h"
+#include "NameBook.h"
 #include "TimeFormat.h"
 
 #include <QDate>
@@ -20,9 +21,11 @@ QString senderLabel(const MessageItem& item)
 
 } // namespace
 
-MessageListModel::MessageListModel(QObject* parent)
+MessageListModel::MessageListModel(const NameBook& names, QObject* parent)
     : QAbstractListModel(parent)
+    , m_names(names)
 {
+    connect(&names, &NameBook::changed, this, &MessageListModel::nameChanged);
 }
 
 int MessageListModel::rowCount(const QModelIndex& parent) const
@@ -58,6 +61,7 @@ QVariant MessageListModel::data(const QModelIndex& index, int role) const
     case AvatarInitialsRole: return Identity::initials(senderLabel(item));
     case AvatarRampRole:     return Identity::avatarRamp(senderLabel(item));
     case DeliveredRole: return item.delivered;
+    case SenderNameRole: return item.isMe ? QString() : m_names.name(item.sender);
     default:            return {};
     }
 }
@@ -75,7 +79,8 @@ QHash<int, QByteArray> MessageListModel::roleNames() const
         { TimeDisplayRole,            "timeDisplay" },
         { AvatarInitialsRole,         "avatarInitials" },
         { AvatarRampRole,             "avatarRamp" },
-        { DeliveredRole,              "delivered" }
+        { DeliveredRole,              "delivered" },
+        { SenderNameRole,             "senderName" }
     };
 }
 
@@ -153,6 +158,15 @@ void MessageListModel::clear()
     beginResetModel();
     m_items.clear();
     endResetModel();
+}
+
+void MessageListModel::nameChanged(const QString& address)
+{
+    for (int row = 0; row < m_items.size(); ++row) {
+        const MessageItem& item = m_items.at(row);
+        if (!item.isMe && item.sender == address)
+            emit dataChanged(index(row), index(row), { SenderNameRole });
+    }
 }
 
 QString MessageListModel::dayLabel(const QDateTime& timestamp) const

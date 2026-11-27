@@ -34,6 +34,7 @@ QtObject {
     readonly property int memberCount: backend ? backend.memberCount : 0
     readonly property int pendingMemberCount: backend ? backend.pendingMemberCount : 0
     readonly property string currentPeerAddress: backend ? backend.currentPeerAddress : ""
+    readonly property string currentPeerLabel: backend ? backend.currentPeerLabel : ""
     // The current conversation is from a previous session, kept for its
     // history only.
     readonly property bool currentHistoryOnly: backend ? backend.currentHistoryOnly : false
@@ -46,6 +47,8 @@ QtObject {
     readonly property string myAddress: backend ? backend.myAddress : ""
     readonly property string myLabel: backend ? backend.myLabel : ""
     readonly property string myInitials: backend ? backend.myInitials : ""
+    // The name this account set; empty when it set none.
+    readonly property string myAccountName: backend ? backend.myAccountName : ""
 
     // The run's logs: every failure it reported, every run each writer kept, and
     // the directory they share.

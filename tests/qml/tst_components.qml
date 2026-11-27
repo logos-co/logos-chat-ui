@@ -32,6 +32,7 @@ Item {
             preview: "See you tomorrow"
             description: ""
             historyOnly: false
+            peerLabel: "0b2c3d4e"
         }
         ListElement {
             conversationId: "c2"
@@ -44,6 +45,7 @@ Item {
             preview: "Alice: shipping the new theme"
             description: "Shipping the new theme"
             historyOnly: false
+            peerLabel: ""
         }
     }
     // This session's conversations, then two kept from a previous session.
@@ -60,6 +62,7 @@ Item {
             preview: "Here's my new address"
             description: ""
             historyOnly: false
+            peerLabel: "0b2c3d4e"
         }
         ListElement {
             conversationId: "c2"
@@ -72,6 +75,7 @@ Item {
             preview: "Sounds good, talk soon"
             description: ""
             historyOnly: true
+            peerLabel: "4be1c07a"
         }
         ListElement {
             conversationId: "c3"
@@ -84,12 +88,14 @@ Item {
             preview: "Pax: notes are up for review"
             description: ""
             historyOnly: true
+            peerLabel: ""
         }
     }
     ListModel {
         id: messagesMock
         ListElement {
             sender: "Alice"
+            senderName: ""
             avatarInitials: "al"
             avatarRamp: 0
             content: "Hi there"
@@ -116,6 +122,7 @@ Item {
         ListElement {
             address: "0xabc"
             label: "Alice"
+            accountName: ""
             avatarInitials: "0x"
             avatarRamp: 1
             isSelf: false
@@ -430,6 +437,7 @@ Item {
             preview: "See you tomorrow"
             description: "Ship it"
             historyOnly: false
+            peerLabel: ""
             currentConversationId: "c1"
         }
     }
@@ -440,6 +448,7 @@ Item {
             isMe: false
             timeDisplay: "12:34"
             sender: "Alice"
+            senderName: ""
             avatarInitials: "al"
             avatarRamp: 2
             groupContext: true
@@ -457,6 +466,7 @@ Item {
         id: memberDelegateC
         MemberDelegate {
             label: "Carol"
+            accountName: ""
             address: "0xcarol"
             avatarInitials: "0x"
             avatarRamp: 4
@@ -589,6 +599,7 @@ Item {
         function threadRow(content, isMe) {
             return {
                 sender: "Raya",
+                senderName: "",
                 avatarInitials: "ra",
                 avatarRamp: 1,
                 content: content,
@@ -786,6 +797,10 @@ Item {
             compare(conversation.avatarInitials, "c2", "and the avatar identity the header needs");
             compare(conversation.avatarRamp, 3, "with its colour");
             compare(conversation.historyOnly, false, "and whether it takes replies");
+            compare(conversation.peerLabel, "", "and, for a group, no peer");
+
+            list.itemAtIndex(0).clicked();
+            compare(conversationSelectedSpy.signalArguments[1][0].peerLabel, "0b2c3d4e", "a direct conversation carries its peer");
         }
 
         // The conversations kept from a previous session sit under one heading,
@@ -1034,6 +1049,20 @@ Item {
             btn.clicked();
             verify(card.copiedFlashing, "the copy is confirmed");
             compare(address.text, "Copied to clipboard", "and the confirmation lands on the value");
+        }
+
+        // A name the account set heads the card, its short address after it.
+        function test_accountCardShowsTheName() {
+            const card = createTemporaryObject(accountCardC, testRoot);
+            verify(card, "the card must instantiate");
+            const name = findField(card, "myNameText");
+            const label = findField(card, "myLabelText");
+            verify(name && label, "the identity must be reachable");
+            verify(!name.visible && label.visible, "an account that set no name is its short address");
+            card.accountName = "Saro";
+            verify(name.visible && label.visible, "a named account shows both");
+            compare(name.text, "Saro");
+            compare(label.color, Theme.palette.textTertiary, "and the short address steps back");
         }
 
         // Before init there is no address to show, and a card showing an empty
@@ -1336,16 +1365,127 @@ Item {
         }
 
         // A sender's name takes the first colour of the ramp their avatar is
-        // drawn in, through a binding that sees the ramp change.
+        // drawn in, through a binding that sees the ramp change. A sender who
+        // set no name is their short address, in the same colour.
         function test_messageDelegateSenderColour() {
             failOnWarning(/depends on non-bindable properties/);
             const row = createTemporaryObject(messageDelegateC, testRoot);
             verify(row, "the delegate must instantiate");
-            const label = findField(row, "senderLabel");
-            verify(label, "the sender label must be reachable");
-            compare(label.color, ChatTheme.avatarRamps[2].stops[0].color, "the name wears its ramp's first colour");
+            const name = findField(row, "senderNameText");
+            const address = findField(row, "senderAddressText");
+            verify(name && address, "the sender label must be reachable");
+            verify(!name.visible, "a sender who set no name has none shown");
+            compare(address.color, ChatTheme.avatarRamps[2].stops[0].color, "the short address wears its ramp's first colour");
+            row.senderName = "Raya";
+            verify(name.visible && address.visible, "a named sender shows the name and the short address");
+            compare(name.color, ChatTheme.avatarRamps[2].stops[0].color, "the name wears its ramp's first colour");
+            compare(address.color, Theme.palette.textTertiary, "and the short address steps back");
             row.avatarRamp = 4;
-            compare(label.color, ChatTheme.avatarRamps[4].stops[0].color, "and follows a change of ramp");
+            compare(name.color, ChatTheme.avatarRamps[4].stops[0].color, "and follows a change of ramp");
+        }
+
+        // However long the name an account picks, the address it cannot pick
+        // stays whole beside it.
+        function test_messageDelegateKeepsTheAddressBesideALongName() {
+            const row = createTemporaryObject(messageDelegateC, testRoot, {
+                width: 360,
+                sender: "0b2c3d4e",
+                senderName: "Raya Kowalska-Nowakowska from the Design Team at Logos"
+            });
+            verify(row, "the delegate must instantiate");
+            const name = findField(row, "senderNameText");
+            const address = findField(row, "senderAddressText");
+            waitForRendering(row);
+            verify(name.truncated, "the name elides");
+            verify(address.width >= address.implicitWidth, "the address keeps its width (" + address.width + " of " + address.implicitWidth + ")");
+            const right = address.mapToItem(row, address.width, 0).x;
+            verify(right <= row.width, "and stays inside the row (right edge " + right + ", row " + row.width + ")");
+        }
+
+        // A direct conversation's header shows its peer's short address after
+        // the title, unless the title already is that address.
+        function test_threadHeaderShowsThePeer() {
+            const header = createTemporaryObject(threadHeaderC, testRoot, {
+                isGroup: false,
+                title: "Raya",
+                titleLabel: "0b2c3d4e"
+            });
+            verify(header, "the header must instantiate");
+            const label = findField(header, "threadTitleLabel");
+            verify(label, "the peer's short address must be reachable");
+            verify(label.visible, "a named peer shows their short address too");
+            compare(label.text, "0b2c3d4e");
+            header.title = "0b2c3d4e";
+            verify(!label.visible, "a peer who set no name is not named twice");
+            header.titleLabel = "";
+            verify(!label.visible, "and a group has none");
+        }
+
+        // With only the title to show, as for a group without a description,
+        // the title keeps its place after the avatar and the toggle its edge.
+        function test_threadHeaderKeepsItsLayoutWithOnlyATitle() {
+            const header = createTemporaryObject(threadHeaderC, testRoot, {
+                width: 600
+            });
+            verify(header, "the header must instantiate");
+            const title = findField(header, "threadTitle");
+            const toggle = findField(header, "detailsButton");
+            waitForRendering(header);
+            const titleX = title.mapToItem(header, 0, 0).x;
+            const toggleX = toggle.mapToItem(header, 0, 0).x;
+            header.description = "";
+            waitForRendering(header);
+            compare(title.mapToItem(header, 0, 0).x, titleX, "the title stays after the avatar");
+            compare(toggle.mapToItem(header, 0, 0).x, toggleX, "the toggle stays at the edge");
+        }
+
+        // A name that arrives after the first layout shows whole, though the
+        // layout hands out whole pixels and the text's own width has a fraction.
+        function test_aLateNameShowsWhole_data() {
+            return [
+                {
+                    tag: "card",
+                    component: accountCardC,
+                    field: "myNameText",
+                    property: "accountName",
+                    value: "Carol"
+                },
+                {
+                    tag: "header",
+                    component: threadHeaderC,
+                    field: "threadTitle",
+                    property: "title",
+                    value: "Book Club"
+                },
+                {
+                    tag: "member",
+                    component: memberDelegateC,
+                    field: "memberNameText",
+                    property: "accountName",
+                    value: "Carol"
+                },
+                {
+                    tag: "message",
+                    component: messageDelegateC,
+                    field: "senderNameText",
+                    property: "senderName",
+                    value: "Carol"
+                }
+            ];
+        }
+
+        function test_aLateNameShowsWhole(data) {
+            const item = createTemporaryObject(data.component, testRoot, {
+                width: 340
+            });
+            verify(item, "the component must instantiate");
+            item[data.property] = "";
+            waitForRendering(item);
+            item[data.property] = data.value;
+            waitForRendering(item);
+            const text = findField(item, data.field);
+            compare(text.text, data.value);
+            verify(!text.truncated, data.value + " shows whole (" + text.width + " of " + text.implicitWidth + ")");
         }
 
         // A reused row changes sides whenever the list hands it a message from
@@ -1628,6 +1768,23 @@ Item {
             del.flashCopied();
             verify(del.copiedFlashing, "flashing right after a copy");
             tryCompare(del, "copiedFlashing", false, 3000, "the flash clears");
+        }
+
+        // A member who set a name shows it before their short address; the
+        // copy confirmation stands in for both.
+        function test_memberDelegateNamesTheAccount() {
+            const del = createTemporaryObject(memberDelegateC, testRoot);
+            verify(del, "the row must instantiate");
+            const name = findField(del, "memberNameText");
+            const label = findField(del, "memberLabelText");
+            verify(name && label, "the row's identity must be reachable");
+            verify(!name.visible && label.visible, "an account that set no name is its short address");
+            del.accountName = "Raya";
+            verify(name.visible && label.visible, "a named account shows both");
+            compare(name.text, "Raya");
+            del.flashCopied();
+            compare(name.text, "Copied to clipboard", "the confirmation replaces the name");
+            verify(!label.visible, "and the short address");
         }
 
         // Confirming the explainer emits confirmed() so the caller can go on to

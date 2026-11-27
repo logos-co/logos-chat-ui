@@ -12,6 +12,7 @@
 #include "ConversationListModel.h"
 #include "MessageListModel.h"
 #include "MemberListModel.h"
+#include "NameBook.h"
 #include "ErrorLog.h"
 #include "SessionLogFiles.h"
 
@@ -76,6 +77,10 @@ private:
     // module's address.
     void onHealthAnswer(bool answered, bool unreachable);
     void subscribeToEvents();
+    // Asks the module for the name `address` set, into m_names. The module
+    // answers from what it last read and re-reads a name older than half an
+    // hour, so asking each time an address is shown keeps its name fresh.
+    void lookUpName(const QString& address);
     void rehydrateConversations();
     // Reads this account's own address into the myAddress property. A
     // synchronous module read, so never call it from inside a module event
@@ -110,13 +115,8 @@ private:
     // and on screen.
     void refreshDebugDataAfter(const QString& convoId);
 
-    // The other participant in a direct conversation's roster; empty for a group
-    // or when no other account is on it.
-    static QString peerAddressOf(const QVector<MemberItem>& members, bool isGroup);
-
-    static QString fallbackDisplayName(const QString& convoId, const QString& peerLabel = QString(),
-                                       bool isGroup = false);
-
+    // Every model names people from this one table.
+    NameBook* m_names;
     ConversationListModel* m_conversationModel;
     // Sorts m_conversationModel newest-first for the view; the source keeps
     // insertion order and every internal edit stays on the source.

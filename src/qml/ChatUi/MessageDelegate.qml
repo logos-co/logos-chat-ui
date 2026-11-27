@@ -15,6 +15,8 @@ Item {
     // Clock time for the bubble, formatted by the model.
     required property string timeDisplay
     required property string sender
+    // The name the sender's account set; empty when it set none.
+    required property string senderName
     // Avatar identity for the sender, computed by the model.
     required property string avatarInitials
     required property int avatarRamp
@@ -51,7 +53,7 @@ Item {
 
     Accessible.role: Accessible.StaticText
     Accessible.name: root.content
-    Accessible.description: qsTr("%1, %2").arg(root.sender).arg(timeText.text)
+    Accessible.description: qsTr("%1, %2").arg(root.senderName !== "" ? root.senderName + " " + root.sender : root.sender).arg(timeText.text)
 
     Item {
         id: daySeparator
@@ -67,21 +69,47 @@ Item {
         }
     }
 
-    LogosText {
+    // A long name elides before the address it sits beside: an account picks
+    // its name, not its address.
+    RowLayout {
         id: senderLabel
         objectName: "senderLabel"
         y: daySeparator.height
         visible: root.showSender
         anchors.left: parent.left
         anchors.leftMargin: Theme.spacing.xlarge + root.gutter
-        text: root.sender
-        textFormat: Text.PlainText
-        // The sender's own colour, taken from the ramp their avatar is drawn in,
-        // so a name and a face read as the same person.
-        color: ChatTheme.avatarRampLeads[root.avatarRamp]
-        font.family: Theme.typography.mono
-        font.pixelSize: Theme.typography.secondaryText
-        font.weight: Theme.typography.weightMedium
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.spacing.xlarge
+        spacing: Theme.spacing.tiny
+
+        LogosText {
+            objectName: "senderNameText"
+            visible: root.senderName !== ""
+            text: root.senderName
+            textFormat: Text.PlainText
+            // The sender's own colour, taken from the ramp their avatar is drawn
+            // in, so a name and a face read as the same person.
+            color: ChatTheme.avatarRampLeads[root.avatarRamp]
+            font.pixelSize: Theme.typography.secondaryText
+            font.weight: Theme.typography.weightMedium
+            elide: Text.ElideRight
+            Layout.fillWidth: true
+            // Rounded up: the layout hands out whole pixels, and a text a fraction short elides.
+            Layout.maximumWidth: Math.ceil(implicitWidth)
+        }
+
+        LogosText {
+            objectName: "senderAddressText"
+            text: root.sender
+            textFormat: Text.PlainText
+            color: root.senderName !== "" ? Theme.palette.textTertiary : ChatTheme.avatarRampLeads[root.avatarRamp]
+            font.family: Theme.typography.mono
+            font.pixelSize: Theme.typography.secondaryText
+            font.weight: root.senderName !== "" ? Theme.typography.weightRegular : Theme.typography.weightMedium
+            Layout.alignment: Qt.AlignBaseline
+            Layout.minimumWidth: implicitWidth
+            Layout.fillWidth: true
+        }
     }
 
     Avatar {

@@ -19,6 +19,8 @@ logos_module(
         src/MessageListModel.cpp
         src/MemberListModel.h
         src/MemberListModel.cpp
+        src/NameBook.h
+        src/NameBook.cpp
         src/TimeFormat.h
         src/TimeFormat.cpp
         src/Identity.h

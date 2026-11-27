@@ -5,6 +5,8 @@
 #include <QString>
 #include <QVector>
 
+class NameBook;
+
 struct MemberItem {
     // The member's verified account address, empty when no account is confirmed
     // — used for the tooltip and identity comparisons.
@@ -31,10 +33,13 @@ public:
         // Avatar identity, derived from the address so one account keeps one
         // pair of initials and one colour wherever it is drawn.
         AvatarInitialsRole,
-        AvatarRampRole
+        AvatarRampRole,
+        // The name the member's account set; empty when it set none.
+        AccountNameRole
     };
 
-    explicit MemberListModel(QObject* parent = nullptr);
+    // Members are named from `names`, which outlives the model.
+    explicit MemberListModel(const NameBook& names, QObject* parent = nullptr);
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role) const override;
@@ -47,6 +52,9 @@ public:
     bool contains(const QString& address) const;
 
 private:
+    void nameChanged(const QString& address);
+
+    const NameBook& m_names;
     QVector<MemberItem> m_items;
 };
 

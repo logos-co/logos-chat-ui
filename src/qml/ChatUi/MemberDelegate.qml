@@ -12,6 +12,8 @@ LogosItemDelegate {
     id: root
 
     required property string label
+    // The name the account set; empty when it set none.
+    required property string accountName
     required property string address
     // Avatar identity, computed by the model from the address.
     required property string avatarInitials
@@ -34,7 +36,7 @@ LogosItemDelegate {
     hoverColor: Theme.palette.overlayLight
 
     Accessible.role: Accessible.ListItem
-    Accessible.name: label
+    Accessible.name: root.accountName !== "" ? root.accountName + " " + root.label : root.label
 
     // Flash a brief confirmation that the address was copied.
     function flashCopied() {
@@ -70,15 +72,36 @@ LogosItemDelegate {
             Layout.fillWidth: true
             spacing: 1
 
-            LogosText {
-                text: root.copiedFlashing ? qsTr("Copied to clipboard") : root.label
-                textFormat: Text.PlainText
-                color: root.copiedFlashing ? Theme.palette.success : root.pending ? Theme.palette.textTertiary : Theme.palette.text
-                font.family: root.copiedFlashing ? Theme.typography.publicSans : Theme.typography.mono
-                font.pixelSize: Theme.typography.secondaryText
-                font.weight: Theme.typography.weightMedium
-                elide: Text.ElideRight
+            RowLayout {
+                spacing: Theme.spacing.tiny
                 Layout.fillWidth: true
+
+                LogosText {
+                    objectName: "memberNameText"
+                    visible: root.copiedFlashing || root.accountName !== ""
+                    text: root.copiedFlashing ? qsTr("Copied to clipboard") : root.accountName
+                    textFormat: Text.PlainText
+                    color: root.copiedFlashing ? Theme.palette.success : root.pending ? Theme.palette.textTertiary : Theme.palette.text
+                    font.pixelSize: Theme.typography.secondaryText
+                    font.weight: Theme.typography.weightMedium
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
+                    // Rounded up: the layout hands out whole pixels, and a text a fraction short elides.
+                    Layout.maximumWidth: Math.ceil(implicitWidth)
+                }
+
+                LogosText {
+                    objectName: "memberLabelText"
+                    visible: !root.copiedFlashing
+                    text: root.label
+                    textFormat: Text.PlainText
+                    color: root.accountName !== "" || root.pending ? Theme.palette.textTertiary : Theme.palette.text
+                    font.family: Theme.typography.mono
+                    font.pixelSize: Theme.typography.secondaryText
+                    font.weight: root.accountName !== "" ? Theme.typography.weightRegular : Theme.typography.weightMedium
+                    Layout.alignment: Qt.AlignBaseline
+                    Layout.fillWidth: true
+                }
             }
 
             RowLayout {

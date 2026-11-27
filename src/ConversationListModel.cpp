@@ -1,6 +1,7 @@
 #include "ConversationListModel.h"
 
 #include "Identity.h"
+#include "NameBook.h"
 #include "TimeFormat.h"
 
 #include <QDate>
@@ -8,9 +9,11 @@
 
 #include <utility>
 
-ConversationListModel::ConversationListModel(QObject* parent)
+ConversationListModel::ConversationListModel(const NameBook& names, QObject* parent)
     : QAbstractListModel(parent)
+    , m_names(names)
 {
+    connect(&names, &NameBook::changed, this, &ConversationListModel::nameChanged);
 }
 
 int ConversationListModel::rowCount(const QModelIndex& parent) const
@@ -27,16 +30,17 @@ QVariant ConversationListModel::data(const QModelIndex& index, int role) const
     const auto& item = m_items.at(index.row());
     switch (role) {
     case ConversationIdRole:      return item.conversationId;
-    case DisplayNameRole:         return item.displayName.simplified();
+    case DisplayNameRole:         return title(item);
     case LastActivityRole:        return item.lastActivity;
     case LastActivityDisplayRole: return formatLastActivity(item.lastActivity);
     case UnreadCountRole:         return item.unreadCount;
     case IsGroupRole:             return item.isGroup;
     case PreviewRole:             return item.preview.simplified();
     case DescriptionRole:         return item.description;
-    case AvatarInitialsRole:      return Identity::initials(item.conversationId);
-    case AvatarRampRole:          return Identity::avatarRamp(Identity::shortLabel(item.conversationId));
+    case AvatarInitialsRole:      return Identity::initials(face(item));
+    case AvatarRampRole:          return Identity::avatarRamp(Identity::shortLabel(face(item)));
     case HistoryOnlyRole:         return item.historyOnly;
+    case PeerLabelRole:           return item.peer.isEmpty() ? QString() : Identity::shortLabel(item.peer);
     default:                      return {};
     }
 }
@@ -54,7 +58,8 @@ QHash<int, QByteArray> ConversationListModel::roleNames() const
         { DescriptionRole,         "description" },
         { AvatarInitialsRole,      "avatarInitials" },
         { AvatarRampRole,          "avatarRamp" },
-        { HistoryOnlyRole,         "historyOnly" }
+        { HistoryOnlyRole,         "historyOnly" },
+        { PeerLabelRole,           "peerLabel" }
     };
 }
 
@@ -94,6 +99,16 @@ void ConversationListModel::updateProtocol(const QString& id, const QString& pro
     const int idx = indexOf(id);
     if (idx >= 0)
         m_items[idx].protocol = protocol;
+}
+
+void ConversationListModel::updatePeer(const QString& id, const QString& peer)
+{
+    const int idx = indexOf(id);
+    if (idx < 0 || m_items[idx].peer == peer) return;
+
+    m_items[idx].peer = peer;
+    emit dataChanged(index(idx), index(idx),
+                     { DisplayNameRole, AvatarInitialsRole, AvatarRampRole, PeerLabelRole });
 }
 
 void ConversationListModel::updatePreview(const QString& id, const QString& preview)
@@ -203,7 +218,7 @@ int ConversationListModel::indexOf(const QString& id) const
 QString ConversationListModel::displayNameFor(const QString& id) const
 {
     const int idx = indexOf(id);
-    return idx < 0 ? QString() : m_items.at(idx).displayName.simplified();
+    return idx < 0 ? QString() : title(m_items.at(idx));
 }
 
 QString ConversationListModel::descriptionFor(const QString& id) const
@@ -228,6 +243,38 @@ QString ConversationListModel::protocolFor(const QString& id) const
 {
     const int idx = indexOf(id);
     return idx < 0 ? QString() : m_items.at(idx).protocol;
+}
+
+QString ConversationListModel::peerFor(const QString& id) const
+{
+    const int idx = indexOf(id);
+    return idx < 0 ? QString() : m_items.at(idx).peer;
+}
+
+QString ConversationListModel::title(const ConversationItem& item) const
+{
+    if (!item.displayName.isEmpty())
+        return item.displayName.simplified();
+    if (!item.peer.isEmpty()) {
+        const QString name = m_names.name(item.peer);
+        return name.isEmpty() ? Identity::shortLabel(item.peer) : name;
+    }
+    return (item.isGroup ? QStringLiteral("Group ") : QStringLiteral("DM "))
+        + Identity::shortLabel(item.conversationId);
+}
+
+QString ConversationListModel::face(const ConversationItem& item)
+{
+    return item.peer.isEmpty() ? item.conversationId : item.peer;
+}
+
+void ConversationListModel::nameChanged(const QString& address)
+{
+    for (int row = 0; row < m_items.size(); ++row) {
+        const ConversationItem& item = m_items.at(row);
+        if (item.displayName.isEmpty() && item.peer == address)
+            emit dataChanged(index(row), index(row), { DisplayNameRole });
+    }
 }
 
 QString ConversationListModel::formatLastActivity(const QDateTime& lastActivity) const

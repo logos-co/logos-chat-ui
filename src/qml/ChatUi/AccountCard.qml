@@ -19,6 +19,8 @@ Rectangle {
     required property string label
     // Two-letter form of the address, for the avatar.
     required property string initials
+    // The name this account set; empty when it set none.
+    property string accountName: ""
     required property bool online
     // Short connectivity label ("Online", "Initialising...").
     required property string statusLabel
@@ -82,17 +84,37 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 2
 
-                LogosText {
-                    objectName: "myLabelText"
+                RowLayout {
                     visible: root.label !== ""
-                    text: root.label
-                    textFormat: Text.PlainText
-                    color: Theme.palette.text
-                    font.family: Theme.typography.mono
-                    font.pixelSize: Theme.typography.subtitleText
-                    font.weight: Theme.typography.weightBold
-                    elide: Text.ElideRight
+                    spacing: Theme.spacing.small
                     Layout.fillWidth: true
+
+                    LogosText {
+                        objectName: "myNameText"
+                        visible: root.accountName !== ""
+                        text: root.accountName
+                        textFormat: Text.PlainText
+                        color: Theme.palette.text
+                        font.pixelSize: Theme.typography.subtitleText
+                        font.weight: Theme.typography.weightBold
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                        // Rounded up: the layout hands out whole pixels, and a text a fraction short elides.
+                        Layout.maximumWidth: Math.ceil(implicitWidth)
+                    }
+
+                    LogosText {
+                        objectName: "myLabelText"
+                        text: root.label
+                        textFormat: Text.PlainText
+                        color: root.accountName !== "" ? Theme.palette.textTertiary : Theme.palette.text
+                        font.family: Theme.typography.mono
+                        font.pixelSize: root.accountName !== "" ? Theme.typography.secondaryText : Theme.typography.subtitleText
+                        font.weight: root.accountName !== "" ? Theme.typography.weightRegular : Theme.typography.weightBold
+                        elide: Text.ElideRight
+                        Layout.alignment: Qt.AlignBaseline
+                        Layout.fillWidth: true
+                    }
                 }
 
                 RowLayout {
