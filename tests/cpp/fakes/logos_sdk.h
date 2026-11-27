@@ -96,8 +96,13 @@ public:
     QList<Conversation> conversations;
     // What get_messages answers, for every conversation.
     QList<Message> messages;
+    // Runs while get_messages is answering, after the answer is taken, the way
+    // a select or an event runs while the real client waits for the reply.
+    std::function<void()> whileReadingMessages;
     // What list_group_members answers, for every conversation.
     QList<GroupMember> members;
+    // Runs while list_group_members is answering, after the answer is taken.
+    std::function<void()> whileListingMembers;
     // The name each address set, as get_display_name answers it.
     QHash<QString, QString> displayNames;
     // The error code get_display_name fails with; it answers while empty.
@@ -162,8 +167,20 @@ public:
     }
     Status status(logos::CallError* = nullptr) { return {0, deliveryState, QString(), deliveryAdopted}; }
     void healthAsyncResult(std::function<void(logos::AsyncResult<bool>)>, Timeout = Timeout()) {}
-    QList<Message> get_messages(const QString&, logos::CallError* = nullptr) { return messages; }
-    QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr) { return members; }
+    QList<Message> get_messages(const QString&, logos::CallError* = nullptr)
+    {
+        const QList<Message> answer = messages;
+        if (whileReadingMessages)
+            whileReadingMessages();
+        return answer;
+    }
+    QList<GroupMember> list_group_members(const QString&, logos::CallError* = nullptr)
+    {
+        const QList<GroupMember> answer = members;
+        if (whileListingMembers)
+            whileListingMembers();
+        return answer;
+    }
     // Answers on a later turn of the event loop, as the real client does.
     void get_display_nameAsyncResult(const QString& address,
                                      std::function<void(logos::AsyncResult<QString>)> callback,
