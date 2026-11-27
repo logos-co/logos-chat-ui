@@ -82,6 +82,8 @@ state apart; it defaults to the platform application data location.
 |---|---|
 | `LOGOS_USER_DIR` | The standalone app's session directory, for when setting it by environment is easier than by flag. `--user-dir` wins over it. |
 | `LOGOS_CHAT_DELIVERY_PRESET` | The delivery network Chat starts its node on, `logos.test` when unset. The doc-tests set `logos.dev`. |
+| `LOGOS_CHAT_DELIVERY_CONFIG_PATH` | Path to a JSON file the chat module passes to `delivery_module`'s `createNode` instead of the preset's config, for example to join your own delivery nodes. It takes precedence over `LOGOS_CHAT_DELIVERY_PRESET`, although the account card still shows the preset. |
+| `LOGOS_CHAT_CONTACT_REGISTRY_URL` | Contact registry the chat module publishes to and resolves accounts from, `https://devnet.chat-kc.logos.co` when unset. |
 | `QML_INSPECTOR_PORT` | Only needed when attaching the [logos-qt-mcp](https://github.com/logos-co/logos-qt-mcp) inspector to drive an instance programmatically (default 3768); give each a distinct one then. Interactive use does not need it. |
 
 Each node joins the `logos.test` Waku fleet and publishes its key package during
