@@ -128,8 +128,10 @@ private:
     MemberListModel* m_memberModel;
 
     bool m_moduleInitialised = false;
-    // Counts thread loads, so a load can tell a later one started while it waited.
+    // Count thread and member list loads, so a load can tell a later one
+    // started while it waited.
     quint64 m_threadLoads = 0;
+    quint64 m_memberLoads = 0;
     // Set once the initial snapshot has loaded; gates the reconnect resync in
     // applyDeliveryState so it doesn't fire during initial setup.
     bool m_initialSnapshotDone = false;

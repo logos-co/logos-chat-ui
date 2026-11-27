@@ -44,6 +44,8 @@ private slots:
     void loadsTheConversationSelectedWhileAReloadReadsMembers();
     void keepsTheNewerThreadWhenAReloadIsRetried();
     void loadsNothingForAConversationDeletedWhileLoading();
+    void listsTheMembersOfTheConversationSelectedDuringTheirRead();
+    void keepsTheMembersThatChangedDuringARead();
 
 private:
     QTemporaryDir m_logs;
@@ -905,6 +907,64 @@ void TestChatBackend::loadsNothingForAConversationDeletedWhileLoading()
     QCOMPARE(backend.currentConversationId(), QString());
     QCOMPARE(backend.loadedConversationId(), QString());
     QCOMPARE(backend.messageModel()->rowCount(), 0);
+}
+
+void TestChatBackend::listsTheMembersOfTheConversationSelectedDuringTheirRead()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+    modules.chat_module.conversations = { groupConversation(QStringLiteral("first")),
+                                          groupConversation(QStringLiteral("second")) };
+    modules.chat_module.members = { { kRaya, false } };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    bool selected = false;
+    modules.chat_module.whileListingMembers = [&] {
+        if (selected)
+            return;
+        selected = true;
+        modules.chat_module.members = { { kPax, false } };
+        backend.selectConversation(QStringLiteral("second"));
+    };
+    backend.selectConversation(QStringLiteral("first"));
+
+    const QAbstractItemModel* members = backend.memberModel();
+    QCOMPARE(members->rowCount(), 1);
+    QCOMPARE(members->data(members->index(0, 0), MemberListModel::AddressRole).toString(), kPax);
+}
+
+void TestChatBackend::keepsTheMembersThatChangedDuringARead()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.deliveryState = QStringLiteral("online");
+    modules.chat_module.conversations = { groupConversation(QStringLiteral("group")) };
+    modules.chat_module.members = { { kRaya, false } };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    backend.selectConversation(QStringLiteral("group"));
+    QCOMPARE(backend.memberModel()->rowCount(), 1);
+
+    // While a refresh waits, Pax joins, and the refetch that change asks for
+    // runs in the wait's event loop.
+    bool joined = false;
+    modules.chat_module.whileListingMembers = [&] {
+        if (joined)
+            return;
+        joined = true;
+        modules.chat_module.members = { { kRaya, false }, { kPax, false } };
+        modules.chat_module.emitEvent(QStringLiteral("members_changed"), { QStringLiteral("group") });
+        QCoreApplication::processEvents();
+    };
+    modules.chat_module.emitEvent(QStringLiteral("members_changed"), { QStringLiteral("group") });
+    QTRY_VERIFY_WITH_TIMEOUT(joined, 1000);
+
+    QCOMPARE(backend.memberModel()->rowCount(), 2);
 }
 
 QTEST_MAIN(TestChatBackend)

@@ -707,7 +707,12 @@ void ChatBackend::refreshMembers()
     if (myAddress().isEmpty())
         refreshMyAddress();
 
+    const quint64 load = ++m_memberLoads;
     const QList<ChatModule::GroupMember> members = modules().chat_module.list_group_members(convoId);
+    // The read waits in a nested event loop, where a select or a later refresh
+    // can run and leave this result stale.
+    if (load != m_memberLoads || convoId != currentConversationId())
+        return;
     QVector<MemberItem> rows;
     rows.reserve(members.size());
     int committed = 0;
