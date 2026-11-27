@@ -15,8 +15,8 @@
       },
       "original": {
         "owner": "logos-co",
+        "ref": "v0.4.0-rc.2",
         "repo": "logos-chat-module",
-        "rev": "8386227fe4c33d245299444bce7220c99afe902e",
         "type": "github"
       }
     },
