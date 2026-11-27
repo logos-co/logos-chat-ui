@@ -152,6 +152,9 @@ arrived in [chat-module PR #66](https://github.com/logos-co/logos-chat-module/pu
   (the real two-party round-trip, captured) and
   [Run the automated group-chat test](doctests/chat-ui-group.test.yaml)
   (a real three-party group, with a missed message fetched from Store, captured).
+  Their pull-request runs join the local delivery fleet the chat module's own
+  doc-tests use, through `LOGOS_CHAT_DELIVERY_CONFIG_PATH`, and a nightly run
+  joins `logos.dev`.
 
   Enabling the report links is a one-time repo setup: Settings -> Pages ->
   "Deploy from a branch", branch `gh-pages` / `(root)` (the CI publish-report

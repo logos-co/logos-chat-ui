@@ -12,6 +12,12 @@ name: Doc-Tests
 # full screenshot set, docs/two-instance-exchange.md's images among them, and a
 # failing leg uploads every app log.
 #
+# On pull requests and pushes the ubuntu leg runs those flows on the local
+# delivery fleet chat_module's own doc-tests use, doctests/fleet/ in the
+# chat_module this flake pins, so a run does not depend on a public fleet being
+# up. The nightly run joins logos.dev, and so can a manual run. Every run uses
+# the devnet contact registry.
+#
 # Each run publishes the two-column HTML report to:
 #   https://<owner>.github.io/<repo>/pr-<N>/<os>/      (pull requests)
 #   https://<owner>.github.io/<repo>/<branch>/<os>/    (pushes and manual runs)
@@ -26,7 +32,15 @@ on:
   pull_request:
   push:
     branches: [master, main]
+  schedule:
+    - cron: '17 5 * * *'
   workflow_dispatch:
+    inputs:
+      network:
+        description: Delivery network the ubuntu leg joins
+        type: choice
+        options: [local, logos.dev]
+        default: local
 
 permissions:
   contents: read
@@ -48,6 +62,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 150
+    env:
+      # The delivery network the ubuntu leg's flows join: "local", the fleet
+      # started below, or "logos.dev".
+      NETWORK: ${{ github.event_name == 'schedule' && 'logos.dev' || inputs.network || 'local' }}
 
     steps:
       - name: Checkout
@@ -87,6 +105,15 @@ jobs:
             "builtins.head (builtins.attrNames (builtins.getContext (builtins.getFlake \"$ref\").apps.\"$sys\".default.program))")"
           nix build --no-link "$drv^*" -L
 
+      - name: Start the local delivery fleet
+        if: matrix.os == 'ubuntu-latest' && env.NETWORK == 'local'
+        shell: bash
+        run: |
+          ref="github:logos-co/logos-chat-ui/${{ steps.commit.outputs.sha }}"
+          fleet="$(nix eval --impure --raw --expr "(builtins.getFlake \"$ref\").inputs.chat_module.outPath")/doctests/fleet"
+          docker compose -f "$fleet/docker-compose.yml" up -d --wait --wait-timeout 120
+          echo "FLEET_DIR=$fleet" >> "$GITHUB_ENV"
+
       # The runner is the shared `doctest` CLI, invoked directly via its flake
       # (github:logos-co/logos-doctest) at a pinned rev. --release-for pins the
       # {release} placeholder for logos-chat-ui to the commit under test, so every
@@ -107,6 +134,9 @@ jobs:
           TMPDIR: ${{ runner.temp }}
           # logos.test needs an RLN membership to send, which these runs lack.
           LOGOS_CHAT_DELIVERY_PRESET: logos.dev
+          # chat_module creates its delivery node from this file instead of the
+          # preset. Empty counts as unset.
+          LOGOS_CHAT_DELIVERY_CONFIG_PATH: ${{ env.FLEET_DIR && format('{0}/delivery.json', env.FLEET_DIR) || '' }}
         run: |
           # The exchange and group specs mark their live sections `platform:
           # linux`, so the macOS leg skips them.
@@ -125,6 +155,16 @@ jobs:
             --release-for logos-chat-ui=${{ steps.commit.outputs.sha }} \
             --release-for logos-qt-mcp=1fea509485a48ab185fafae8dc21bdbcc808a07e \
             --report "${{ runner.temp }}/chat-ui-doctest-report.html"
+
+      # The flows pass on logos.dev too, so messages in the local Store node are
+      # what shows the apps used the fleet.
+      - name: Check the flows went through the local fleet
+        if: matrix.os == 'ubuntu-latest' && env.NETWORK == 'local'
+        shell: bash
+        run: |
+          docker compose -f "$FLEET_DIR/docker-compose.yml" exec -T store \
+            curl -fsS 'http://127.0.0.1:8645/store/v3/messages?pageSize=1' |
+            jq -e '.messages | length > 0'
 
       - name: Stage report for upload
         if: always()
@@ -168,6 +208,24 @@ jobs:
           path: |
             ${{ runner.temp }}/doctest-test-*/ui-test-app.log
             ${{ runner.temp }}/chat-*-show.*/data/*.log
+          if-no-files-found: warn
+
+      - name: Collect the local fleet's logs
+        if: always() && matrix.os == 'ubuntu-latest' && env.NETWORK == 'local'
+        shell: bash
+        run: |
+          compose="docker compose -f $FLEET_DIR/docker-compose.yml"
+          $compose stop
+          $compose ps -a
+          $compose logs --no-color --timestamps > "${{ runner.temp }}/fleet.log"
+          $compose down
+
+      - name: Upload the local fleet's logs
+        if: always() && matrix.os == 'ubuntu-latest' && env.NETWORK == 'local'
+        uses: actions/upload-artifact@v7
+        with:
+          name: chat-ui-doctest-fleet-logs
+          path: ${{ runner.temp }}/fleet.log
           if-no-files-found: warn
 
       - name: Verify markdown generation
@@ -223,6 +281,8 @@ jobs:
           set -euo pipefail
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="pr-${{ github.event.pull_request.number }}"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            BASE="nightly"
           else
             BASE="${{ github.ref_name }}"
           fi
