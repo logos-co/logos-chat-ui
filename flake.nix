@@ -10,10 +10,10 @@
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
-    # Pinned to the rev that reads LOGOS_CHAT_DELIVERY_CONFIG_PATH and
-    # LOGOS_CHAT_CONTACT_REGISTRY_URL: this view and the module it renders are
-    # released in lockstep, so re-pin to the release tag once one carries it.
-    chat_module.url = "github:logos-co/logos-chat-module/bb0bf0df885a3a249ecb7726a8d3510927779cb5";
+    # Pinned to the rev whose local delivery fleet (doctests/fleet/) the
+    # doc-tests run on: this view and the module it renders are released in
+    # lockstep, so re-pin to the release tag once one carries it.
+    chat_module.url = "github:logos-co/logos-chat-module/7c17b5f075c403275426b080ef3bc40dee61bdd7";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";
