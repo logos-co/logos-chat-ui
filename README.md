@@ -250,14 +250,15 @@ tab is there and says so.
 | Qt6 Core, RemoteObjects, Declarative | UI framework + IPC |
 | [`logos-module-builder`](https://github.com/logos-co/logos-module-builder) | Build system (mkLogosQmlModule) |
 | [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) | Chat backend module |
-| [`logos-delivery-module`](https://github.com/logos-co/logos-delivery-module) | Transport (Waku) — runtime dependency, pinned at v0.4.0-rc.1 |
+| [`logos-delivery-module`](https://github.com/logos-co/logos-delivery-module) | Transport (Waku) — runtime dependency, pinned through `chat_module` |
+| `rln_module`, which brings `rln_lez_module` and `membership_allocation_client_module` | RLN, an optional dependency of `delivery_module`, which starts no node on `logos.test` or `logos.dev` without it |
 
 ## Related Repositories
 
 | Repository | Role |
 |---|---|
 | [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) | Chat backend — this UI's required dependency |
-| [`logos-delivery-module`](https://github.com/logos-co/logos-delivery-module) | Transport (Waku) — runtime dependency, pinned at v0.4.0-rc.1 |
+| [`logos-delivery-module`](https://github.com/logos-co/logos-delivery-module) | Transport (Waku) — runtime dependency, pinned through `chat_module` |
 | [`logos-chat`](https://github.com/logos-messaging/logos-chat) | Chat engine (libchat) embedded by `chat_module` (E2EE, sessions) |
 | [`logos-module-builder`](https://github.com/logos-co/logos-module-builder) | Module build system |
 | [`logos-liblogos`](https://github.com/logos-co/logos-liblogos) | Logos Core platform |
