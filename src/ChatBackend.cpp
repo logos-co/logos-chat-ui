@@ -539,25 +539,26 @@ void ChatBackend::syncCurrentConversationMeta()
     setCurrentAvatarRamp(row.data(ConversationListModel::AvatarRampRole).toInt());
 }
 
-bool ChatBackend::showConversationMessages(const QString& convoId)
+void ChatBackend::showConversationMessages(const QString& convoId)
 {
-    if (convoId.isEmpty()) {
+    if (convoId.isEmpty() || !m_moduleInitialised) {
         m_messageModel->clear();
-        return true;
-    }
-    if (!m_moduleInitialised) {
-        m_messageModel->clear();
-        return false;
+        return;
     }
 
+    const quint64 load = ++m_threadLoads;
     // A failed read comes back as an empty list, so ask for the error too: an
     // empty thread and an unreachable module must not look alike.
     logos::CallError err;
     const QList<ChatModule::Message> msgs = modules().chat_module.get_messages(convoId, &err);
+    // The read waits in a nested event loop, where a select, a reload or a
+    // delete can run and leave this result stale.
+    if (load != m_threadLoads || convoId != currentConversationId())
+        return;
     if (!err.ok()) {
         const QString reason = QString::fromStdString(err.message);
         reportFailure(QStringLiteral("Could not load messages"), reason);
-        return false;
+        return;
     }
 
     QVector<MessageItem> rows;
@@ -570,9 +571,9 @@ bool ChatBackend::showConversationMessages(const QString& convoId)
         senders.insert(rows.constLast().sender);
     }
     m_messageModel->setMessages(std::move(rows));
+    setLoadedConversationId(convoId);
     for (const QString& sender : senders)
         lookUpName(sender);
-    return true;
 }
 
 void ChatBackend::deferToEventLoop(std::function<void()> work)
@@ -674,7 +675,7 @@ void ChatBackend::selectConversation(QString conversationId)
     setCurrentConversationId(conversationId);
     syncCurrentConversationMeta();
     m_conversationModel->clearUnread(conversationId);
-    const bool loaded = showConversationMessages(conversationId);
+    showConversationMessages(conversationId);
     // Reset the roster on every switch: a conversation whose roster we can't
     // fetch right now (offline) must show empty, not the previous conversation's
     // members. refreshMembers then loads the new roster when it can, and keeps
@@ -687,8 +688,6 @@ void ChatBackend::selectConversation(QString conversationId)
     setDebugData({});
     if (debugDataShown())
         refreshDebugData();
-    if (loaded)
-        setLoadedConversationId(conversationId);
 }
 
 void ChatBackend::refreshMembers()
@@ -811,10 +810,8 @@ void ChatBackend::applyDeliveryState(const QString& state, const QString& detail
             // The refetch replaces the thread, so the models stop holding it
             // until the reload lands.
             setLoadedConversationId(QString());
-            const bool loaded = showConversationMessages(convoId);
+            showConversationMessages(convoId);
             refreshMembers();
-            if (loaded)
-                setLoadedConversationId(convoId);
         });
     }
 }

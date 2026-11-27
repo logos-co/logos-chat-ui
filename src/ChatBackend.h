@@ -91,9 +91,11 @@ private:
     // as backend properties for the QML view to bind — see the .cpp for why the
     // view can't read them off the model directly.
     void syncCurrentConversationMeta();
-    // Loads a conversation's messages into messageModel. False when the module
-    // could not be read, leaving the model as it was.
-    bool showConversationMessages(const QString& convoId);
+    // Loads a conversation's messages into messageModel and marks it loaded.
+    // Leaves both as they were when the module could not be read, or when the
+    // conversation stopped being current or a later load started while the
+    // read waited.
+    void showConversationMessages(const QString& convoId);
 
     // Runs `work` on the next event-loop turn. A module read (list_conversations/
     // get_messages) is a synchronous QtRO call; issuing one from inside a module
@@ -126,6 +128,8 @@ private:
     MemberListModel* m_memberModel;
 
     bool m_moduleInitialised = false;
+    // Counts thread loads, so a load can tell a later one started while it waited.
+    quint64 m_threadLoads = 0;
     // Set once the initial snapshot has loaded; gates the reconnect resync in
     // applyDeliveryState so it doesn't fire during initial setup.
     bool m_initialSnapshotDone = false;

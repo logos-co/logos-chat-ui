@@ -40,6 +40,10 @@ private slots:
     void leavesTheModuleRunningWhenTheViewCloses();
     void showsAGroupsDebugDataThisAccountFirst();
     void readsTheDebugDataAgainOnlyWhileShown();
+    void loadsTheConversationSelectedWhileAReloadReadsMessages();
+    void loadsTheConversationSelectedWhileAReloadReadsMembers();
+    void keepsTheNewerThreadWhenAReloadIsRetried();
+    void loadsNothingForAConversationDeletedWhileLoading();
 
 private:
     QTemporaryDir m_logs;
@@ -773,6 +777,134 @@ void TestChatBackend::readsTheDebugDataAgainOnlyWhileShown()
     backend.selectConversation(QStringLiteral("group"));
     QVERIFY(backend.debugData().isEmpty());
     QCOMPARE(modules.chat_module.debugDataReads, 3);
+}
+
+namespace {
+
+ChatModule::Conversation groupConversation(const QString& id)
+{
+    ChatModule::Conversation conversation;
+    conversation.convo_id = id;
+    conversation.kind = QStringLiteral("group");
+    return conversation;
+}
+
+QString content(const QAbstractItemModel* thread, int row)
+{
+    return thread->data(thread->index(row, 0), MessageListModel::ContentRole).toString();
+}
+
+} // namespace
+
+void TestChatBackend::loadsTheConversationSelectedWhileAReloadReadsMessages()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.conversations = { groupConversation(QStringLiteral("first")),
+                                          groupConversation(QStringLiteral("second")) };
+    modules.chat_module.messages = { received(kRaya, QStringLiteral("in first"), 1000) };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    backend.selectConversation(QStringLiteral("first"));
+
+    // Delivery comes back, and the second conversation is selected while the
+    // reload waits for the first one's messages.
+    bool selected = false;
+    modules.chat_module.whileReadingMessages = [&] {
+        if (selected)
+            return;
+        selected = true;
+        modules.chat_module.messages = { received(kPax, QStringLiteral("in second"), 2000) };
+        backend.selectConversation(QStringLiteral("second"));
+    };
+    modules.chat_module.goOnline();
+    QTRY_VERIFY_WITH_TIMEOUT(selected, 1000);
+
+    QCOMPARE(backend.currentConversationId(), QStringLiteral("second"));
+    QCOMPARE(backend.loadedConversationId(), QStringLiteral("second"));
+    QCOMPARE(backend.messageModel()->rowCount(), 1);
+    QCOMPARE(content(backend.messageModel(), 0), QStringLiteral("in second"));
+}
+
+void TestChatBackend::loadsTheConversationSelectedWhileAReloadReadsMembers()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.conversations = { groupConversation(QStringLiteral("first")),
+                                          groupConversation(QStringLiteral("second")) };
+    modules.chat_module.messages = { received(kRaya, QStringLiteral("in first"), 1000) };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    backend.selectConversation(QStringLiteral("first"));
+
+    bool selected = false;
+    modules.chat_module.whileListingMembers = [&] {
+        if (selected)
+            return;
+        selected = true;
+        modules.chat_module.messages = { received(kPax, QStringLiteral("in second"), 2000) };
+        backend.selectConversation(QStringLiteral("second"));
+    };
+    modules.chat_module.goOnline();
+    QTRY_VERIFY_WITH_TIMEOUT(selected, 1000);
+
+    QCOMPARE(backend.currentConversationId(), QStringLiteral("second"));
+    QCOMPARE(backend.loadedConversationId(), QStringLiteral("second"));
+    QCOMPARE(content(backend.messageModel(), 0), QStringLiteral("in second"));
+}
+
+void TestChatBackend::keepsTheNewerThreadWhenAReloadIsRetried()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.conversations = { groupConversation(QStringLiteral("group")) };
+    modules.chat_module.messages = { received(kRaya, QStringLiteral("first"), 1000) };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    backend.selectConversation(QStringLiteral("group"));
+
+    // While the reload waits, a message arrives and the conversation is
+    // selected again, which reads it with the message.
+    bool retried = false;
+    modules.chat_module.whileReadingMessages = [&] {
+        if (retried)
+            return;
+        retried = true;
+        modules.chat_module.messages = { received(kRaya, QStringLiteral("first"), 1000),
+                                         received(kRaya, QStringLiteral("second"), 2000) };
+        backend.selectConversation(QStringLiteral("group"));
+    };
+    modules.chat_module.goOnline();
+    QTRY_VERIFY_WITH_TIMEOUT(retried, 1000);
+
+    QCOMPARE(backend.loadedConversationId(), QStringLiteral("group"));
+    QCOMPARE(backend.messageModel()->rowCount(), 2);
+}
+
+void TestChatBackend::loadsNothingForAConversationDeletedWhileLoading()
+{
+    LogosModules modules;
+    place(modules);
+    modules.chat_module.conversations = { groupConversation(QStringLiteral("group")) };
+    modules.chat_module.messages = { received(kRaya, QStringLiteral("hi"), 1000) };
+
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    modules.chat_module.whileReadingMessages = [&modules] {
+        modules.chat_module.emitEvent(QStringLiteral("conversation_deleted"), { QStringLiteral("group") });
+    };
+    backend.selectConversation(QStringLiteral("group"));
+
+    QCOMPARE(backend.currentConversationId(), QString());
+    QCOMPARE(backend.loadedConversationId(), QString());
+    QCOMPARE(backend.messageModel()->rowCount(), 0);
 }
 
 QTEST_MAIN(TestChatBackend)
