@@ -102,6 +102,8 @@ public:
     QHash<QString, QString> displayNames;
     // The error code get_display_name fails with; it answers while empty.
     std::string displayNameError;
+    // The reason set_display_name refuses a name with; it publishes while empty.
+    QString setDisplayNameError;
     // The reason create_conversation fails with; it succeeds while empty.
     QString createConversationError;
     // How many create_conversation calls succeeded.
@@ -173,6 +175,24 @@ public:
         else if (m_initialised)
             answer.value = displayNames.value(address);
         QTimer::singleShot(0, [callback, answer] { callback(answer); });
+    }
+    // Publishes on a later turn of the event loop and raises display_name_changed
+    // for this account before answering, as the module does.
+    void set_display_nameAsyncResult(const QString& name,
+                                     std::function<void(logos::AsyncResult<LogosResult>)> callback,
+                                     Timeout = Timeout())
+    {
+        QTimer::singleShot(0, [this, name, callback] {
+            logos::AsyncResult<LogosResult> answer;
+            if (!setDisplayNameError.isEmpty()) {
+                answer.value = { false, {}, setDisplayNameError };
+            } else {
+                displayNames.insert(address, name.trimmed());
+                emitEvent(QStringLiteral("display_name_changed"), { address, name.trimmed() });
+                answer.value = { true, {}, {} };
+            }
+            callback(answer);
+        });
     }
     LogosResult create_conversation(const QString&, logos::CallError* = nullptr)
     {

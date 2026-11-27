@@ -28,6 +28,11 @@ class ChatBackend
     // The name this account set, from its log on the chat registry; empty while
     // it has not been read and when it set none.
     PROP(QString myAccountName READONLY)
+    // A name saveMyAccountName sent is on its way to the registry.
+    PROP(bool myAccountNameSaving READONLY)
+    // Why the chat module refused the last name saveMyAccountName sent; cleared
+    // when the next save starts.
+    PROP(QString myAccountNameProblem READONLY)
     PROP(QString currentConversationId)
     // The conversation whose messages and roster the models currently hold.
     // Empty while a selection is being loaded, so the view can tell a loaded
@@ -93,6 +98,9 @@ class ChatBackend
     SLOT(void addGroupMembers(QString conversationId, QStringList peerAddresses))
     SLOT(void sendMessage(QString conversationId, QString content))
     SLOT(void selectConversation(QString conversationId))
+    // Publishes `name` as this account's name: myAccountNameSaved follows once
+    // it is published, myAccountNameProblem once it is refused.
+    SLOT(void saveMyAccountName(QString name))
     SLOT(void refreshMembers())
     // Re-reads the log directory, both writers' runs. The files grow, rotate and
     // get pruned while the app runs, so the view asks for a fresh list when it is
@@ -104,4 +112,6 @@ class ChatBackend
     // A message the module refused, so the composer can offer the text back.
     SIGNAL(sendFailed(QString conversationId, QString content))
     SIGNAL(error(QString message))
+    // The name saveMyAccountName sent was published.
+    SIGNAL(myAccountNameSaved())
 }

@@ -43,6 +43,7 @@ public slots:
     void addGroupMembers(QString conversationId, QStringList peerAddresses) override;
     void sendMessage(QString conversationId, QString content) override;
     void selectConversation(QString conversationId) override;
+    void saveMyAccountName(QString name) override;
     // Reloads the current conversation's roster into memberModel. A synchronous
     // module read, so never call it from inside a module event callback without
     // deferToEventLoop.

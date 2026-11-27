@@ -152,6 +152,14 @@ async function callDelivery(insp, method, topic) {
   if (reply?.success !== true) throw new Error(`delivery_module.${method}(${topic}): ${raw}`);
 }
 
+// Names the instance's account as the card's Save does, and waits for the card
+// to show the name, which it does once the account's log holds it.
+async function nameAccount(insp, who, name) {
+  await evalq(insp, `store.saveMyAccountName(${JSON.stringify(name)})`);
+  await waitFor(async () => (await evalq(insp, "store.myAccountName")) === name,
+    { timeout: 60000, what: `${who}'s card to show the name ${name}` });
+}
+
 const CONV_ID_ROLE = 257; // ConversationListModel::ConversationIdRole (Qt::UserRole + 1)
 const DISPLAY_NAME_ROLE = 258; // ConversationListModel::DisplayNameRole
 const CONTENT_ROLE = 258; // MessageListModel::ContentRole
@@ -189,6 +197,11 @@ async function main() {
   // A chat_module RPC issued the instant after Online can time out while the
   // module is still settling; let it quiesce before the first call.
   await sleep(3000);
+
+  console.log("name the three accounts...");
+  await nameAccount(alice, "alice", "Alice");
+  await nameAccount(bob, "bob", "Bob");
+  await nameAccount(carol, "carol", "Carol");
 
   console.log("bob/carol: read their addresses...");
   const bobAddr = await getAddress(bob);

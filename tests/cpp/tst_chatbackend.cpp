@@ -30,6 +30,8 @@ private slots:
     void namesTheSendersOfAThread();
     void namesTheRosterAndThisAccount();
     void keepsANameWhenAReadFails();
+    void savesThisAccountsName();
+    void showsWhyANameWasRefused();
     void reportsAMultiLineFailureOnOneLine();
     void createsAConversationWhileDeliveryIsOffline();
     void addsEveryMemberInOneCall();
@@ -489,6 +491,49 @@ void TestChatBackend::namesTheRosterAndThisAccount()
                                   { modules.chat_module.address, QString() });
     QCOMPARE(backend.myAccountName(), QString());
     QCOMPARE(name(0), QString());
+}
+
+void TestChatBackend::savesThisAccountsName()
+{
+    LogosModules modules;
+    place(modules);
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    QSignalSpy saved(&backend, &ChatBackend::myAccountNameSaved);
+
+    backend.saveMyAccountName(QStringLiteral("Saro"));
+
+    QVERIFY(backend.myAccountNameSaving());
+    QTRY_COMPARE_WITH_TIMEOUT(saved.count(), 1, 1000);
+    QVERIFY(!backend.myAccountNameSaving());
+    QCOMPARE(backend.myAccountName(), QStringLiteral("Saro"));
+    QCOMPARE(backend.myAccountNameProblem(), QString());
+}
+
+// The module's reason stays on show until the next save starts.
+void TestChatBackend::showsWhyANameWasRefused()
+{
+    LogosModules modules;
+    place(modules);
+    ChatBackend backend;
+    backend._logosCoreSetLogosModulesPtr_(&modules);
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAddress(), modules.chat_module.address, 1000);
+    QSignalSpy saved(&backend, &ChatBackend::myAccountNameSaved);
+    const QString tooLong = QStringLiteral("a display name is limited to 64 bytes of UTF-8, and this one is 66");
+    modules.chat_module.setDisplayNameError = tooLong;
+
+    backend.saveMyAccountName(QStringLiteral("é").repeated(33));
+
+    QTRY_COMPARE_WITH_TIMEOUT(backend.myAccountNameProblem(), tooLong, 1000);
+    QVERIFY(!backend.myAccountNameSaving());
+    QCOMPARE(saved.count(), 0);
+    QCOMPARE(backend.myAccountName(), QString());
+
+    modules.chat_module.setDisplayNameError.clear();
+    backend.saveMyAccountName(QStringLiteral("Saro"));
+    QCOMPARE(backend.myAccountNameProblem(), QString());
+    QTRY_COMPARE_WITH_TIMEOUT(saved.count(), 1, 1000);
 }
 
 // A read that fails says so, and a name already shown stays rather than reading

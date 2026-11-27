@@ -10,10 +10,10 @@
     # Follow chat_module's own builder, so the logos-protocol/logos-qt-sdk
     # chain matches across both.
     logos-module-builder.follows = "chat_module/logos-module-builder";
-    # Pinned to the rev that reports a direct conversation's peer and each
-    # account's display name: this view and the module it renders are released
-    # in lockstep, so re-pin to the release tag once one carries it.
-    chat_module.url = "github:logos-co/logos-chat-module/28a38d9ed69d664aba0857c809d0d07b84d0df87";
+    # Pinned to the rev that keeps the account across restarts and sets its
+    # name: this view and the module it renders are released in lockstep, so
+    # re-pin to the release tag once one carries it.
+    chat_module.url = "github:logos-co/logos-chat-module/8386227fe4c33d245299444bce7220c99afe902e";
     # Follow chat_module's delivery pin, so both build against the same
     # delivery module.
     logos-delivery-module.follows = "chat_module/logos-delivery-module";

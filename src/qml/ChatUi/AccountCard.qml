@@ -21,6 +21,11 @@ Rectangle {
     required property string initials
     // The name this account set; empty when it set none.
     property string accountName: ""
+    // A name on its way to the registry, and why the last one did not get there.
+    property bool accountNameSaving: false
+    property string accountNameProblem: ""
+    // The name editor is open. The view closes it once the name is published.
+    property bool editingName: false
     required property bool online
     // Short connectivity label ("Online", "Initialising...").
     required property string statusLabel
@@ -32,6 +37,8 @@ Rectangle {
 
     // The unknown-network link after the status was activated.
     signal unknownNetworkRequested
+    // A name to publish, trimmed.
+    signal accountNameSubmitted(string name)
 
     // Whether the developer tools are open, and the failures nobody has looked
     // at yet, the newest of which the icon names on hover.
@@ -43,6 +50,16 @@ Rectangle {
 
     // True briefly after a copy, so the tooltip can confirm it.
     readonly property bool copiedFlashing: copiedTimer.running
+
+    // The editor opens on the current name, with no save started from it yet.
+    onEditingNameChanged: if (editingName) {
+        nameField.text = accountName;
+        d.saveStarted = false;
+        nameField.forceActiveFocus();
+    }
+    // Not at the click: the backend clears the last refusal as the save starts.
+    onAccountNameSavingChanged: if (accountNameSaving)
+        d.saveStarted = true
 
     implicitWidth: 260
     implicitHeight: layout.implicitHeight + 2 * Theme.spacing.medium
@@ -58,6 +75,15 @@ Rectangle {
     Timer {
         id: copiedTimer
         interval: 2000
+    }
+
+    QtObject {
+        id: d
+
+        // A save started from this opening of the editor, so the last refusal
+        // is about it rather than about one given up on before.
+        property bool saveStarted: false
+        readonly property string problem: saveStarted ? root.accountNameProblem : ""
     }
 
     ColumnLayout {
@@ -103,17 +129,54 @@ Rectangle {
                         Layout.maximumWidth: Math.ceil(implicitWidth)
                     }
 
+                    // The name's place holds the way to set one.
+                    LogosLink {
+                        objectName: "addNameLink"
+                        visible: root.accountName === "" && !root.editingName
+                        text: qsTr("Add your name")
+                        underline: false
+                        labelItem.font.pixelSize: Theme.typography.subtitleText
+                        labelItem.font.weight: Theme.typography.weightBold
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                        Layout.maximumWidth: implicitWidth
+                        onActivated: root.editingName = true
+                    }
+
                     LogosText {
                         objectName: "myLabelText"
                         text: root.label
                         textFormat: Text.PlainText
-                        color: root.accountName !== "" ? Theme.palette.textTertiary : Theme.palette.text
+                        // Leads the row only while nothing stands before it.
+                        readonly property bool leads: root.accountName === "" && root.editingName
+                        color: leads ? Theme.palette.text : Theme.palette.textTertiary
                         font.family: Theme.typography.mono
-                        font.pixelSize: root.accountName !== "" ? Theme.typography.secondaryText : Theme.typography.subtitleText
-                        font.weight: root.accountName !== "" ? Theme.typography.weightRegular : Theme.typography.weightBold
+                        font.pixelSize: leads ? Theme.typography.subtitleText : Theme.typography.secondaryText
+                        font.weight: leads ? Theme.typography.weightBold : Theme.typography.weightRegular
                         elide: Text.ElideRight
                         Layout.alignment: Qt.AlignBaseline
                         Layout.fillWidth: true
+                        // The name gives way first.
+                        Layout.minimumWidth: implicitWidth
+                    }
+
+                    ChatIconButton {
+                        id: editNameButton
+                        objectName: "editNameButton"
+                        visible: root.accountName !== "" && !root.editingName
+                        size: 24
+                        iconSize: 12
+                        iconSource: Qt.resolvedUrl("icons/edit.png")
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("Change my name")
+                        onClicked: root.editingName = true
+                        Layout.alignment: Qt.AlignVCenter
+
+                        LogosToolTip {
+                            text: qsTr("Change my name")
+                            placement: LogosToolTip.Top
+                            visible: editNameButton.hovered
+                        }
                     }
                 }
 
@@ -236,6 +299,66 @@ Rectangle {
                     text: root.unseenErrors > 0 ? root.newestError : qsTr("Developer tools (F12)")
                     placement: LogosToolTip.Top
                     visible: devtoolsButton.hovered
+                }
+            }
+        }
+
+        // The name editor: what was typed, what happens to it, and the two ways out.
+        ColumnLayout {
+            visible: root.editingName
+            // A hidden editor takes no keys.
+            enabled: root.editingName
+            spacing: Theme.spacing.small
+            Layout.fillWidth: true
+
+            LogosTextField {
+                id: nameField
+                objectName: "nameField"
+                placeholderText: qsTr("Your name")
+                // Read-only rather than disabled, so the focus survives the save.
+                readOnly: root.accountNameSaving
+                Layout.fillWidth: true
+                Keys.onReturnPressed: if (saveButton.enabled)
+                    saveButton.clicked()
+                Keys.onEscapePressed: if (cancelButton.enabled)
+                    cancelButton.clicked()
+            }
+
+            LogosText {
+                objectName: "nameHint"
+                text: d.problem !== "" ? d.problem : qsTr("Anyone with your address can see this name.")
+                textFormat: Text.PlainText
+                color: d.problem !== "" ? Theme.palette.warning : Theme.palette.textTertiary
+                font.pixelSize: Theme.typography.secondaryText
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+
+            RowLayout {
+                spacing: Theme.spacing.small
+                Layout.fillWidth: true
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                LogosButton {
+                    id: cancelButton
+                    objectName: "cancelNameButton"
+                    compact: true
+                    text: qsTr("Cancel")
+                    enabled: !root.accountNameSaving
+                    onClicked: root.editingName = false
+                }
+
+                LogosButton {
+                    id: saveButton
+                    objectName: "saveNameButton"
+                    compact: true
+                    variant: LogosButton.Variant.Primary
+                    text: root.accountNameSaving ? qsTr("Saving...") : qsTr("Save")
+                    enabled: !root.accountNameSaving && nameField.text.trim() !== "" && nameField.text.trim() !== root.accountName
+                    onClicked: root.accountNameSubmitted(nameField.text.trim())
                 }
             }
         }

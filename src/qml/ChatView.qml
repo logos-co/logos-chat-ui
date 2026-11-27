@@ -86,6 +86,9 @@ Rectangle {
         function onSendFailed(conversationId, content) {
             threadPane.restoreFailedSend(conversationId, content);
         }
+        function onMyAccountNameSaved() {
+            accountCard.editingName = false;
+        }
         // The backend switched somewhere else (a new conversation opening, the
         // selected one going away), which retires the pending row.
         function onCurrentConversationIdChanged() {
@@ -137,11 +140,15 @@ Rectangle {
                 }
 
                 AccountCard {
+                    id: accountCard
+                    objectName: "accountCard"
                     Layout.fillWidth: true
                     address: store.myAddress
                     label: store.myLabel
                     initials: store.myInitials
                     accountName: store.myAccountName
+                    accountNameSaving: store.myAccountNameSaving
+                    accountNameProblem: store.myAccountNameProblem
                     online: store.online
                     statusLabel: store.statusLabel
                     deliveryAdopted: store.deliveryAdopted
@@ -151,6 +158,7 @@ Rectangle {
                     newestError: root.lastError
                     onUnknownNetworkRequested: unknownNetworkDialog.open()
                     onDevtoolsRequested: root.toggleDevtools()
+                    onAccountNameSubmitted: name => store.saveMyAccountName(name)
                 }
             }
 

@@ -21,9 +21,9 @@ the conversation's details are open:
 
 Core functionality:
 
-- **Identity** — on startup, initializes a chat identity; the account card at the foot of the sidebar shows the account's short form and its connection state
+- **Identity** — Chat makes an account on its first start and keeps it in its session directory, so the address and the name stay across restarts; the account card at the foot of the sidebar shows the account's name, or a link to add one, its short form and its connection state
 - **Addresses** — your own address sits on the account card with a copy button beside it; share it with others to let them start a conversation with you
-- **Names** — a person shows as the name their account set, followed by the first eight characters of their address, which they cannot pick; someone who set no name shows as those characters alone. A direct conversation is titled by the other person
+- **Names** — a person shows as the name their account set, followed by the first eight characters of their address, which they cannot pick; someone who set no name shows as those characters alone. A direct conversation is titled by the other person. You name your own account on the account card, and anyone with your address can see the name
 - **Direct messages** — paste another user's address into **New chat > Direct message** to open a private (1:1) conversation
 - **Group conversations** — start a group with **New chat > Group**, then invite peers by address from the members panel (see below)
 - **Messaging** — send and receive messages in real-time over the Logos network
@@ -77,7 +77,9 @@ Add further windows the same way, giving each a fresh session directory
 
 The standalone app hands every module its own directory under
 `<session dir>/module_data`, so `--user-dir` is what keeps two instances' chat
-state apart; it defaults to the platform application data location.
+state apart; it defaults to the platform application data location. Chat keeps
+its account there too, so a session directory is one account: started again on
+the same `--user-dir`, a window has the same address and name.
 
 | Variable | Purpose |
 |---|---|

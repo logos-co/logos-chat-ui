@@ -441,6 +441,33 @@ void ChatBackend::lookUpName(const QString& address)
         });
 }
 
+void ChatBackend::saveMyAccountName(QString name)
+{
+    if (!m_moduleInitialised || myAccountNameSaving())
+        return;
+    setMyAccountNameProblem(QString());
+    setMyAccountNameSaving(true);
+    // The name itself comes back as display_name_changed, which the name book
+    // records like any other.
+    QPointer<ChatBackend> self(this);
+    modules().chat_module.set_display_nameAsyncResult(
+        name, [self](const logos::AsyncResult<LogosResult>& answer) {
+            if (!self)
+                return;
+            self->setMyAccountNameSaving(false);
+            if (answer.ok() && answer.value.success) {
+                emit self->myAccountNameSaved();
+                return;
+            }
+            const QString reason = answer.ok() ? answer.value.getError<QString>()
+                                               : QString::fromStdString(answer.error.message);
+            self->setMyAccountNameProblem(
+                reason.isEmpty()
+                    ? QStringLiteral("Your name was not saved, and the chat module gave no reason.")
+                    : reason);
+        });
+}
+
 void ChatBackend::rehydrateConversations()
 {
     if (!m_moduleInitialised) return;
