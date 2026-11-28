@@ -251,7 +251,7 @@ tab is there and says so.
 | [`logos-module-builder`](https://github.com/logos-co/logos-module-builder) | Build system (mkLogosQmlModule) |
 | [`logos-chat-module`](https://github.com/logos-co/logos-chat-module) | Chat backend module |
 | [`logos-delivery-module`](https://github.com/logos-co/logos-delivery-module) | Transport (Waku) — runtime dependency, pinned through `chat_module` |
-| `rln_module`, which brings `rln_lez_module` and `membership_allocation_client_module` | RLN, an optional dependency of `delivery_module`, which starts no node on `logos.test` or `logos.dev` without it |
+| `rln_module`, which brings `rln_lez_module` and `membership_allocation_client_module` | RLN, an optional dependency of `delivery_module`, needed to send on `logos.test` |
 
 ## Related Repositories
 
