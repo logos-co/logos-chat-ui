@@ -6,11 +6,11 @@
         "logos-module-builder": "logos-module-builder_20"
       },
       "locked": {
-        "lastModified": 1795820688,
-        "narHash": "sha256-PXodECwKwdS8rfVB4NNT8yDboB3V9tsv88MavfRsnds=",
+        "lastModified": 1795867502,
+        "narHash": "sha256-7rT11tw37szjzDlDMmLFho1F5NQokLnHSis78JjL1FI=",
         "owner": "logos-co",
         "repo": "logos-chat-module",
-        "rev": "0e518896ecd82e3c155ed4d144fe856f6cdc6244",
+        "rev": "2d1bb98a1876b614df6601fe6182e83b0da943da",
         "type": "github"
       },
       "original": {
@@ -6635,17 +6635,17 @@
         "zerokit": "zerokit"
       },
       "locked": {
-        "lastModified": 1795809551,
-        "narHash": "sha256-9wX3bK4hH25aS4/E5ymVUOfwXm79tEC6Fy8dnhF2X8w=",
+        "lastModified": 1795827910,
+        "narHash": "sha256-hiWZ1Cs6Lb4C+Umn6+B0jcUAnpX9BeWQlJama//bbSE=",
         "ref": "refs/heads/master",
-        "rev": "5d9179f696095d90907f539724a59d947ecb2851",
-        "revCount": 2840,
+        "rev": "686d3b78084fb567a288378b10297fd31a07de8f",
+        "revCount": 2841,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/logos-messaging/logos-delivery"
       },
       "original": {
-        "rev": "5d9179f696095d90907f539724a59d947ecb2851",
+        "rev": "686d3b78084fb567a288378b10297fd31a07de8f",
         "submodules": true,
         "type": "git",
         "url": "https://github.com/logos-messaging/logos-delivery"
@@ -6673,11 +6673,11 @@
         "rln_module": "rln_module"
       },
       "locked": {
-        "lastModified": 1795817972,
-        "narHash": "sha256-fhr+wYZLvDVvE94ICbTf4PSjC1eHHQrXB/7cRSw7i1M=",
+        "lastModified": 1795866235,
+        "narHash": "sha256-gfT1h5x6V/NLjii4Vyj8bE+rfTtvYGHP/htTIbaXfBs=",
         "owner": "logos-co",
         "repo": "logos-delivery-module",
-        "rev": "1e0e353c64c0135f5845766887baf299120438bb",
+        "rev": "b0575d33935ed97354c4dd95878111f057110ad4",
         "type": "github"
       },
       "original": {
