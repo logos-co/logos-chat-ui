@@ -15,7 +15,8 @@ name: Doc-Tests
 # On pull requests and pushes the ubuntu leg runs those flows on the local
 # delivery fleet chat_module's own doc-tests use, doctests/fleet/ in the
 # chat_module this flake pins, so a run does not depend on a public fleet being
-# up. The nightly run joins logos.dev, and so can a manual run. Every run uses
+# up; the macOS leg creates its node from that fleet's config without the fleet.
+# The nightly run joins logos.dev, and so can a manual run. Every run uses
 # the devnet contact registry.
 #
 # Each run publishes the two-column HTML report to:
@@ -63,8 +64,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 150
     env:
-      # The delivery network the ubuntu leg's flows join: "local", the fleet
-      # started below, or "logos.dev".
+      # The delivery network the specs join: "local", the fleet located
+      # below, or "logos.dev".
       NETWORK: ${{ github.event_name == 'schedule' && 'logos.dev' || inputs.network || 'local' }}
 
     steps:
@@ -105,14 +106,21 @@ jobs:
             "builtins.head (builtins.attrNames (builtins.getContext (builtins.getFlake \"$ref\").apps.\"$sys\".default.program))")"
           nix build --no-link "$drv^*" -L
 
-      - name: Start the local delivery fleet
-        if: matrix.os == 'ubuntu-latest' && env.NETWORK == 'local'
+      # Both legs create their nodes from the fleet's config. macOS runners have
+      # no docker, so the macOS leg starts no fleet: its single-window spec
+      # only needs the node to start, which a node without peers does.
+      - name: Locate the local delivery fleet
+        if: env.NETWORK == 'local'
         shell: bash
         run: |
           ref="github:logos-co/logos-chat-ui/${{ steps.commit.outputs.sha }}"
           fleet="$(nix eval --impure --raw --expr "(builtins.getFlake \"$ref\").inputs.chat_module.outPath")/doctests/fleet"
-          docker compose -f "$fleet/docker-compose.yml" up -d --wait --wait-timeout 120
           echo "FLEET_DIR=$fleet" >> "$GITHUB_ENV"
+
+      - name: Start the local delivery fleet
+        if: matrix.os == 'ubuntu-latest' && env.NETWORK == 'local'
+        shell: bash
+        run: docker compose -f "$FLEET_DIR/docker-compose.yml" up -d --wait --wait-timeout 120
 
       # The runner is the shared `doctest` CLI, invoked directly via its flake
       # (github:logos-co/logos-doctest) at a pinned rev. --release-for pins the
